@@ -6,6 +6,7 @@ import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.NaturalId;
 
 import java.time.LocalDate;
@@ -17,7 +18,7 @@ import java.util.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class User extends BaseEntity {
     @Id
@@ -63,7 +64,6 @@ public class User extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     Set<Role> roles = new HashSet<>();
-
 
     public void addRole(Role role) {
         if (role != null) {
