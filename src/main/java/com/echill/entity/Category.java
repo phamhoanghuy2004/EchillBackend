@@ -1,37 +1,39 @@
 package com.echill.entity;
 
-import com.echill.entity.enums.Level;
+import com.echill.entity.enums.Status;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
-@Table(name = "student_profiles")
+@Table(name = "categories")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class StudentProfile extends BaseEntity {
+public class Category extends BaseEntity {
     @Id
+    @Tsid
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "user_id", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    User user;
+    @Column(nullable = false, length = 100)
+    String name;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    String description;
 
     @Enumerated(EnumType.STRING)
-    @Builder.Default
     @Column(nullable = false, length = 20)
-    Level level = Level.BEGINNER;
+    @Builder.Default
+    Status status = Status.ACTIVE;
 
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    Category parent;
 }

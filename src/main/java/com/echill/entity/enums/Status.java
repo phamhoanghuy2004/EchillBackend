@@ -1,6 +1,6 @@
 package com.echill.entity.enums;
 
-public enum UserStatus {
+public enum Status {
     ACTIVE,
     INACTIVE,
 }

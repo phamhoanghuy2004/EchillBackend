@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 
 @Entity
@@ -25,6 +27,7 @@ public class StudyGoal extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_profile_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     StudentProfile studentProfile;
 
     @Enumerated(EnumType.STRING)

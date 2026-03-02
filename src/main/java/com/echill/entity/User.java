@@ -1,6 +1,6 @@
 package com.echill.entity;
 
-import com.echill.entity.enums.UserStatus;
+import com.echill.entity.enums.Status;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
@@ -53,15 +53,21 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    UserStatus status = UserStatus.ACTIVE;
+    Status status = Status.ACTIVE;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @Setter(AccessLevel.NONE)
     @Builder.Default
     @JoinTable(
             name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
+            joinColumns = @JoinColumn(
+                    name = "user_id",
+                    foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE")
+            ),
+            inverseJoinColumns = @JoinColumn(
+                    name = "role_id",
+                    foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE")
+            )
     )
     Set<Role> roles = new HashSet<>();
 
