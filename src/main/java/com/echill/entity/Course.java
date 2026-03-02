@@ -10,6 +10,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "courses")
@@ -45,4 +47,26 @@ public class Course extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "teacher_id", nullable = false)
+    User teacher;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @Builder.Default
+    @JoinTable(
+            name = "course_tags",
+            joinColumns = @JoinColumn(
+                    name = "course_id",
+                    // Xóa Course -> Tự động xóa dòng liên kết trong course_tags
+                    foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE")
+            ),
+            inverseJoinColumns = @JoinColumn(
+                    name = "tag_id",
+                    // Xóa Tag -> Tự động xóa dòng liên kết trong course_tags
+                    foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE")
+            )
+    )
+    Set<Tag> tags = new HashSet<>();
+
 }
