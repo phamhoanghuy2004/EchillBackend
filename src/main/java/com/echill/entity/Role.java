@@ -5,6 +5,7 @@ import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.NaturalId;
 
 import java.util.*;
@@ -15,7 +16,7 @@ import java.util.*;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Role extends BaseEntity {
     @Id
@@ -33,9 +34,15 @@ public class Role extends BaseEntity {
     @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
-        name = "role_permissions",
-        joinColumns = @JoinColumn(name = "role_id"),
-        inverseJoinColumns = @JoinColumn(name = "permission_id")
+            name = "role_permissions",
+            joinColumns = @JoinColumn(
+                    name = "role_id",
+                    foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE")
+            ),
+            inverseJoinColumns = @JoinColumn(
+                    name = "permission_id",
+                    foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE")
+            )
     )
     Set<Permission> permissions = new HashSet<>();
 
