@@ -10,36 +10,32 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
-import java.util.Objects;
+import java.math.BigDecimal;
 
 @Entity
-@Table(name = "tags")
+@Table(name = "coin_packages")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Tag extends BaseEntity   {
+public class CoinPackage extends BaseEntity {
     @Id
     @Tsid
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, length = 100)
     String name;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Tag)) return false;
-        Tag tag = (Tag) o;
-        // So sánh an toàn dựa trên tên Tag (ví dụ: "TOEIC")
-        return Objects.equals(name, tag.name);
-    }
+    @Column(nullable = false, precision = 12, scale = 0)
+    BigDecimal price;
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(name);
-    }
+    @Column(name = "coin_amount", nullable = false)
+    Long coinAmount;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    Boolean isActive = true;
 }

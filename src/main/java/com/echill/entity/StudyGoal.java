@@ -68,4 +68,21 @@ public class StudyGoal extends BaseEntity {
     @Column(name = "current_total")
     Double currentTotal;
 
+    // 1. Cập nhật tiến độ điểm hiện tại (Dành cho TOEIC Nói & Viết hoặc 4 kỹ năng)
+    public void updateCurrentProgress(Double listening, Double reading, Double speaking, Double writing, Double total) {
+        // Có thể áp dụng validation ở đây: Điểm không được số âm
+        if (listening != null && listening < 0) throw new IllegalArgumentException("Điểm không hợp lệ");
+
+        this.currentListening = listening;
+        this.currentReading = reading;
+        this.currentSpeaking = speaking;
+        this.currentWriting = writing;
+        this.currentTotal = total;
+    }
+
+    // 2. Đánh dấu mục tiêu này đã hoàn thành hoặc bị bỏ ngang (Lưu trữ lịch sử)
+    public void markAsInactive() {
+        this.isActive = false;
+    }
+
 }

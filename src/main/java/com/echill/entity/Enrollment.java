@@ -47,4 +47,41 @@ public class Enrollment extends BaseEntity {
 
     @Column(name = "last_accessed_at", nullable = false)
     Instant lastAccessedAt;
+
+    // ==========================================
+    // HELPER METHODS (Đóng gói nghiệp vụ Học tập)
+    // ==========================================
+
+    /**
+     * Tự động set thời gian truy cập lần đầu khi mới mua khóa học
+     */
+    @PrePersist
+    protected void onCreate() {
+        if (this.lastAccessedAt == null) {
+            this.lastAccessedAt = Instant.now();
+        }
+    }
+
+    /**
+     * Ghi nhận lại thời điểm học viên vừa bấm vào học
+     */
+    public void recordAccess() {
+        this.lastAccessedAt = Instant.now();
+    }
+
+    /**
+     * Cập nhật phần trăm tiến độ và tự động cấp chứng chỉ/hoàn thành
+     */
+    public void updateProgress(Double percent) {
+        if (percent == null || percent < 0.0 || percent > 100.0) {
+            throw new IllegalArgumentException("Phần trăm tiến độ không hợp lệ (phải từ 0 đến 100)");
+        }
+
+        this.progressPercent = percent;
+
+        // Tự động chốt sổ nếu đạt 100%
+        if (this.progressPercent >= 100.0) {
+            this.isCompleted = true;
+        }
+    }
 }

@@ -26,13 +26,13 @@ public class Question extends BaseEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     String content;
 
-    @Column(name = "audio_url")
+    @Column(name = "audio_url", length = 1000) // Nới rộng URL
     String audioUrl;
 
-    @Column(name = "image_url")
+    @Column(name = "image_url", length = 1000) // Nới rộng URL
     String imageUrl;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT") // Cho phép null để giáo viên soạn đề nhanh hơn
     String explanation;
 
     @ManyToOne(fetch = FetchType.LAZY)

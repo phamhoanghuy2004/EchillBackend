@@ -1,7 +1,7 @@
 package com.echill.entity;
 
-import com.echill.entity.enums.Level;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -10,27 +10,31 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
-@Table(name = "student_profiles")
+@Table(name = "participants", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"conversation_id", "user_id"}) // 1 người không thể join 1 nhóm 2 lần
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class StudentProfile extends BaseEntity {
+public class Participant  extends BaseEntity {
     @Id
+    @Tsid
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
+    @Column(name = "last_seen_at")
+    java.time.Instant lastSeenAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conversation_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    Conversation conversation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     User user;
-
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    @Column(nullable = false, length = 20)
-    Level level = Level.BEGINNER;
-
 }

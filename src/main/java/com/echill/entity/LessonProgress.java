@@ -52,4 +52,41 @@ public class LessonProgress extends BaseEntity {
     @Column(name = "is_completed", nullable = false)
     @Builder.Default
     Boolean isCompleted = false;
+
+    // ==========================================
+    // HELPER METHODS (Đóng gói nghiệp vụ Tiến độ)
+    // ==========================================
+
+    /**
+     * Lưu lại số giây đang xem dở (Resume play)
+     * Chỉ lưu khi số giây mới lớn hơn số giây cũ để tránh lỗi tua ngược video
+     */
+    public void updateWatchTime(Integer currentSecond) {
+        if (currentSecond != null && currentSecond > this.lastWatchedSecond) {
+            this.lastWatchedSecond = currentSecond;
+        }
+    }
+
+    /**
+     * Đánh dấu bài học này đã hoàn thành toàn bộ (Xem xong Video + Pass Quiz)
+     */
+    public void markAsCompleted() {
+        this.isVideoWatched = true;
+        this.isQuizPassed = true;
+        this.isCompleted = true;
+    }
+
+    /**
+     * Đánh dấu đã xem xong Video (Dùng cho bài không có bài tập)
+     */
+    public void markVideoWatched() {
+        this.isVideoWatched = true;
+    }
+
+    /**
+     * Đánh dấu đã qua bài kiểm tra nhỏ (Dùng cho bài Quiz)
+     */
+    public void markQuizPassed() {
+        this.isQuizPassed = true;
+    }
 }

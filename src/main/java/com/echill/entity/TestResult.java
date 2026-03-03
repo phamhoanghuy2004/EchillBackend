@@ -29,6 +29,10 @@ public class TestResult extends  BaseEntity {
     @Column(nullable = false, name = "time_taken_seconds")
     Integer timeTakenSeconds;
 
+    @Column(name = "is_passed", nullable = false)
+    @Builder.Default
+    Boolean isPassed = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE) // Xóa User -> Quét sạch lịch sử thi của người đó
@@ -38,4 +42,12 @@ public class TestResult extends  BaseEntity {
     @JoinColumn(name = "test_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE) // Xóa bài Test -> Xóa sạch mọi kết quả thi của bài đó
     Test test;
+
+    public void evaluateResult(Double targetPassScore) {
+        if (this.score == null) {
+            this.score = 0.0;
+        }
+        // Tự động quyết định Đậu hay Rớt
+        this.isPassed = this.score >= targetPassScore;
+    }
 }

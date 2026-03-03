@@ -30,49 +30,44 @@ public class Role extends BaseEntity {
 
     String description;
 
-    @Setter(AccessLevel.NONE)
+    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(
-            name = "role_permissions",
-            joinColumns = @JoinColumn(
-                    name = "role_id",
-                    foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE")
-            ),
-            inverseJoinColumns = @JoinColumn(
-                    name = "permission_id",
-                    foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE")
-            )
-    )
-    Set<Permission> permissions = new HashSet<>();
-
+    Set<RolePermission> rolePermissions = new HashSet<>();
 
     public void addPermission(Permission permission) {
-        if (permission != null) {
-            this.permissions.add(permission);
+        if (permission  != null){
+            RolePermission rolePermission = RolePermission.builder()
+                    .permission(permission)
+                    .role(this)
+                    .build();
+            this.rolePermissions.add(rolePermission);
         }
     }
 
-    public void removePermission(Permission permission) {
-        if (permission != null) {
-            this.permissions.remove(permission);
+    public void removePermission(Permission permission){
+        if (permission != null){
+            this.rolePermissions.removeIf(rp -> rp.getPermission().equals(permission));
         }
     }
 
     public void addPermissions(Collection<Permission> permissions) {
-        if (permissions != null) {
-            this.permissions.addAll(permissions);
+        if (permissions != null){
+            for (Permission permission : permissions) {
+                this.addPermission(permission);
+            }
         }
     }
 
-    public void removePermissions(Collection<Permission> oldPermissions) {
-        if (oldPermissions != null && !oldPermissions.isEmpty()) {
-            this.permissions.removeAll(oldPermissions);
+    public void removePermissions(Collection<Permission> permissions){
+        if (permissions != null){
+            for (Permission p : permissions) {
+                this.removePermission(p);
+            }
         }
     }
 
     public void clearPermissions() {
-        this.permissions.clear();
+        this.rolePermissions.clear(); // Nhờ orphanRemoval, Hibernate sẽ tự bắn lệnh DELETE sạch sẽ!
     }
 
     @Override
@@ -80,7 +75,7 @@ public class Role extends BaseEntity {
         if (this == o) return true;
         if (!(o instanceof Role)) return false;
         Role role = (Role) o;
-        return Objects.equals(name, role.name); // ham nay la de so sanh an toan, khong bi loi null pointer
+        return Objects.equals(name, role.name);
     }
 
     @Override
