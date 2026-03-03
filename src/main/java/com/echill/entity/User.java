@@ -27,10 +27,10 @@ public class User extends BaseEntity {
     Long id;
 
     @NaturalId
-    @Column(unique = true , length = 50, nullable = false)
+    @Column(nullable = false, unique = true , length = 50)
     String username;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 255)
     String password;
 
     @Column(name = "full_name", nullable = false, length = 100)
@@ -55,48 +55,45 @@ public class User extends BaseEntity {
     @Builder.Default
     Status status = Status.ACTIVE;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @Setter(AccessLevel.NONE)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    @JoinTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(
-                    name = "user_id",
-                    foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE")
-            ),
-            inverseJoinColumns = @JoinColumn(
-                    name = "role_id",
-                    foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE")
-            )
-    )
-    Set<Role> roles = new HashSet<>();
+    Set<UserRole> userRoles = new HashSet<>();
 
     public void addRole(Role role) {
         if (role != null) {
-            this.roles.add(role);
+            UserRole userRole = UserRole.builder()
+                    .user(this) // Đóng dấu chủ quyền: Gán Cha cho Con
+                    .role(role)
+                    .build();
+            this.userRoles.add(userRole);
         }
     }
 
     public void removeRole(Role role) {
         if (role != null) {
-            this.roles.remove(role);
-        }
-    }
-
-    public void addRoles(Collection<Role> roles) {
-        if (roles != null) {
-            this.roles.addAll(roles);
-        }
-    }
-
-    public void removeRoles(Collection<Role> roles) {
-        if (roles != null && !roles.isEmpty()) {
-            this.roles.removeAll(roles);
+            this.userRoles.removeIf(ur -> ur.getRole().equals(role));
         }
     }
 
     public void clearRoles() {
-        this.roles.clear();
+        this.userRoles.clear(); // Xóa sạch mọi Role của User này (Hibernate tự bắn lệnh DELETE)
+    }
+
+    public void deductCoin(Long amount) {
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("Số xu trừ phải lớn hơn 0");
+        }
+        if (this.currentCoin < amount) {
+            throw new IllegalStateException("Số dư xu không đủ để thực hiện giao dịch!");
+        }
+        this.currentCoin -= amount;
+    }
+
+    public void addCoin(Long amount) {
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("Số xu nạp phải lớn hơn 0");
+        }
+        this.currentCoin += amount;
     }
 
     @Override

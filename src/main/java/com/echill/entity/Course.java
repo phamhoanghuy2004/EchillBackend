@@ -1,6 +1,7 @@
 package com.echill.entity;
 
 
+import com.echill.entity.enums.Level;
 import com.echill.entity.enums.Status;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.hypersistence.utils.hibernate.id.Tsid;
@@ -44,6 +45,11 @@ public class Course extends BaseEntity {
     @Builder.Default
     Status status = Status.ACTIVE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    Level level = Level.BEGINNER;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     Category category;
@@ -68,5 +74,21 @@ public class Course extends BaseEntity {
             )
     )
     Set<Tag> tags = new HashSet<>();
+
+    public void addTag(Tag tag) {
+        if (tag != null) {
+            this.tags.add(tag);
+        }
+    }
+
+    public void removeTag(Tag tag) {
+        if (tag != null) {
+            this.tags.remove(tag);
+        }
+    }
+
+    public void clearTags() {
+        this.tags.clear();
+    }
 
 }

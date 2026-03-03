@@ -1,7 +1,7 @@
 package com.echill.entity;
 
-import com.echill.entity.enums.Level;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -10,27 +10,27 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
-@Table(name = "student_profiles")
+@Table(name = "blogs")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class StudentProfile extends BaseEntity {
+public class Blog extends BaseEntity {
     @Id
+    @Tsid
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
+    @Column(nullable = false, columnDefinition = "TEXT")
+    String content;
+
+    @Column(name = "image_url")
+    String imageUrl;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     User user;
-
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    @Column(nullable = false, length = 20)
-    Level level = Level.BEGINNER;
-
 }

@@ -10,36 +10,22 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
-import java.util.Objects;
-
 @Entity
-@Table(name = "tags")
+@Table(name = "conversations")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Tag extends BaseEntity   {
+public class Conversation extends BaseEntity {
     @Id
     @Tsid
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
-    String name;
+    @Column(length = 200) String name; // Nullable vì chat 1-1 thường không có tên
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Tag)) return false;
-        Tag tag = (Tag) o;
-        // So sánh an toàn dựa trên tên Tag (ví dụ: "TOEIC")
-        return Objects.equals(name, tag.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(name);
-    }
+    @Column(name = "last_message_at")
+    java.time.Instant lastMessageAt;
 }
