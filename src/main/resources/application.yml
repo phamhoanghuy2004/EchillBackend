@@ -1,0 +1,54 @@
+# ===============================
+# SERVER CONFIGURATION
+# ===============================
+server:
+  port: 8080
+
+spring:
+  application:
+    name: echill-backend
+
+  # ===============================
+  # DATABASE CONFIGURATION
+  # ===============================
+  datasource:
+    url: jdbc:mysql://mysql-2cc2c868-phamhoanghuy-96f0.e.aivencloud.com:15293/echill_db?sslMode=REQUIRED&rewriteBatchedStatements=true
+    username: avnadmin
+    password: AVNS_439qsgZdIKzTmluCfBg
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # ===============================
+  # JPA / HIBERNATE CONFIGURATION
+  # ===============================
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+
+        # ===============================
+        # PERFORMANCE TUNING (Batching)
+        # ===============================
+        jdbc:
+          batch_size: 30
+        # giup gom gon cac batch xong roi moi thuc hien
+        order_inserts: true
+        order_updates: true
+
+# dung de hien luon tham so duoc bind trong cau lenh sql duoc sinh ra
+logging:
+  level:
+    org:
+      hibernate:
+        orm:
+          jdbc:
+            bind: TRACE
+
+# ===============================
+# JWT CONFIGURATION (Fix lỗi sập Server)
+# ===============================
+jwt:
+  # Chú ý: Hãy đổi chuỗi này thành một chuỗi ngẫu nhiên, dài và phức tạp hơn khi đưa lên Production nhé!
+  signerKey: "4666c04b12243870bf10458cb52745f79f68e7d88c1028a27cd036f37346aa96"
