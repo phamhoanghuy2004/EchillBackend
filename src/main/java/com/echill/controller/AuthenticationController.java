@@ -3,10 +3,12 @@ package com.echill.controller;
 import com.echill.dto.request.AuthenticationRequest;
 import com.echill.dto.request.IntrospectRequest;
 import com.echill.dto.request.LogoutRequest;
+import com.echill.dto.request.RefreshRequest;
 import com.echill.dto.response.ApiResponse;
 import com.echill.dto.response.AuthenticationResponse;
 import com.echill.dto.response.IntrospectResponse;
 import com.echill.service.AuthenticationService;
+import com.nimbusds.jose.JOSEException;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.text.ParseException;
 
 
 @RestController
@@ -37,6 +40,15 @@ public class AuthenticationController {
     public ApiResponse<IntrospectResponse> introspect(@Valid @RequestBody IntrospectRequest introspectRequest) {
         var result = authenticationService.introspect(introspectRequest);
         return ApiResponse.<IntrospectResponse>builder()
+                .data(result)
+                .build();
+    }
+
+    @PostMapping("/refresh")
+    ApiResponse<AuthenticationResponse> authenticate(@RequestBody RefreshRequest request)
+            throws ParseException, JOSEException {
+        var result = authenticationService.refreshToken(request);
+        return ApiResponse.<AuthenticationResponse>builder()
                 .data(result)
                 .build();
     }

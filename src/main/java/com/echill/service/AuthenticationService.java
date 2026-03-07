@@ -3,6 +3,7 @@ package com.echill.service;
 import com.echill.dto.request.AuthenticationRequest;
 import com.echill.dto.request.IntrospectRequest;
 import com.echill.dto.request.LogoutRequest;
+import com.echill.dto.request.RefreshRequest;
 import com.echill.dto.response.AuthenticationResponse;
 import com.echill.dto.response.IntrospectResponse;
 import com.echill.entity.InvalidatedToken;
@@ -43,6 +44,14 @@ public class AuthenticationService {
     @Value("${jwt.signerKey}")
     String SIGNER_KEY;
 
+    @NonFinal
+    @Value("${jwt.valid-duration}")
+    protected long VALID_DURATION;
+
+    @NonFinal
+    @Value("${jwt.refreshable-duration}")
+    protected long REFRESHABLE_DURATION;
+
     InvalidatedTokenRepository invalidatedTokenRepository;
 
     UserRepository userRepository;
@@ -72,7 +81,7 @@ public class AuthenticationService {
         var token = introspectRequest.getToken();
         boolean isValid = true;
         try{
-            verifyToken(token);
+            verifyToken(token, false);
         }
         catch (Exception e){
             isValid = false;
@@ -84,21 +93,16 @@ public class AuthenticationService {
 
     public void logout(LogoutRequest logoutRequest) {
         try {
-            // 1. Xác thực token
-            var signedToken = verifyToken(logoutRequest.getToken());
+            var signToken = verifyToken(logoutRequest.getToken(), true);
 
-            // 2. Lấy thông tin
-            String jti = signedToken.getJWTClaimsSet().getJWTID();
-            Date expiryTime = signedToken.getJWTClaimsSet().getExpirationTime();
+            String jit = signToken.getJWTClaimsSet().getJWTID();
+            Date expiryTime = signToken.getJWTClaimsSet().getExpirationTime();
 
-            // 3. Đưa vào Blacklist
-            InvalidatedToken invalidatedToken = InvalidatedToken.builder()
-                    .id(jti)
-                    .expiryTime(expiryTime)
-                    .build();
+            InvalidatedToken invalidatedToken =
+                    InvalidatedToken.builder().id(jit).expiryTime(expiryTime).build();
 
             invalidatedTokenRepository.save(invalidatedToken);
-            log.info("Đã đưa Token vào danh sách đen: {}", jti);
+            log.info("Đã đưa Token vào danh sách đen: {}", jit);
 
         } catch (AppException e) {
             // TRƯỜNG HỢP 1: Token ĐÃ HẾT HẠN hoặc ĐÃ BỊ LOGOUT TỪ TRƯỚC
@@ -113,13 +117,53 @@ public class AuthenticationService {
         }
     }
 
-    private SignedJWT verifyToken (String token) throws JOSEException, ParseException {
+    public AuthenticationResponse refreshToken(RefreshRequest request)
+            throws ParseException, JOSEException {
+
+        String token = request.getToken();
+        if (token == null || token.isBlank()) {
+            throw new AppException(ErrorEnum.UNAUTHENTICATED);
+        }
+
+        // 1. Verify token trong refresh window
+        SignedJWT signedJWT = verifyToken(token, true);
+        JWTClaimsSet claims = signedJWT.getJWTClaimsSet();
+
+        String jti = claims.getJWTID();
+        Date expiryTime = claims.getExpirationTime();
+
+        // 2. Blacklist token cũ
+        invalidatedTokenRepository.save(
+                InvalidatedToken.builder()
+                        .id(jti)
+                        .expiryTime(expiryTime)
+                        .build()
+        );
+
+        // 3. Lấy user
+        String username = claims.getSubject();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorEnum.UNAUTHENTICATED));
+
+        // 4. Tạo token mới
+        String newToken = generateToken(user);
+
+        return AuthenticationResponse.builder()
+                .authenticated(true)
+                .token(newToken)
+                .build();
+    }
+
+    private SignedJWT verifyToken (String token, boolean isRefresh) throws JOSEException, ParseException {
 
         JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes(StandardCharsets.UTF_8));
 
         SignedJWT signedJWT = SignedJWT.parse(token);
         var verified = signedJWT.verify(verifier);
-        Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+        Date expirationTime = (isRefresh)
+                ? new Date(signedJWT.getJWTClaimsSet().getIssueTime()
+                .toInstant().plus(REFRESHABLE_DURATION, ChronoUnit.SECONDS).toEpochMilli())
+                : signedJWT.getJWTClaimsSet().getExpirationTime();
 
 
         if (!verified || expirationTime == null || expirationTime.before(new Date())) {
@@ -143,7 +187,7 @@ public class AuthenticationService {
                 .issuer("echill.com") // Chuẩn quy ước URL thường viết thường
                 .issueTime(new Date())
                 // TỐI ƯU 1: Viết gọn lại logic cộng thời gian
-                .expirationTime(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
+                .expirationTime(Date.from(Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS)))
                 // TỐI ƯU 2: Nhắc lại - Dùng TSID thay cho UUID để Database truy vấn nhanh như chớp!
                 .jwtID(TsidCreator.getTsid().toString())
                 .claim("scope", buildScope(user))
