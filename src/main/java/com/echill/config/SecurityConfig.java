@@ -26,6 +26,7 @@ import org.springframework.web.filter.CorsFilter;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SecurityConfig {
+
     static String[] PUBLIC_POST_ENDPOINTS = {
             "/users", "/auth/login", "/auth/introspect", "/auth/logout"
     };
