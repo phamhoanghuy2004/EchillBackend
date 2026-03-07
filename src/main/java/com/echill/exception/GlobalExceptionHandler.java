@@ -3,11 +3,14 @@ package com.echill.exception;
 import com.echill.dto.response.ApiResponse;
 import jakarta.validation.ConstraintViolation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
 import java.util.Objects;
@@ -16,13 +19,13 @@ import java.util.Objects;
 @Slf4j
 public class GlobalExceptionHandler {
     @ExceptionHandler(value = Exception.class)
-    ResponseEntity<ApiResponse<?>> handleRuntimeException(Exception ex) {
+    ResponseEntity<ApiResponse<Void>> handleRuntimeException(Exception ex) {
         // TỐI ƯU 2: Phải log ra toàn bộ Stack Trace để Dev còn biết đường fix bug
         log.error("Uncategorized Exception occurred: ", ex);
 
         var errorEnum = ErrorEnum.UNCATEGORIZED;
         return ResponseEntity.status(errorEnum.getStatusCode()).body(
-                ApiResponse.builder()
+                ApiResponse.<Void>builder()
                         .code(errorEnum.getCode())
                         .message(errorEnum.getMessage())
                         .build()
@@ -30,7 +33,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    ResponseEntity<ApiResponse<?>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+    ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
         var errorEnum = ErrorEnum.INVALID_KEY;
         Map<String, Object> attributes = null;
 
@@ -54,7 +57,7 @@ public class GlobalExceptionHandler {
         String finalMessage = Objects.nonNull(attributes) ? mapAttribute(errorEnum.getMessage(), attributes) : errorEnum.getMessage();
 
         return ResponseEntity.status(errorEnum.getStatusCode()).body(
-                ApiResponse.builder()
+                ApiResponse.<Void>builder()
                         .code(errorEnum.getCode())
                         .message(finalMessage)
                         .build()
@@ -62,10 +65,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(value = AppException.class)
-    ResponseEntity<ApiResponse<?>> handleAppException(AppException ex) {
+    ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex) {
         var errorEnum = ex.getErrorEnum();
         return ResponseEntity.status(errorEnum.getStatusCode()).body(
-                ApiResponse.builder()
+                ApiResponse.<Void>builder()
                         .code(errorEnum.getCode())
                         .message(errorEnum.getMessage())
                         .build()
@@ -73,15 +76,37 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(value = AuthorizationDeniedException.class)
-    ResponseEntity<ApiResponse<?>> handleAuthorizationException(AuthorizationDeniedException ex) {
+    ResponseEntity<ApiResponse<Void>> handleAuthorizationException(AuthorizationDeniedException ex) {
         var errorEnum = ErrorEnum.UNAUTHORIZED;
         log.warn("Access denied: {}", ex.getMessage()); // Nên log lại để trace xem ai cố tình truy cập trái phép
         return ResponseEntity.status(errorEnum.getStatusCode()).body(
-                ApiResponse.builder()
+                ApiResponse.<Void>builder()
                         .code(errorEnum.getCode())
                         .message(errorEnum.getMessage())
                         .build()
         );
+    }
+
+    @ExceptionHandler(value = AccessDeniedException.class)
+    ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException ex) {
+        ErrorEnum errorEnum = ErrorEnum.UNAUTHORIZED;
+        return ResponseEntity.status(errorEnum.getStatusCode()).body(
+                ApiResponse.<Void>builder()
+                        .code(errorEnum.getCode())
+                        .message(errorEnum.getMessage())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(value = NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handlingNoResourceFoundException(NoResourceFoundException exception) {
+
+        // Trả về HTTP Status 404 (Not Found) kèm thông báo rõ ràng
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.<Void>builder()
+                        .code(404)
+                        .message("Endpoint does not exist: " + exception.getResourcePath())
+                        .build());
     }
 
     // TỐI ƯU 3: Hàm "Ma thuật" tự động thay thế TẤT CẢ các parameter ({min}, {max}, {value}...)

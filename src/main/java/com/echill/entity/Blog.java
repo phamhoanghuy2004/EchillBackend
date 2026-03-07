@@ -20,7 +20,6 @@ import org.hibernate.annotations.OnDeleteAction;
 public class Blog extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @Column(nullable = false, columnDefinition = "TEXT")

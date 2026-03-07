@@ -23,7 +23,6 @@ import java.time.LocalDate;
 public class Certificate extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

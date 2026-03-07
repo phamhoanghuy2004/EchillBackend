@@ -21,7 +21,6 @@ import java.util.*;
 public class Role extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @NaturalId

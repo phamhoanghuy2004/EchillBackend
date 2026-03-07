@@ -24,7 +24,6 @@ import java.util.Objects;
 public class RolePermission extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

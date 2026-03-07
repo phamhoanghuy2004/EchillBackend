@@ -50,6 +50,7 @@ public class CustomJwtDecoder implements JwtDecoder {
         var response = authenticationService.introspect(IntrospectRequest.builder().token(token).build());
 
         if (!response.getValid()) {
+            log.warn("Token invalid, expired, or logged out");
             throw new JwtException("Token invalid, expired, or logged out");
         }
 

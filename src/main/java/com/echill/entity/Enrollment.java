@@ -24,7 +24,6 @@ import java.time.Instant;
 public class Enrollment extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

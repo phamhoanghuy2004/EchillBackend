@@ -21,7 +21,6 @@ import lombok.experimental.SuperBuilder;
 public class Conversation extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @Column(length = 200) String name; // Nullable vì chat 1-1 thường không có tên

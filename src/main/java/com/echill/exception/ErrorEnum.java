@@ -3,7 +3,6 @@ package com.echill.exception;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 
@@ -27,7 +26,12 @@ public enum ErrorEnum {
     // CÁC MÃ LỖI MỚI THÊM CHO VALIDATION DTO
     USERNAME_REQUIRED(1009, "Username cannot be blank", HttpStatus.BAD_REQUEST),
     PASSWORD_REQUIRED(1010, "Password cannot be blank", HttpStatus.BAD_REQUEST),
-    TOKEN_REQUIRED(1011, "Token cannot be blank", HttpStatus.BAD_REQUEST);
+    TOKEN_REQUIRED(1011, "Token cannot be blank", HttpStatus.BAD_REQUEST),
+    PERMISSION_NAME_REQUIRED(1012, "Permission name cannot be blank", HttpStatus.BAD_REQUEST),
+    PERMISSION_EXISTED(1013, "Permission already exists", HttpStatus.BAD_REQUEST),
+    PERMISSION_NOT_EXIST(1014, "Permission does not exist", HttpStatus.BAD_REQUEST),
+    ROLE_NOT_EXIST(1015, "Role does not exist", HttpStatus.BAD_REQUEST);
+
 
     Integer code;
     String message;

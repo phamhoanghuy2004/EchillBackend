@@ -25,7 +25,6 @@ import java.util.Set;
 public class Course extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @Column(nullable = false, length = 200)

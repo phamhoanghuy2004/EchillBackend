@@ -22,7 +22,6 @@ import java.math.BigDecimal;
 public class Transaction extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     // Mã giao dịch từ đối tác (VD: VNPay gửi về). Không cho phép sửa sau khi tạo.
