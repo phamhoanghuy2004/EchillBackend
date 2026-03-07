@@ -24,7 +24,6 @@ public class Review extends BaseEntity {
 
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @Column(nullable = false, columnDefinition = "TEXT")

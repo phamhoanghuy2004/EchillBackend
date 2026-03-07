@@ -22,7 +22,6 @@ import org.hibernate.annotations.OnDeleteAction;
 public class StudyGoal extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

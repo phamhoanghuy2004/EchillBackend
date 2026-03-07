@@ -22,7 +22,6 @@ import org.hibernate.annotations.OnDeleteAction;
 public class Participant  extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @Column(name = "last_seen_at")

@@ -23,7 +23,6 @@ import java.util.*;
 public class User extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @NaturalId

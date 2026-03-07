@@ -29,6 +29,8 @@ public class SecurityConfig {
 
     JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
+    CustomAccessDeniedHandler customAccessDeniedHandler;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
 
@@ -42,7 +44,12 @@ public class SecurityConfig {
                 oauth2.jwt(jwtConfigurer -> jwtConfigurer
                                 .decoder(customJwtDecoder)
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter()))
-                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+        );
+
+        // Gom chung xử lý ngoại lệ 401 và 403 vào khối exceptionHandling của Spring Security
+        httpSecurity.exceptionHandling(exception -> exception
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                .accessDeniedHandler(customAccessDeniedHandler)
         );
 
         // 3. Tắt CSRF (Bắt buộc cho API RESTful dùng JWT)

@@ -23,7 +23,6 @@ import java.math.BigDecimal;
 public class CoinPackage extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @Column(nullable = false, length = 100)

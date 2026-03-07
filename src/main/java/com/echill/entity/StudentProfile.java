@@ -19,7 +19,6 @@ import org.hibernate.annotations.OnDeleteAction;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class StudentProfile extends BaseEntity {
     @Id
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @OneToOne(fetch = FetchType.LAZY)

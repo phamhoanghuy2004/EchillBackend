@@ -23,7 +23,6 @@ import java.util.Objects;
 public class Tag extends BaseEntity   {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @Column(nullable = false, unique = true, length = 100)

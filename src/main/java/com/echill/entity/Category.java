@@ -19,7 +19,6 @@ import lombok.experimental.SuperBuilder;
 public class Category extends BaseEntity {
     @Id
     @Tsid
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
 
     @Column(nullable = false, length = 100)
