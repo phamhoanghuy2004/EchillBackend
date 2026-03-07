@@ -6,6 +6,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -14,6 +15,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
+
 
 @Configuration
 @EnableWebSecurity
@@ -21,8 +26,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SecurityConfig {
-    static String[] PUBLIC_ENDPOINTS = {
+    static String[] PUBLIC_POST_ENDPOINTS = {
             "/users", "/auth/login", "/auth/introspect", "/auth/logout"
+    };
+
+    static String[] PUBLIC_GET_ENDPOINTS = {
+            "/courses", "/courses/**", "/exams", "/exams/**"
     };
 
     CustomJwtDecoder customJwtDecoder;
@@ -34,12 +43,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
 
-        // 1. Cấu hình phân quyền Endpoint
+        // Cấu hình phân quyền Endpoint
         httpSecurity.authorizeHttpRequests(request ->
-                request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
+                request.requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                         .anyRequest().authenticated());
 
-        // 2. Cấu hình JWT Decoder & Xử lý ngoại lệ 401
+        // Cấu hình JWT Decoder & Xử lý ngoại lệ 401
         httpSecurity.oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwtConfigurer -> jwtConfigurer
                                 .decoder(customJwtDecoder)
@@ -52,17 +62,36 @@ public class SecurityConfig {
                 .accessDeniedHandler(customAccessDeniedHandler)
         );
 
-        // 3. Tắt CSRF (Bắt buộc cho API RESTful dùng JWT)
+        // Tắt CSRF (Bắt buộc cho API RESTful dùng JWT)
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
 
+        // Bật tính năng CORS trong Filter Chain
+        httpSecurity.cors(Customizer.withDefaults());
+
         // =========================================================
-        // TỐI ƯU 1: Cấu hình STATELESS - Tắt hoàn toàn Session
+        // Cấu hình STATELESS - Tắt hoàn toàn Session
         // Giúp Server tiết kiệm tối đa RAM khi có hàng ngàn user truy cập
         // =========================================================
         httpSecurity.sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return httpSecurity.build();
+    }
+
+    @Bean
+    public CorsFilter corsFilter() {
+        CorsConfiguration corsConfiguration = new CorsConfiguration();
+
+        // Thay "http://localhost:3000" bằng domain frontend của bạn sau khi deploy
+        corsConfiguration.addAllowedOrigin("http://localhost:3000");
+        corsConfiguration.addAllowedMethod("*"); // Cho phép mọi method (GET, POST, PUT, DELETE, OPTIONS)
+        corsConfiguration.addAllowedHeader("*"); // Cho phép mọi header (Authorization, Content-Type,...)
+        corsConfiguration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
+        urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
+
+        return new CorsFilter(urlBasedCorsConfigurationSource);
     }
 
     @Bean
