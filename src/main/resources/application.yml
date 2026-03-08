@@ -52,5 +52,5 @@ logging:
 jwt:
   # Chú ý: Hãy đổi chuỗi này thành một chuỗi ngẫu nhiên, dài và phức tạp hơn khi đưa lên Production nhé!
   signerKey: "4666c04b12243870bf10458cb52745f79f68e7d88c1028a27cd036f37346aa96"
-  valid-duration: 10 # in second
-  refreshable-duration: 20 # in seconds
+  valid-duration: 7200 # in second
+  refreshable-duration: 604800 # in seconds
