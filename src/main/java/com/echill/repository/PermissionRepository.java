@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -21,4 +22,6 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
     @Transactional
     @Query("DELETE FROM Permission p WHERE p.id = :id")
     void deletePermissionById(@Param("id") Long id);
+
+    List<Permission> findAllByNameIn(Collection<String> names);
 }

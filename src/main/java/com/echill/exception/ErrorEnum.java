@@ -30,7 +30,10 @@ public enum ErrorEnum {
     PERMISSION_NAME_REQUIRED(1012, "Permission name cannot be blank", HttpStatus.BAD_REQUEST),
     PERMISSION_EXISTED(1013, "Permission already exists", HttpStatus.BAD_REQUEST),
     PERMISSION_NOT_EXIST(1014, "Permission does not exist", HttpStatus.BAD_REQUEST),
-    ROLE_NOT_EXIST(1015, "Role does not exist", HttpStatus.BAD_REQUEST);
+    ROLE_NOT_EXIST(1015, "Role does not exist", HttpStatus.BAD_REQUEST),
+    ROLE_NAME_REQUIRED(1016, "Role name cannot be blank", HttpStatus.BAD_REQUEST),
+    ROLE_EXISTED(1017, "Role already exists", HttpStatus.BAD_REQUEST),
+    ;
 
 
     Integer code;

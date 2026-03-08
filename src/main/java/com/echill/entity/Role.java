@@ -65,6 +65,25 @@ public class Role extends BaseEntity {
         }
     }
 
+    public void syncPermissions(List<Permission> newPermissions) {
+        if (newPermissions == null) return;
+
+        // 1. Lọc và XÓA những quyền CŨ không còn nằm trong danh sách MỚI
+        this.rolePermissions.removeIf(rp -> !newPermissions.contains(rp.getPermission()));
+
+        // 2. Lấy ra danh sách các quyền hiện tại đang có
+        Set<Permission> currentPermissions = this.rolePermissions.stream()
+                .map(RolePermission::getPermission)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // 3. Chỉ THÊM những quyền MỚI chưa từng tồn tại trong danh sách cũ
+        for (Permission p : newPermissions) {
+            if (!currentPermissions.contains(p)) {
+                this.addPermission(p);
+            }
+        }
+    }
+
     public void clearPermissions() {
         this.rolePermissions.clear(); // Nhờ orphanRemoval, Hibernate sẽ tự bắn lệnh DELETE sạch sẽ!
     }
