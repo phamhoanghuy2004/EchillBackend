@@ -30,26 +30,23 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     public ApiResponse<AuthenticationResponse> login(@Valid @RequestBody AuthenticationRequest authenticationRequest) {
-        var result = authenticationService.authenticate(authenticationRequest);
         return ApiResponse.<AuthenticationResponse>builder()
-                .data(result)
+                .data(authenticationService.authenticate(authenticationRequest))
                 .build();
     }
 
     @PostMapping("/introspect")
     public ApiResponse<IntrospectResponse> introspect(@Valid @RequestBody IntrospectRequest introspectRequest) {
-        var result = authenticationService.introspect(introspectRequest);
         return ApiResponse.<IntrospectResponse>builder()
-                .data(result)
+                .data(authenticationService.introspect(introspectRequest))
                 .build();
     }
 
     @PostMapping("/refresh")
-    ApiResponse<AuthenticationResponse> authenticate(@RequestBody RefreshRequest request)
+    ApiResponse<AuthenticationResponse> authenticate(@Valid @RequestBody RefreshRequest request)
             throws ParseException, JOSEException {
-        var result = authenticationService.refreshToken(request);
         return ApiResponse.<AuthenticationResponse>builder()
-                .data(result)
+                .data(authenticationService.refreshToken(request))
                 .build();
     }
 
