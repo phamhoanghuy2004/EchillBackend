@@ -10,6 +10,8 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "transactions")
@@ -24,19 +26,15 @@ public class Transaction extends BaseEntity {
     @Tsid
     Long id;
 
-    // Mã giao dịch từ đối tác (VD: VNPay gửi về). Không cho phép sửa sau khi tạo.
     @Column(name = "transaction_code", unique = true, length = 100, updatable = false)
     String transactionCode;
 
-    // Số xu thay đổi (VD: -100 xu, +500 xu).
-    @Column(name = "coins_changed", nullable = false, updatable = false)
-    Long coinsChanged;
+    @Column(name = "total_coins_changed", nullable = false, updatable = false)
+    Long totalCoinsChanged;
 
-    // Số tiền VNĐ thanh toán thực tế (nếu có nạp tiền).
-    @Column(precision = 12, scale = 0, updatable = false)
-    BigDecimal amount;
+    @Column(name = "total_amount", precision = 12, scale = 0, updatable = false)
+    BigDecimal totalAmount;
 
-    // Số dư xu của User NGAY SAU KHI giao dịch thành công (Rất quan trọng để đối soát)
     @Column(name = "balance_after")
     Long balanceAfter;
 
@@ -51,30 +49,30 @@ public class Transaction extends BaseEntity {
     @Column(nullable = false, length = 20, updatable = false)
     TransactionType type;
 
-    // --- CÁC LIÊN KẾT: BẢO VỆ CHẶT CHẼ BẰNG SET NULL ---
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, updatable = false)
-    User user; // Giao dịch bắt buộc phải có User. (Không nên cascade delete User nếu có dính giao dịch)
+    User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id", foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL"))
-    Course course;
+    @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<TransactionItem> items = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "test_id", foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (test_id) REFERENCES tests(id) ON DELETE SET NULL"))
-    Test test;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "coin_package_id", foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (coin_package_id) REFERENCES coin_packages(id) ON DELETE SET NULL"))
-    CoinPackage coinPackage;
+    public void addItem(TransactionItem item) {
+        items.add(item);
+        item.setTransaction(this);
+    }
 
-    // ==========================================
-    // HELPER METHODS
-    // ==========================================
+    public void removeItems() {
+        for (TransactionItem item : items) {
+            item.setTransaction(null);
+        }
+        this.items.clear();
+    }
 
     public void markAsSuccess(Long currentBalance) {
         this.status = TransactionStatus.SUCCESS;
-        this.balanceAfter = currentBalance; // Chốt số dư tại thời điểm thành công
+        this.balanceAfter = currentBalance;
     }
 
     public void markAsFailed() {
