@@ -1,5 +1,6 @@
 package com.echill.entity;
 
+import com.echill.entity.enums.EnrollmentStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
@@ -44,6 +45,11 @@ public class Enrollment extends BaseEntity {
     @Builder.Default
     Boolean isCompleted = false;
 
+    @Column(name = "enrollment_status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    EnrollmentStatus enrollmentStatus = EnrollmentStatus.ACTIVE;
+
     @Column(name = "last_accessed_at", nullable = false)
     Instant lastAccessedAt;
 
@@ -82,5 +88,18 @@ public class Enrollment extends BaseEntity {
         if (this.progressPercent >= 100.0) {
             this.isCompleted = true;
         }
+    }
+
+    public void unlockCourse() {
+        if (this.enrollmentStatus == EnrollmentStatus.LOCKED) {
+            this.enrollmentStatus = EnrollmentStatus.ACTIVE;
+        }
+    }
+
+    /**
+     * Dành cho luồng: Mua Combo, khóa đầu tiên ACTIVE, các khóa sau bị khóa lại chờ học
+     */
+    public void lockCourse() {
+        this.enrollmentStatus = EnrollmentStatus.LOCKED;
     }
 }
