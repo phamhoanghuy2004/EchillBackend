@@ -57,6 +57,13 @@ public class Transaction extends BaseEntity {
     @Builder.Default
     List<TransactionItem> items = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "voucher_id", foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (voucher_id) REFERENCES vouchers(id) ON DELETE SET NULL"))
+    Voucher voucher;
+
+    @Column(name = "discount_amount", precision = 12, scale = 0)
+    BigDecimal discountAmount;
+
 
     public void addItem(TransactionItem item) {
         items.add(item);

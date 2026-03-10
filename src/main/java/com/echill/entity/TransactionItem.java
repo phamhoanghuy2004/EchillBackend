@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TransactionItem {
+public class TransactionItem extends BaseEntity {
     @Id
     @Tsid
     Long id;
