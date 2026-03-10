@@ -11,6 +11,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,6 +36,9 @@ public class Course extends BaseEntity {
 
     @Column(nullable = false, precision = 12, scale = 0)
     BigDecimal price;
+
+    @Column(name = "original_price", precision = 12, scale = 0)
+    BigDecimal originalPrice;
 
     @Column(nullable = false, name = "image_url")
     String imageUrl;
@@ -88,6 +92,24 @@ public class Course extends BaseEntity {
 
     public void clearTags() {
         this.tags.clear();
+    }
+
+    // @Transient báo cho Hibernate biết: "Đừng tạo cột này dưới Database, tao chỉ xài tạm trên RAM thôi"
+    @Transient
+    public Integer getDiscountPercent() {
+        // Nếu không có giá gốc, hoặc giá gốc = 0, hoặc giá bán >= giá gốc -> KHÔNG GIẢM GIÁ (0%)
+        if (this.originalPrice == null
+                || this.originalPrice.compareTo(BigDecimal.ZERO) == 0
+                || this.price.compareTo(this.originalPrice) >= 0) {
+            return 0;
+        }
+
+        // Công thức: ((Giá gốc - Giá bán) / Giá gốc) * 100
+        BigDecimal discountAmount = this.originalPrice.subtract(this.price);
+        BigDecimal percentage = discountAmount.divide(this.originalPrice, 2, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100"));
+
+        return percentage.intValue();
     }
 
 }
