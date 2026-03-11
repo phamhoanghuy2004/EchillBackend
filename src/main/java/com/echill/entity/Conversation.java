@@ -1,6 +1,5 @@
 package com.echill.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,4 +26,8 @@ public class Conversation extends BaseEntity {
 
     @Column(name = "last_message_at")
     java.time.Instant lastMessageAt;
+
+    @Column(name = "is_group", nullable = false)
+    @Builder.Default
+    Boolean isGroup = false;
 }
