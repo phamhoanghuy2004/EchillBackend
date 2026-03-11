@@ -1,6 +1,5 @@
 package com.echill.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -10,7 +9,9 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
-@Table(name = "messages")
+@Table(name = "messages", indexes = {
+        @Index(name = "idx_message_conversation_sent", columnList = "conversation_id, sent_at DESC")
+})
 @Getter
 @Setter
 @NoArgsConstructor

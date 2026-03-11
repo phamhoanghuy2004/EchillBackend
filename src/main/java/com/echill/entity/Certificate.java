@@ -27,7 +27,7 @@ public class Certificate extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "teacher_profile_id", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE) // Bổ sung dòng này để MySQL tự dọn dẹp khi xóa Teacher
+    @OnDelete(action = OnDeleteAction.CASCADE)
     TeacherProfile teacherProfile;
 
     @Enumerated(EnumType.STRING)
