@@ -1,7 +1,6 @@
 package com.echill.entity;
 
 import com.echill.entity.enums.EnrollmentStatus;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
