@@ -27,7 +27,7 @@ public class Document extends BaseEntity {
     @Column(nullable = false, length = 100)
     String title;
 
-    @Column(nullable = false, name = "file_url")
+    @Column(nullable = false, name = "file_url", length = 1000)
     String fileUrl;
 
     @Enumerated(EnumType.STRING)

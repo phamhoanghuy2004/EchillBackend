@@ -1,6 +1,5 @@
 package com.echill.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,15 +23,14 @@ public class Answer extends BaseEntity {
     Long id;
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    String content; // Nội dung đáp án (Ví dụ: "He is running")
+    String content;
 
     @Column(name = "is_correct", nullable = false)
     @Builder.Default
-    Boolean isCorrect = false; // Đánh dấu đây là đáp án đúng
+    Boolean isCorrect = false;
 
-    // --- LIÊN KẾT VỚI CÂU HỎI (SỐNG CÒN) ---
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE) // Câu hỏi bị xóa -> 4 đáp án đi tong
-            Question question;
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    Question question;
 }

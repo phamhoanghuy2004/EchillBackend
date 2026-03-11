@@ -1,7 +1,6 @@
 package com.echill.entity;
 
 import com.echill.entity.enums.Level;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;

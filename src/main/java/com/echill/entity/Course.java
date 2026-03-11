@@ -12,7 +12,9 @@ import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -40,7 +42,7 @@ public class Course extends BaseEntity {
     @Column(name = "original_price", precision = 12, scale = 0)
     BigDecimal originalPrice;
 
-    @Column(nullable = false, name = "image_url")
+    @Column(nullable = false, name = "image_url", length = 1000)
     String imageUrl;
 
     @Enumerated(EnumType.STRING)
@@ -57,6 +59,10 @@ public class Course extends BaseEntity {
     @JoinColumn(name = "category_id", nullable = false)
     Category category;
 
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<Lesson> lessons = new ArrayList<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "teacher_id", nullable = false)
     User teacher;
@@ -67,12 +73,10 @@ public class Course extends BaseEntity {
             name = "course_tags",
             joinColumns = @JoinColumn(
                     name = "course_id",
-                    // Xóa Course -> Tự động xóa dòng liên kết trong course_tags
                     foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE")
             ),
             inverseJoinColumns = @JoinColumn(
                     name = "tag_id",
-                    // Xóa Tag -> Tự động xóa dòng liên kết trong course_tags
                     foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE")
             )
     )
@@ -94,7 +98,17 @@ public class Course extends BaseEntity {
         this.tags.clear();
     }
 
-    // @Transient báo cho Hibernate biết: "Đừng tạo cột này dưới Database, tao chỉ xài tạm trên RAM thôi"
+    public void addLesson(Lesson lesson) {
+        lessons.add(lesson);
+        lesson.setCourse(this);
+    }
+
+    public void removeLesson(Lesson lesson) {
+        lessons.remove(lesson);
+        lesson.setCourse(null);
+    }
+
+
     @Transient
     public Integer getDiscountPercent() {
         // Nếu không có giá gốc, hoặc giá gốc = 0, hoặc giá bán >= giá gốc -> KHÔNG GIẢM GIÁ (0%)

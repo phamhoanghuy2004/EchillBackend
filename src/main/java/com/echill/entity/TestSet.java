@@ -9,6 +9,9 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "test_sets", uniqueConstraints = {
         @UniqueConstraint(
@@ -38,8 +41,22 @@ public class TestSet extends BaseEntity {
 
     Integer year;
 
+    @OneToMany(mappedBy = "testSet", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<Test>  tests = new ArrayList<>();
+
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lesson_id") // Cho phép NULL (Dành cho bộ đề độc lập)
-    @OnDelete(action = OnDeleteAction.CASCADE) // Xóa Lesson -> Xóa cmn luôn Bộ đề này
+    @JoinColumn(name = "lesson_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     Lesson lesson;
+
+    public void addTest(Test test) {
+        tests.add(test);
+        test.setTestSet(this);
+    }
+
+    public void removeTest(Test test) {
+        tests.remove(test);
+        test.setTestSet(null);
+    }
 }
