@@ -46,3 +46,9 @@ jwt:
   signerKey: "4666c04b12243870bf10458cb52745f79f68e7d88c1028a27cd036f37346aa96" # CẢNH BÁO: Đang lộ Secret Key!
   valid-duration: 7200 # in seconds (2 giờ)
   refreshable-duration: 604800 # in seconds (7 ngày)
+
+# ===============================
+# GOOGLE OAUTH2 CONFIGURATION
+# ===============================
+google:
+  client-id: "819434124988-biv50h47upg20bpo07ckog7reur9vojo.apps.googleusercontent.com"
