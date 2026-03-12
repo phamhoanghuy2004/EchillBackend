@@ -11,4 +11,7 @@ import lombok.experimental.FieldDefaults;
 public class AuthenticationResponse {
     String token;
     Boolean authenticated;
+    
+    @Builder.Default
+    Boolean isFirstTime = false;
 }
