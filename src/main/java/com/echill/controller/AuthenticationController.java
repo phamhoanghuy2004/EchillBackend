@@ -1,14 +1,10 @@
 package com.echill.controller;
 
-import com.echill.dto.request.AuthenticationRequest;
-import com.echill.dto.request.IntrospectRequest;
-import com.echill.dto.request.LogoutRequest;
-import com.echill.dto.request.RefreshRequest;
+import com.echill.dto.request.*;
 import com.echill.dto.response.ApiResponse;
 import com.echill.dto.response.AuthenticationResponse;
 import com.echill.dto.response.IntrospectResponse;
 import com.echill.service.AuthenticationService;
-import com.nimbusds.jose.JOSEException;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +13,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.text.ParseException;
 
 
 @RestController
@@ -42,9 +36,15 @@ public class AuthenticationController {
                 .build();
     }
 
+    @PostMapping("/google-login")
+    public ApiResponse<AuthenticationResponse> googleLogin(@Valid @RequestBody com.echill.dto.request.GoogleLoginRequest request) {
+        return ApiResponse.<AuthenticationResponse>builder()
+                .data(authenticationService.googleLogin(request))
+                .build();
+    }
+
     @PostMapping("/refresh")
-    ApiResponse<AuthenticationResponse> authenticate(@Valid @RequestBody RefreshRequest request)
-            throws ParseException, JOSEException {
+    ApiResponse<AuthenticationResponse> authenticate(@Valid @RequestBody RefreshRequest request) {
         return ApiResponse.<AuthenticationResponse>builder()
                 .data(authenticationService.refreshToken(request))
                 .build();
@@ -57,4 +57,26 @@ public class AuthenticationController {
                 .build();
     }
 
+    @PostMapping("/register")
+    public ApiResponse<Void> register(@Valid @RequestBody StudentRegisterRequest request) {
+        authenticationService.register(request);
+        return ApiResponse.<Void>builder()
+                .message("User registered successfully!")
+                .build();
+    }
+
+    @PostMapping("/verify-otp")
+    public ApiResponse<AuthenticationResponse> verity(@Valid @RequestBody VerifyOtpRequest verifyOtpRequest) {
+        return ApiResponse.<AuthenticationResponse>builder()
+                .data(authenticationService.verifyOtp(verifyOtpRequest))
+                .build();
+    }
+
+    @PostMapping("/resend-otp")
+    public ApiResponse<Void> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
+        authenticationService.resendOtp(request.getEmail());
+        return ApiResponse.<Void>builder()
+                .message("Đã gửi lại mã OTP. Vui lòng kiểm tra hộp thư của bạn.")
+                .build();
+    }
 }

@@ -29,6 +29,6 @@ public class StudentProfile extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     @Column(nullable = false, length = 20)
-    Level level = Level.BEGINNER;
+    Level level = Level.UNDETERMINED;
 
 }
