@@ -21,6 +21,15 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import com.echill.dto.request.GoogleLoginRequest;
+import com.echill.repository.RoleRepository;
+import com.echill.entity.Role;
+import com.echill.entity.enums.Status;
+import java.util.Collections;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
@@ -61,6 +70,10 @@ public class AuthenticationService {
     protected long REFRESHABLE_DURATION;
 
     @NonFinal
+    @Value("${google.client-id}")
+    protected String GOOGLE_CLIENT_ID;
+
+    @NonFinal
     JWSVerifier verifier;
 
     @NonFinal
@@ -69,6 +82,8 @@ public class AuthenticationService {
     InvalidatedTokenRepository invalidatedTokenRepository;
 
     UserRepository userRepository;
+
+    RoleRepository roleRepository;
 
     PasswordEncoder passwordEncoder;
 
@@ -233,7 +248,68 @@ public class AuthenticationService {
         return AuthenticationResponse.builder()
                 .authenticated(true)
                 .token(token)
+                .isFirstTime(false)
                 .build();
+    }
+
+    public AuthenticationResponse googleLogin(GoogleLoginRequest request) {
+        try {
+            GoogleIdTokenVerifier googleVerifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                    .setAudience(Collections.singletonList(GOOGLE_CLIENT_ID))
+                    .build();
+
+            GoogleIdToken idToken = googleVerifier.verify(request.getCredential());
+            if (idToken != null) {
+                GoogleIdToken.Payload payload = idToken.getPayload();
+                String email = payload.getEmail();
+                String name = (String) payload.get("name");
+                String pictureUrl = (String) payload.get("picture");
+
+                var userOptional = userRepository.findByEmail(email);
+                if (userOptional.isPresent()) {
+                    var user = userOptional.get();
+                    var token = generateToken(user);
+                    return AuthenticationResponse.builder()
+                            .authenticated(true)
+                            .token(token)
+                            .isFirstTime(false)
+                            .build();
+                } else {
+                    // Create new user
+                    Role studentRole = roleRepository.findByName("STUDENT")
+                            .orElseThrow(() -> new AppException(ErrorEnum.ROLE_NOT_EXIST));
+
+                    String randomSuffix = java.util.UUID.randomUUID().toString().substring(0, 5);
+                    String generatedUsername = "google_" + email.split("@")[0] + "_" + randomSuffix;
+
+                    User newUser = User.builder()
+                            .email(email)
+                            .fullName(name)
+                            .username(generatedUsername)
+                            .password("googlelogin") // Thống nhất lưu cứng, không mã hóa theo yêu cầu
+                            .avatarUrl(pictureUrl)
+                            .status(Status.ACTIVE)
+                            .jobTitle("") // Default value as wait for profile update
+                            .build();
+
+                    newUser.addRole(studentRole);
+                    userRepository.save(newUser);
+
+                    var token = generateToken(newUser);
+                    return AuthenticationResponse.builder()
+                            .authenticated(true)
+                            .token(token)
+                            .isFirstTime(true)
+                            .build();
+                }
+            } else {
+                log.warn("Invalid ID token.");
+                throw new AppException(ErrorEnum.UNAUTHENTICATED);
+            }
+        } catch (Exception e) {
+            log.error("Error verifying Google token", e);
+            throw new AppException(ErrorEnum.UNAUTHENTICATED);
+        }
     }
 
     public IntrospectResponse introspect (IntrospectRequest introspectRequest) {
@@ -301,6 +377,7 @@ public class AuthenticationService {
             return AuthenticationResponse.builder()
                     .authenticated(true)
                     .token(newToken)
+                    .isFirstTime(false)
                     .build();
 
         } catch (ParseException e) {

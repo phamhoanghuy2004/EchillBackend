@@ -28,8 +28,9 @@ import org.springframework.web.filter.CorsFilter;
 public class SecurityConfig {
 
     static String[] PUBLIC_POST_ENDPOINTS = {
+
             "/users", "/auth/login", "/auth/introspect", "/auth/logout", "/auth/register", "/auth/verify-otp",
-            "/auth/resend-otp"
+            "/auth/resend-otp", "/auth/google-login"
     };
 
     static String[] PUBLIC_GET_ENDPOINTS = {
@@ -85,7 +86,7 @@ public class SecurityConfig {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
 
         // Thay "http://localhost:3000" bằng domain frontend của bạn sau khi deploy
-        corsConfiguration.addAllowedOrigin("http://localhost:3000");
+        corsConfiguration.addAllowedOrigin("http://localhost:5173");
         corsConfiguration.addAllowedMethod("*"); // Cho phép mọi method (GET, POST, PUT, DELETE, OPTIONS)
         corsConfiguration.addAllowedHeader("*"); // Cho phép mọi header (Authorization, Content-Type,...)
         corsConfiguration.setAllowCredentials(true);

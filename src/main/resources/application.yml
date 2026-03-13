@@ -30,7 +30,7 @@ spring:
         order_updates: true
 
   # ===============================
-  # REDIS CONFIGURATION
+  # REDIS CONFIGURATION (Aiven / Valkey)
   # ===============================
   data:
     redis:
@@ -40,6 +40,7 @@ spring:
       password: AVNS_rmKGsDZar026KHs_sI5
       ssl:
         enabled: true
+
   # ===============================
   # EMAIL CONFIGURATION (Gmail SMTP)
   # ===============================
@@ -70,7 +71,16 @@ jwt:
   valid-duration: 7200 # in seconds (2 giờ)
   refreshable-duration: 604800 # in seconds (7 ngày)
 
+# ===============================
+# OTP CONFIGURATION
+# ===============================
 otp:
   prefix: ${OTP_PREFIX:otp:register:}
   expiration-minutes: ${OTP_EXPIRATION_MINUTES:5}
   resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:60}
+
+# ===============================
+# GOOGLE OAUTH2 CONFIGURATION
+# ===============================
+google:
+  client-id: "819434124988-biv50h47upg20bpo07ckog7reur9vojo.apps.googleusercontent.com"

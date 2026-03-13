@@ -36,6 +36,13 @@ public class AuthenticationController {
                 .build();
     }
 
+    @PostMapping("/google-login")
+    public ApiResponse<AuthenticationResponse> googleLogin(@Valid @RequestBody com.echill.dto.request.GoogleLoginRequest request) {
+        return ApiResponse.<AuthenticationResponse>builder()
+                .data(authenticationService.googleLogin(request))
+                .build();
+    }
+
     @PostMapping("/refresh")
     ApiResponse<AuthenticationResponse> authenticate(@Valid @RequestBody RefreshRequest request) {
         return ApiResponse.<AuthenticationResponse>builder()
