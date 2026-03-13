@@ -33,6 +33,31 @@ public enum ErrorEnum {
     ROLE_NOT_EXIST(1015, "Role does not exist", HttpStatus.BAD_REQUEST),
     ROLE_NAME_REQUIRED(1016, "Role name cannot be blank", HttpStatus.BAD_REQUEST),
     ROLE_EXISTED(1017, "Role already exists", HttpStatus.BAD_REQUEST),
+
+    // ==========================================
+    // CÁC MÃ LỖI MỚI CHO STUDENT REGISTER DTO
+    // ==========================================
+    USERNAME_TOO_LONG(1018, "Username must not exceed {max} characters", HttpStatus.BAD_REQUEST),
+    EMAIL_REQUIRED(1019, "Email cannot be blank", HttpStatus.BAD_REQUEST),
+    EMAIL_INVALID_FORMAT(1020, "Invalid email format", HttpStatus.BAD_REQUEST),
+    EMAIL_TOO_LONG(1021, "Email must not exceed {max} characters", HttpStatus.BAD_REQUEST),
+    PASSWORD_LENGTH_INVALID(1022, "Password must be between {min} and {max} characters", HttpStatus.BAD_REQUEST),
+    PASSWORD_FORMAT_INVALID(1023, "Password must contain at least one uppercase letter, one lowercase letter, and one number", HttpStatus.BAD_REQUEST),
+    FULL_NAME_REQUIRED(1024, "Full name cannot be blank", HttpStatus.BAD_REQUEST),
+    FULL_NAME_TOO_LONG(1025, "Full name must not exceed {max} characters", HttpStatus.BAD_REQUEST),
+    DOB_INVALID_PAST(1026, "Date of birth must be in the past", HttpStatus.BAD_REQUEST),
+    ADDRESS_TOO_LONG(1027, "Address must not exceed {max} characters", HttpStatus.BAD_REQUEST),
+    JOB_TITLE_REQUIRED(1028, "Job title cannot be blank", HttpStatus.BAD_REQUEST),
+    JOB_TITLE_TOO_LONG(1029, "Job title must not exceed {max} characters", HttpStatus.BAD_REQUEST),
+    AVATAR_URL_INVALID(1030, "Avatar URL is invalid", HttpStatus.BAD_REQUEST),
+    EMAIL_ALREADY_EXISTS(1031, "Email already exists", HttpStatus.CONFLICT),
+    USER_ALREADY_ACTIVE(1032,  "User already active", HttpStatus.CONFLICT),
+    PLEASE_WAIT_BEFORE_RESEND(1033, "Please wait before resend", HttpStatus.BAD_REQUEST),
+    OTP_REQUIRED(1034, "OTP cannot be blank", HttpStatus.BAD_REQUEST),
+    OTP_INVALID_LENGTH(1035, "OTP must be between {min} and {max} characters", HttpStatus.BAD_REQUEST),
+    OTP_EXPIRED(1036, "OTP expired", HttpStatus.BAD_REQUEST),
+    OTP_INCORRECT(1037, "OTP incorrect", HttpStatus.BAD_REQUEST),
+    USER_INACTIVE(1038, "User inactive", HttpStatus.BAD_REQUEST),
     ;
 
 

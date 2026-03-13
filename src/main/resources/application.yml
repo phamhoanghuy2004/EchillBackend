@@ -11,7 +11,7 @@ spring:
   datasource:
     url: jdbc:mysql://mysql-2cc2c868-phamhoanghuy-96f0.e.aivencloud.com:15293/echill_db?sslMode=REQUIRED&rewriteBatchedStatements=true
     username: avnadmin
-    password: AVNS_439qsgZdIKzTmluCfBg # CẢNH BÁO: Đang lộ mật khẩu DB thật!
+    password: AVNS_439qsgZdIKzTmluCfBg # ⚠️ Nhớ giấu đi khi đưa lên GitHub nhé!
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   # ===============================
@@ -24,17 +24,40 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        # --- Performance Tuning (Batching) ---
         jdbc:
           batch_size: 30
-        # Gom gọn các batch xong rồi mới thực hiện
         order_inserts: true
         order_updates: true
+
+  # ===============================
+  # REDIS CONFIGURATION
+  # ===============================
+  data:
+    redis:
+      host: valkey-dostore-phamhoanghuy-96f0.f.aivencloud.com
+      port: 15294
+      username: default
+      password: AVNS_rmKGsDZar026KHs_sI5
+      ssl:
+        enabled: true
+  # ===============================
+  # EMAIL CONFIGURATION (Gmail SMTP)
+  # ===============================
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: echillenglish@gmail.com
+    password: cojcoupjzaomoenm
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 # ===============================
 # LOGGING CONFIGURATION
 # ===============================
-# Hiện tham số được bind trong câu lệnh SQL sinh ra
 logging:
   level:
     org.hibernate.orm.jdbc.bind: TRACE
@@ -43,6 +66,11 @@ logging:
 # JWT CONFIGURATION
 # ===============================
 jwt:
-  signerKey: "4666c04b12243870bf10458cb52745f79f68e7d88c1028a27cd036f37346aa96" # CẢNH BÁO: Đang lộ Secret Key!
+  signerKey: "4666c04b12243870bf10458cb52745f79f68e7d88c1028a27cd036f37346aa96" # ⚠️ Nhớ đổi key khác khi lên Production!
   valid-duration: 7200 # in seconds (2 giờ)
   refreshable-duration: 604800 # in seconds (7 ngày)
+
+otp:
+  prefix: ${OTP_PREFIX:otp:register:}
+  expiration-minutes: ${OTP_EXPIRATION_MINUTES:5}
+  resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:60}

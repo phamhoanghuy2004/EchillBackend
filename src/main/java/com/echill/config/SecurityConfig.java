@@ -28,7 +28,8 @@ import org.springframework.web.filter.CorsFilter;
 public class SecurityConfig {
 
     static String[] PUBLIC_POST_ENDPOINTS = {
-            "/users", "/auth/login", "/auth/introspect", "/auth/logout"
+            "/users", "/auth/login", "/auth/introspect", "/auth/logout", "/auth/register", "/auth/verify-otp",
+            "/auth/resend-otp"
     };
 
     static String[] PUBLIC_GET_ENDPOINTS = {

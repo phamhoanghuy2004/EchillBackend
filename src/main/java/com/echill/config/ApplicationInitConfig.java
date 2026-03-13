@@ -12,44 +12,69 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.support.TransactionTemplate; // Thêm import này
 
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class ApplicationInitConfig {
+
+    static final Map<String, String> DEFAULT_ROLES = Map.of(
+            "ADMIN", "Quản trị viên tối cao của hệ thống",
+            "STUDENT", "Học viên của nền tảng Echill",
+            "TEACHER", "Giảng viên giảng dạy và tạo khóa học"
+    );
+
     PasswordEncoder passwordEncoder;
 
     @Bean
-    public ApplicationRunner applicationRunner(UserRepository userRepository, RoleRepository roleRepository) {
+    public ApplicationRunner applicationRunner(
+            UserRepository userRepository,
+            RoleRepository roleRepository,
+            TransactionTemplate transactionTemplate) {
+
         return args -> {
-            // 1. Kiểm tra và tạo Role ADMIN trước (Nếu chưa có thì tạo)
-            Role adminRole = roleRepository.findByName("ADMIN")
-                    .orElseGet(() -> {
-                        Role newRole = Role.builder()
-                                .name("ADMIN")
-                                .description("Quản trị viên tối cao của hệ thống")
-                                .build();
-                        return roleRepository.save(newRole);
-                    });
 
-            // 2. Kiểm tra và tạo tài khoản admin
-            if (userRepository.findByUsername("admin").isEmpty()) {
+            transactionTemplate.execute(status -> {
 
-                User adminUser = User.builder()
-                        .username("admin")
-                        .password(passwordEncoder.encode("admin"))
-                        .fullName("System Administrator")
-                        .jobTitle("Super Admin")
-                        .build();
+                Map<String, Role> roleCache = new HashMap<>();
 
-                adminUser.addRole(adminRole);
+                DEFAULT_ROLES.forEach((roleName, description) -> {
+                    Role role = roleRepository.findByName(roleName)
+                            .orElseGet(() -> roleRepository.save(Role.builder()
+                                    .name(roleName)
+                                    .description(description)
+                                    .build()));
 
-                userRepository.save(adminUser);
+                    roleCache.put(roleName, role);
+                });
 
-                log.warn("Đã khởi tạo thành công tài khoản ADMIN mặc định!");
-            }
+                log.info("Đã kiểm tra và đồng bộ các Role cốt lõi ({}) thành công!", String.join(", ", DEFAULT_ROLES.keySet()));
+
+                if (userRepository.findByUsername("admin").isEmpty()) {
+
+                    User adminUser = User.builder()
+                            .username("admin")
+                            .password(passwordEncoder.encode("admin"))
+                            .email("admin@gmail.com")
+                            .fullName("System Administrator")
+                            .jobTitle("Super Admin")
+                            .build();
+
+                    Role adminRole = roleCache.get("ADMIN");
+                    adminUser.addRole(adminRole);
+
+                    userRepository.save(adminUser);
+
+                    log.warn("⚠️ Đã khởi tạo thành công tài khoản ADMIN mặc định!");
+                }
+
+                return null;
+            });
         };
     }
 }
