@@ -38,6 +38,4 @@ public interface UserRepository extends JpaRepository<User,Long> {
             "WHERE u.email = :email")
     Optional<User> findByEmailWithRolesAndPermissions(@Param("email") String email);
 
-    boolean existsByEmail(String email);
-
 }

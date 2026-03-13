@@ -26,9 +26,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.echill.dto.request.GoogleLoginRequest;
-import com.echill.repository.RoleRepository;
-import com.echill.entity.Role;
-import com.echill.entity.enums.Status;
 import java.util.Collections;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
@@ -88,8 +85,6 @@ public class AuthenticationService {
     PasswordEncoder passwordEncoder;
 
     UserMapper userMapper;
-
-    RoleRepository roleRepository;
 
     StudentProfileRepository studentProfileRepository;
 
