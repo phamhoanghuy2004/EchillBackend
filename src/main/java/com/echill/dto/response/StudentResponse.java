@@ -6,6 +6,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 @Getter
 @AllArgsConstructor
@@ -29,4 +30,6 @@ public class StudentResponse {
 
     // Thông tin Mục tiêu học tập (Có thể null nếu học viên chưa thiết lập)
     StudyGoalResponse activeGoal;
+
+    Set<String> roles;
 }

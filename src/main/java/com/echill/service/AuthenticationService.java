@@ -7,6 +7,7 @@ import com.echill.entity.InvalidatedToken;
 import com.echill.entity.Role;
 import com.echill.entity.StudentProfile;
 import com.echill.entity.User;
+import com.echill.entity.enums.Level;
 import com.echill.entity.enums.Status;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
@@ -182,6 +183,8 @@ public class AuthenticationService {
         // Sinh số ngẫu nhiên từ 0 đến 999999 (Tối ưu bound thành 1000000 thay vì 999999)
         String otp = String.format("%06d", SECURE_RANDOM.nextInt(1000000));
 
+        log.info("Mã otp vừa sinh: {}", otp);
+
         String redisKey = OTP_PREFIX + email;
 
         // Lưu/Ghi đè vào Redis. Redis tự dọn rác khi hết TTL nên rất sạch sẽ
@@ -247,6 +250,7 @@ public class AuthenticationService {
                 .build();
     }
 
+    @Transactional
     public AuthenticationResponse googleLogin(GoogleLoginRequest request) {
         try {
             GoogleIdTokenVerifier googleVerifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
@@ -254,52 +258,71 @@ public class AuthenticationService {
                     .build();
 
             GoogleIdToken idToken = googleVerifier.verify(request.getCredential());
-            if (idToken != null) {
-                GoogleIdToken.Payload payload = idToken.getPayload();
-                String email = payload.getEmail();
-                String name = (String) payload.get("name");
-                String pictureUrl = (String) payload.get("picture");
 
-                var userOptional = userRepository.findByEmail(email);
-                if (userOptional.isPresent()) {
-                    var user = userOptional.get();
-                    var token = generateToken(user);
-                    return AuthenticationResponse.builder()
-                            .authenticated(true)
-                            .token(token)
-                            .isFirstTime(false)
-                            .build();
-                } else {
-                    // Create new user
-                    Role studentRole = roleRepository.findByName("STUDENT")
-                            .orElseThrow(() -> new AppException(ErrorEnum.ROLE_NOT_EXIST));
-
-                    String randomSuffix = java.util.UUID.randomUUID().toString().substring(0, 5);
-                    String generatedUsername = "google_" + email.split("@")[0] + "_" + randomSuffix;
-
-                    User newUser = User.builder()
-                            .email(email)
-                            .fullName(name)
-                            .username(generatedUsername)
-                            .password("googlelogin") // Thống nhất lưu cứng, không mã hóa theo yêu cầu
-                            .avatarUrl(pictureUrl)
-                            .status(Status.ACTIVE)
-                            .jobTitle("") // Default value as wait for profile update
-                            .build();
-
-                    newUser.addRole(studentRole);
-                    userRepository.save(newUser);
-
-                    var token = generateToken(newUser);
-                    return AuthenticationResponse.builder()
-                            .authenticated(true)
-                            .token(token)
-                            .isFirstTime(true)
-                            .build();
-                }
-            } else {
-                log.warn("Invalid ID token.");
+            if (idToken == null) {
+                log.warn("Invalid ID token from Google.");
                 throw new AppException(ErrorEnum.UNAUTHENTICATED);
+            }
+
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            String name = (String) payload.get("name");
+            String pictureUrl = (String) payload.get("picture");
+
+            var userOptional = userRepository.findByEmail(email);
+
+            // ==========================================
+            // TRƯỜNG HỢP 1: USER CŨ ĐÃ TỒN TẠI
+            // ==========================================
+            if (userOptional.isPresent()) {
+                User existingUser = userOptional.get();
+
+                // 💥 Nâng cấp logic: Check xem user này đã điền đủ thông tin chưa?
+                boolean isProfileIncomplete = existingUser.getJobTitle() == null || existingUser.getJobTitle().isEmpty()
+                        || existingUser.getDob() == null
+                        || existingUser.getAddress() == null || existingUser.getAddress().isEmpty();
+
+                return AuthenticationResponse.builder()
+                        .authenticated(true)
+                        .token(generateToken(existingUser))
+                        .isFirstTime(isProfileIncomplete) // Nếu thiếu thông tin, ép về true để bắt cập nhật
+                        .build();
+            }
+
+            // ==========================================
+            // TRƯỜNG HỢP 2: TẠO USER MỚI HOÀN TOÀN
+            // ==========================================
+            else {
+                Role studentRole = roleRepository.findByName("STUDENT")
+                        .orElseThrow(() -> new AppException(ErrorEnum.ROLE_NOT_EXIST));
+
+                String randomSuffix = java.util.UUID.randomUUID().toString().substring(0, 5);
+                String generatedUsername = "google_" + email.split("@")[0] + "_" + randomSuffix;
+
+                User newUser = User.builder()
+                        .email(email)
+                        .fullName(name)
+                        .username(generatedUsername)
+                        .password("googlelogin") // (Lưu ý: Nhớ chặn không cho đăng nhập tay bằng pass này ở hàm login thường nhé)
+                        .avatarUrl(pictureUrl)
+                        .status(Status.ACTIVE)
+                        .jobTitle("") // Để trống chờ update
+                        .build();
+
+                newUser.addRole(studentRole);
+                userRepository.save(newUser);
+
+                StudentProfile newProfile = StudentProfile.builder()
+                        .user(newUser)
+                        .level(Level.UNDETERMINED)
+                        .build();
+                studentProfileRepository.save(newProfile);
+
+                return AuthenticationResponse.builder()
+                        .authenticated(true)
+                        .token(generateToken(newUser))
+                        .isFirstTime(true) // 100% là người mới
+                        .build();
             }
         } catch (Exception e) {
             log.error("Error verifying Google token", e);

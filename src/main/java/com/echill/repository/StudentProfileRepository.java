@@ -10,6 +10,10 @@ import java.util.Optional;
 
 @Repository
 public interface StudentProfileRepository extends JpaRepository<StudentProfile,Long> {
-    @Query("SELECT sp FROM StudentProfile sp JOIN FETCH sp.user u WHERE u.username = :username")
+    @Query("SELECT sp FROM StudentProfile sp " +
+            "JOIN FETCH sp.user u " +
+            "LEFT JOIN FETCH u.userRoles ur " +
+            "LEFT JOIN FETCH ur.role " +
+            "WHERE u.username = :username")
     Optional<StudentProfile> findByUserUsernameWithUser(@Param("username") String username);
 }
