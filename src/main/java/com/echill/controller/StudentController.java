@@ -1,14 +1,15 @@
 package com.echill.controller;
 
+import com.echill.dto.request.CompleteProfileRequest;
 import com.echill.dto.response.ApiResponse;
 import com.echill.dto.response.StudentResponse;
 import com.echill.service.StudentService;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/students")
@@ -20,6 +21,15 @@ public class StudentController {
     public ApiResponse<StudentResponse> getMyProfile() {
         return ApiResponse.<StudentResponse>builder()
                 .data(studentService.getMyProfile())
+                .build();
+    }
+
+    @PutMapping("/complete-profile")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<Void> completeProfile(@Valid @RequestBody CompleteProfileRequest request) {
+        studentService.completeProfile(request);
+        return ApiResponse.<Void>builder()
+                .message("Profile updated successfully")
                 .build();
     }
 }
