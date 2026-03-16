@@ -76,4 +76,42 @@ public class EmailService {
             log.error("❌ Lỗi khi gửi email tới {}: {}", to, e.getMessage());
         }
     }
+
+    // Chỉ định đích danh Thread Pool
+    @Async("emailTaskExecutor")
+    public void sendForgotPasswordEmailAsync(String to, String fullName, String otp) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            // 💥 Đổi tiêu đề email
+            helper.setSubject("Mã xác thực Khôi phục mật khẩu Echill");
+
+            // 💥 Template HTML chuyên dụng cho Quên mật khẩu
+            String htmlContent = String.format(
+                    "<div style='font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px; max-width: 500px; margin: auto;'>" +
+                            "<h2 style='color: #FF9800; text-align: center;'>Yêu cầu Khôi phục mật khẩu</h2>" +
+                            "<p>Xin chào <b>%s</b>,</p>" +
+                            "<p>Chúng tôi vừa nhận được yêu cầu khôi phục mật khẩu cho tài khoản Echill của bạn. Đây là mã xác thực (OTP) của bạn:</p>" +
+                            "<div style='text-align: center; margin: 20px 0;'>" +
+                            "<span style='font-size: 28px; font-weight: bold; background: #fef0d9; padding: 10px 20px; border-radius: 5px; letter-spacing: 5px; color: #d84315; border: 1px dashed #FF9800;'>%s</span>" +
+                            "</div>" +
+                            "<p style='color: red; font-size: 13px;'><i>* Mã này có hiệu lực trong vòng 5 phút.<br/>Nếu bạn <b>không</b> yêu cầu đổi mật khẩu, vui lòng bỏ qua email này. Tài khoản của bạn vẫn an toàn.</i></p>" +
+                            "<hr style='border-top: 1px solid #eee;'/>" +
+                            "<p style='font-size: 12px; color: #888; text-align: center;'>Đội ngũ hỗ trợ bảo mật Echill</p>" +
+                            "</div>",
+                    fullName, otp
+            );
+
+            helper.setText(htmlContent, true); // true để bật chế độ render HTML
+            mailSender.send(message);
+
+            log.info("📧 Đã gửi email Reset Password thành công tới {}", to);
+
+        } catch (Exception e) {
+            log.error("❌ Lỗi khi gửi email Reset Password tới {}: {}", to, e.getMessage());
+        }
+    }
 }
