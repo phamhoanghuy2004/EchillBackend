@@ -50,21 +50,26 @@ public class StudentService {
         // 1. Lấy username của người đang gọi API từ JWT Token
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        // 2. Lấy Profile + User (1 Query)
-        StudentProfile profile = studentProfileRepository.findByUserUsernameWithUser(username)
+        // 2. Lấy User kèm Roles
+        User user = userRepository.findByUsernameWithRolesAndPermissions(username)
                 .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
 
-        User user = profile.getUser();
-
-        // 3. Lấy StudyGoal đang Active (1 Query) - Dùng orElse(null) để trả về null nếu không có
-        StudyGoal activeGoal = studyGoalRepository.findByStudentProfileIdAndIsActiveTrue(profile.getId())
+        // 3. Lấy Profile (Có thể null với tài khoản ADMIN, TEACHER)
+        StudentProfile profile = studentProfileRepository.findByUserUsernameWithUser(username)
                 .orElse(null);
+
+        // 4. Lấy StudyGoal đang Active nếu có profile
+        StudyGoal activeGoal = null;
+        if (profile != null) {
+            activeGoal = studyGoalRepository.findByStudentProfileIdAndIsActiveTrue(profile.getId())
+                    .orElse(null);
+        }
 
         Set<String> roles = user.getUserRoles().stream()
                 .map(userRole -> userRole.getRole().getName())
                 .collect(Collectors.toSet());
 
-        // 4. Map dữ liệu sang DTO và trả về
+        // 5. Map dữ liệu sang DTO và trả về
         return buildStudentResponse(user, profile, activeGoal, roles);
     }
 
@@ -99,7 +104,7 @@ public class StudentService {
                 .jobTitle(user.getJobTitle())
                 .avatarUrl(user.getAvatarUrl())
                 .currentCoin(user.getCurrentCoin())
-                .level(profile.getLevel())
+                .level(profile != null ? profile.getLevel() : null)
                 .activeGoal(goalResponse) // Nếu chưa set mục tiêu, chỗ này sẽ là null
                 .roles(roles)
                 .build();

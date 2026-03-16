@@ -246,22 +246,26 @@ public class AuthenticationService {
 
     }
 
-    public AuthenticationResponse authenticate (AuthenticationRequest request) {
+    public AuthenticationResponse authenticate(AuthenticationRequest request) {
         var user = userRepository.findByUsernameWithRolesAndPermissions(request.getUsername())
                 .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
 
+        if (!AuthProvider.SYSTEM.equals(user.getAuthProvider())) {
+            throw new AppException(ErrorEnum.MUST_LOGIN_WITH_GOOGLE);
+        }
 
         if (!Status.ACTIVE.equals(user.getStatus())) {
             throw new AppException(ErrorEnum.USER_INACTIVE);
         }
 
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
-
         if (!authenticated) {
             throw new AppException(ErrorEnum.UNAUTHENTICATED);
         }
 
         var token = generateToken(user);
+
+        log.info("✅ User '{}' đăng nhập thành công.", user.getUsername());
 
         return AuthenticationResponse.builder()
                 .authenticated(true)
@@ -269,6 +273,8 @@ public class AuthenticationService {
                 .isFirstTime(false)
                 .build();
     }
+
+
 
     @Transactional
     public AuthenticationResponse googleLogin(GoogleLoginRequest request) {
