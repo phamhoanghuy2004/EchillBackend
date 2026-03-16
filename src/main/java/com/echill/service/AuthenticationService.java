@@ -7,6 +7,7 @@ import com.echill.entity.InvalidatedToken;
 import com.echill.entity.Role;
 import com.echill.entity.StudentProfile;
 import com.echill.entity.User;
+import com.echill.entity.enums.AuthProvider;
 import com.echill.entity.enums.Level;
 import com.echill.entity.enums.Status;
 import com.echill.exception.AppException;
@@ -97,6 +98,8 @@ public class AuthenticationService {
 
     private static final String OTP_PREFIX = "otp:register:";
 
+    private static final String RESET_OTP_PREFIX = "otp:forgotPassword:";
+
     private static final int OTP_EXPIRATION_MINUTES = 5;
 
     private static final int OTP_RESEND_COOLDOWN_SECONDS = 60;
@@ -109,31 +112,57 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public AuthenticationResponse verifyOtp(VerifyOtpRequest request) {
+    public void resetPassword(ResetPasswordRequest request) {
+        String email = request.getEmail();
+        String redisKey = RESET_OTP_PREFIX + email;
+
+        // 1. FAIL-FAST: Kiểm tra OTP trên Redis TRƯỚC!
+        // Nếu sai hoặc hết hạn thì văng lỗi luôn, đỡ tốn công Query DB
+        validateOtp(redisKey, request.getOtpCode());
+
+        // 2. Kéo User từ DB lên để xử lý
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+
+        // 3. Kiểm tra các điều kiện an toàn của User
+        if (!AuthProvider.SYSTEM.equals(user.getAuthProvider())) {
+            throw new AppException(ErrorEnum.MUST_LOGIN_WITH_GOOGLE);
+        }
+
+        if (!Status.ACTIVE.equals(user.getStatus())) {
+            throw new AppException(ErrorEnum.USER_INACTIVE);
+        }
+
+        // 4. Mã hóa và cập nhật mật khẩu
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+        userRepository.save(user);
+
+        // 5. BẢO MẬT TUYỆT ĐỐI: Dọn dẹp OTP để chặn việc tái sử dụng
+        redisTemplate.delete(redisKey);
+    }
+
+    public void forgotPassword(ForgotPasswordRequest request) {
+        // Tận dụng luôn hàm resendOtp vì logic kiểm tra và gửi mail của luồng Quên mật khẩu là y hệt nhau!
+        resendOtp(request.getEmail(), true);
+    }
+
+    @Transactional
+    public AuthenticationResponse verifyRegisterOtp(VerifyOtpRequest request) {
         String email = request.getEmail();
         String inputOtp = request.getOtpCode();
+        String redisKey = OTP_PREFIX + email;
 
-        // 1. Tìm user theo email
+        // 1. Validate opt trước
+        validateOtp(redisKey, inputOtp);
+
+        // 2. Tìm user theo email
         User user = userRepository.findByEmailWithRolesAndPermissions(email)
                 .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
 
-        // 2. Kiểm tra trạng thái: Nếu đã ACTIVE thì không cần xác thực nữa
+        // 3. Kiểm tra trạng thái: Nếu đã ACTIVE thì không cần xác thực nữa
         if (!Status.INACTIVE.equals(user.getStatus())) {
             throw new AppException(ErrorEnum.USER_ALREADY_ACTIVE);
-        }
-
-        // 3. Lấy OTP từ Redis xuống để đối chiếu
-        String redisKey = OTP_PREFIX + email;
-        String savedOtp = redisTemplate.opsForValue().get(redisKey);
-
-        // Trường hợp 1: OTP không tồn tại hoặc đã quá 5 phút (Redis đã tự xoá)
-        if (savedOtp == null) {
-            throw new AppException(ErrorEnum.OTP_EXPIRED);
-        }
-
-        // Trường hợp 2: Sai mã OTP
-        if (!savedOtp.equals(inputOtp)) {
-            throw new AppException(ErrorEnum.OTP_INCORRECT);
         }
 
         // 4. Vượt qua hết -> Xác thực thành công: Đổi trạng thái User thành ACTIVE
@@ -154,44 +183,35 @@ public class AuthenticationService {
                 .build();
     }
 
-    public void resendOtp (String email) {
-        // 1. Kiểm tra user có tồn tại không
+    public void resendOtp (String email, boolean isForgot) {
+        // 1. FAIL-FAST: Dựng khiên Redis lên đỡ đạn TRƯỚC!
+        String redisKey = isForgot ? RESET_OTP_PREFIX + email : OTP_PREFIX + email;
+        validateOtpResendCooldown(redisKey);
+
+        // 2. Kiểm tra user có tồn tại không
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
 
-        // 2. Chỉ gửi lại OTP nếu tài khoản chưa được kích hoạt
-        if (!Status.INACTIVE.equals(user.getStatus())) {
-            throw new AppException(ErrorEnum.USER_ALREADY_ACTIVE);
-        }
-
-        // 3. TỐI ƯU: Chống spam gửi liên tục (Check thời gian tồn tại của key trên Redis)
-        String redisKey = OTP_PREFIX + email;
-        Long expireTime = redisTemplate.getExpire(redisKey);
-
-        // Nếu OTP cũ vẫn còn sống và mới được tạo cách đây chưa đầy 60 giây -> Chặn
-        if (expireTime != null && expireTime > OTP_EXPIRATION_MINUTES * 60 - OTP_RESEND_COOLDOWN_SECONDS) {
-            throw new AppException(ErrorEnum.PLEASE_WAIT_BEFORE_RESEND);
+        // 3. Phân luồng kiểm tra điều kiện hợp lệ
+        if (isForgot) {
+            // 🛑 Luồng Quên mật khẩu: User phải ACTIVE và không phải tài khoản Google
+            if (!AuthProvider.SYSTEM.equals(user.getAuthProvider())) {
+                throw new AppException(ErrorEnum.MUST_LOGIN_WITH_GOOGLE);
+            }
+            if (!Status.ACTIVE.equals(user.getStatus())) {
+                throw new AppException(ErrorEnum.USER_INACTIVE);
+            }
+        } else {
+            // 🛑 Luồng Xác thực đăng ký mới: User phải INACTIVE
+            if (!Status.INACTIVE.equals(user.getStatus())) {
+                throw new AppException(ErrorEnum.USER_ALREADY_ACTIVE);
+            }
         }
 
         // 4. Tạo và gửi lại OTP
-        generateAndSendOtp(email, user.getFullName());
+        generateAndSendOtp(email, user.getFullName(),isForgot);
 
         log.info("🔄 Đã gửi lại OTP cho user: {}", email);
-    }
-
-    private void generateAndSendOtp (String email, String fullName) {
-        // Sinh số ngẫu nhiên từ 0 đến 999999 (Tối ưu bound thành 1000000 thay vì 999999)
-        String otp = String.format("%06d", SECURE_RANDOM.nextInt(1000000));
-
-        log.info("Mã otp vừa sinh: {}", otp);
-
-        String redisKey = OTP_PREFIX + email;
-
-        // Lưu/Ghi đè vào Redis. Redis tự dọn rác khi hết TTL nên rất sạch sẽ
-        redisTemplate.opsForValue().set(redisKey, otp, Duration.ofMinutes(OTP_EXPIRATION_MINUTES));
-
-        // Gọi EmailService gửi bất đồng bộ
-        emailService.sendOtpEmailAsync(email, fullName, otp);
     }
 
     @Transactional
@@ -220,7 +240,7 @@ public class AuthenticationService {
 
         studentProfileRepository.save(StudentProfile.builder().user(newUser).build());
 
-        generateAndSendOtp(newUser.getEmail(), newUser.getFullName());
+        generateAndSendOtp(newUser.getEmail(), newUser.getFullName(), false);
 
         log.info("Đã tạo user {} và phát hành OTP", request.getUsername());
 
@@ -475,6 +495,48 @@ public class AuthenticationService {
             });
         }
         return scope.toString();
+    }
+
+    private void validateOtpResendCooldown(String redisKey) {
+        Long expireTime = redisTemplate.getExpire(redisKey);
+
+        // Nếu OTP cũ vẫn còn sống và mới được tạo cách đây chưa đầy 60 giây (OTP_RESEND_COOLDOWN_SECONDS) -> Chặn
+        if (expireTime != null && expireTime > OTP_EXPIRATION_MINUTES * 60 - OTP_RESEND_COOLDOWN_SECONDS) {
+            throw new AppException(ErrorEnum.PLEASE_WAIT_BEFORE_RESEND);
+        }
+    }
+
+    private void generateAndSendOtp (String email, String fullName, boolean isForgot) {
+        // Sinh số ngẫu nhiên từ 0 đến 999999
+        String otp = String.format("%06d", SECURE_RANDOM.nextInt(1000000));
+        log.info("Mã otp vừa sinh: {}", otp);
+
+        // 💥 Dùng toán tử 3 ngôi để code gọn và sạch hơn
+        String redisKey = isForgot ? RESET_OTP_PREFIX + email : OTP_PREFIX + email;
+
+        // Lưu vào Redis với TTL 5 phút
+        redisTemplate.opsForValue().set(redisKey, otp, Duration.ofMinutes(OTP_EXPIRATION_MINUTES));
+
+        // Phân luồng gọi EmailService
+        if (isForgot) {
+            emailService.sendForgotPasswordEmailAsync(email, fullName, otp);
+        } else {
+            emailService.sendOtpEmailAsync(email, fullName, otp);
+        }
+    }
+
+    private void validateOtp(String redisKey, String inputOtp) {
+        String savedOtp = redisTemplate.opsForValue().get(redisKey);
+
+        // Trường hợp 1: OTP không tồn tại hoặc đã quá 5 phút (Redis đã tự xoá)
+        if (savedOtp == null) {
+            throw new AppException(ErrorEnum.OTP_EXPIRED);
+        }
+
+        // Trường hợp 2: Sai mã OTP
+        if (!savedOtp.equals(inputOtp)) {
+            throw new AppException(ErrorEnum.OTP_INCORRECT);
+        }
     }
 
 }

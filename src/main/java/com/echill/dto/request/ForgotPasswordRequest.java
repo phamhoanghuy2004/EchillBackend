@@ -11,9 +11,9 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ResendOtpRequest {
+public class ForgotPasswordRequest {
     @NotBlank(message = "EMAIL_REQUIRED")
     @Email(message = "EMAIL_INVALID_FORMAT")
     @Size(max = 255, message = "EMAIL_TOO_LONG")
-    String email;
+    private String email;
 }

@@ -1,5 +1,6 @@
 package com.echill.entity;
 
+import com.echill.entity.enums.AuthProvider;
 import com.echill.entity.enums.Status;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.hypersistence.utils.hibernate.id.Tsid;
@@ -56,6 +57,11 @@ public class User extends BaseEntity {
     @Column(nullable = false, length = 20)
     @Builder.Default
     Status status = Status.ACTIVE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, name = "auth_provider", length = 20)
+    @Builder.Default
+    AuthProvider authProvider = AuthProvider.SYSTEM;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

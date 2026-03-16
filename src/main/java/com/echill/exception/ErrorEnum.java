@@ -58,6 +58,7 @@ public enum ErrorEnum {
     OTP_EXPIRED(1036, "OTP expired", HttpStatus.BAD_REQUEST),
     OTP_INCORRECT(1037, "OTP incorrect", HttpStatus.BAD_REQUEST),
     USER_INACTIVE(1038, "User inactive", HttpStatus.BAD_REQUEST),
+    MUST_LOGIN_WITH_GOOGLE(1039, "You must login with your GG account", HttpStatus.BAD_REQUEST),
     ;
 
 

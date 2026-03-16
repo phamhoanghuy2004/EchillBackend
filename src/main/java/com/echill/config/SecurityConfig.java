@@ -29,8 +29,8 @@ public class SecurityConfig {
 
     static String[] PUBLIC_POST_ENDPOINTS = {
 
-            "/users", "/auth/login", "/auth/introspect", "/auth/logout", "/auth/register", "/auth/verify-otp",
-            "/auth/resend-otp", "/auth/google-login"
+            "/users", "/auth/login", "/auth/introspect", "/auth/logout", "/auth/register", "/auth/verify-register-otp",
+            "/auth/resend-register-otp", "/auth/google-login", "/auth/forgot-password", "/auth/reset-password"
     };
 
     static String[] PUBLIC_GET_ENDPOINTS = {

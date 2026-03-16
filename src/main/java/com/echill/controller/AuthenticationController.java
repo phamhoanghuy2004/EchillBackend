@@ -65,18 +65,35 @@ public class AuthenticationController {
                 .build();
     }
 
-    @PostMapping("/verify-otp")
+    @PostMapping("/verify-register-otp")
     public ApiResponse<AuthenticationResponse> verity(@Valid @RequestBody VerifyOtpRequest verifyOtpRequest) {
         return ApiResponse.<AuthenticationResponse>builder()
-                .data(authenticationService.verifyOtp(verifyOtpRequest))
+                .data(authenticationService.verifyRegisterOtp(verifyOtpRequest))
                 .build();
     }
 
-    @PostMapping("/resend-otp")
+    @PostMapping("/resend-register-otp")
     public ApiResponse<Void> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
-        authenticationService.resendOtp(request.getEmail());
+        authenticationService.resendOtp(request.getEmail(), false);
         return ApiResponse.<Void>builder()
                 .message("Đã gửi lại mã OTP. Vui lòng kiểm tra hộp thư của bạn.")
                 .build();
     }
+
+    @PostMapping("/forgot-password")
+    public ApiResponse<Void> forgotPassword(@RequestBody @Valid ForgotPasswordRequest request) {
+        authenticationService.forgotPassword(request);
+        return ApiResponse.<Void>builder()
+                .message("Đã gửi mã OTP khôi phục mật khẩu. Vui lòng kiểm tra email!")
+                .build();
+    }
+
+    @PostMapping("/reset-password")
+    public ApiResponse<Void> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
+        authenticationService.resetPassword(request);
+        return ApiResponse.<Void>builder()
+                .message("Đặt lại mật khẩu thành công! Vui lòng đăng nhập lại.")
+                .build();
+    }
+
 }
