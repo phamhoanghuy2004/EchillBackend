@@ -23,13 +23,4 @@ public class StudentController {
                 .data(studentService.getMyProfile())
                 .build();
     }
-
-    @PutMapping("/complete-profile")
-    @PreAuthorize("hasRole('STUDENT')")
-    public ApiResponse<Void> completeProfile(@Valid @RequestBody CompleteProfileRequest request) {
-        studentService.completeProfile(request);
-        return ApiResponse.<Void>builder()
-                .message("Profile updated successfully")
-                .build();
-    }
 }

@@ -29,22 +29,6 @@ public class StudentService {
     StudyGoalRepository studyGoalRepository;
     UserRepository userRepository;
 
-    @Transactional
-    public void completeProfile(CompleteProfileRequest request) {
-        var context = SecurityContextHolder.getContext();
-        String username = context.getAuthentication().getName();
-
-        User user = userRepository.findByUsername(username).orElseThrow(
-                () -> new AppException(ErrorEnum.USER_NOTFOUND)
-        );
-
-        user.setAddress(request.getAddress());
-        user.setDob(request.getDob());
-        user.setJobTitle(request.getJobTitle());
-
-        userRepository.save(user);
-    }
-
     @Transactional(readOnly = true) // readOnly = true giúp tối ưu hiệu năng khi chỉ đọc dữ liệu
     public StudentResponse getMyProfile() {
         // 1. Lấy username của người đang gọi API từ JWT Token
@@ -55,7 +39,7 @@ public class StudentService {
                 .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
 
         // 3. Lấy Profile (Có thể null với tài khoản ADMIN, TEACHER)
-        StudentProfile profile = studentProfileRepository.findByUserUsernameWithUser(username)
+        StudentProfile profile = studentProfileRepository.findById(user.getId())
                 .orElse(null);
 
         // 4. Lấy StudyGoal đang Active nếu có profile

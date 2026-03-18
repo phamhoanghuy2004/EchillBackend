@@ -12,7 +12,7 @@ import org.springframework.http.HttpStatus;
 public enum ErrorEnum {
     UNCATEGORIZED(9999, "Uncategorized", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_KEY(1001, "Invalid message key", HttpStatus.INTERNAL_SERVER_ERROR),
-    USERNAME_EXISTED(1002, "Username is already in use", HttpStatus.BAD_REQUEST),
+    USERNAME_EXISTED(1002, "Username is already in use, please login", HttpStatus.BAD_REQUEST),
 
     // TỐI ƯU: Đổi cứng số 4 và 8 thành tham số {min} để dễ dàng thay đổi ở DTO mà không cần sửa Enum
     INVALID_USERNAME(1003, "Username must be at least {min} characters", HttpStatus.BAD_REQUEST),
@@ -50,15 +50,17 @@ public enum ErrorEnum {
     JOB_TITLE_REQUIRED(1028, "Job title cannot be blank", HttpStatus.BAD_REQUEST),
     JOB_TITLE_TOO_LONG(1029, "Job title must not exceed {max} characters", HttpStatus.BAD_REQUEST),
     AVATAR_URL_INVALID(1030, "Avatar URL is invalid", HttpStatus.BAD_REQUEST),
-    EMAIL_ALREADY_EXISTS(1031, "Email already exists", HttpStatus.CONFLICT),
-    USER_ALREADY_ACTIVE(1032,  "User already active", HttpStatus.CONFLICT),
+    EMAIL_ALREADY_EXISTS(1031, "Email already exists, please login", HttpStatus.CONFLICT),
+    USER_ALREADY_ACTIVE_OR_BLOCKED(1032,  "User already active or blocked", HttpStatus.CONFLICT),
     PLEASE_WAIT_BEFORE_RESEND(1033, "Please wait before resend", HttpStatus.BAD_REQUEST),
     OTP_REQUIRED(1034, "OTP cannot be blank", HttpStatus.BAD_REQUEST),
     OTP_INVALID_LENGTH(1035, "OTP must be between {min} and {max} characters", HttpStatus.BAD_REQUEST),
     OTP_EXPIRED(1036, "OTP expired", HttpStatus.BAD_REQUEST),
     OTP_INCORRECT(1037, "OTP incorrect", HttpStatus.BAD_REQUEST),
-    USER_INACTIVE(1038, "User inactive", HttpStatus.BAD_REQUEST),
+    USER_INACTIVE_OR_BLOCKED(1038, "User inactive or blocked", HttpStatus.BAD_REQUEST),
     MUST_LOGIN_WITH_GOOGLE(1039, "You must login with your GG account", HttpStatus.BAD_REQUEST),
+    ROLE_REQUIRED(1040, "Role cannot be blank", HttpStatus.BAD_REQUEST),
+    ROLE_INVALID(1041, "Role does not exist", HttpStatus.BAD_REQUEST),
     ;
 
 

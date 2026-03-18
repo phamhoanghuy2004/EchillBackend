@@ -58,7 +58,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register")
-    public ApiResponse<Void> register(@Valid @RequestBody StudentRegisterRequest request) {
+    public ApiResponse<Void> register(@Valid @RequestBody UserRegisterRequest request) {
         authenticationService.register(request);
         return ApiResponse.<Void>builder()
                 .message("User registered successfully!")

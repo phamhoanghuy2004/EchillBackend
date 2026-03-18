@@ -13,7 +13,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class StudentRegisterRequest {
+public class UserRegisterRequest {
 
     @NotBlank(message = "USERNAME_REQUIRED")
     @Size(max = 50, message = "USERNAME_TOO_LONG")
@@ -46,5 +46,9 @@ public class StudentRegisterRequest {
 
     @URL(message = "AVATAR_URL_INVALID")
     String avatarUrl;
+
+    @NotBlank(message = "ROLE_REQUIRED")
+    @Pattern(regexp = "^(STUDENT|TEACHER)$", message = "ROLE_INVALID")
+    String role;
 
 }

@@ -3,20 +3,14 @@ package com.echill.service;
 import com.echill.dto.request.*;
 import com.echill.dto.response.AuthenticationResponse;
 import com.echill.dto.response.IntrospectResponse;
-import com.echill.entity.InvalidatedToken;
-import com.echill.entity.Role;
-import com.echill.entity.StudentProfile;
-import com.echill.entity.User;
+import com.echill.entity.*;
 import com.echill.entity.enums.AuthProvider;
 import com.echill.entity.enums.Level;
 import com.echill.entity.enums.Status;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.mapper.UserMapper;
-import com.echill.repository.InvalidatedTokenRepository;
-import com.echill.repository.RoleRepository;
-import com.echill.repository.StudentProfileRepository;
-import com.echill.repository.UserRepository;
+import com.echill.repository.*;
 import com.github.f4b6a3.tsid.TsidCreator;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -48,6 +42,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Map;
 import java.util.StringJoiner;
 
 
@@ -90,6 +85,8 @@ public class AuthenticationService {
 
     StudentProfileRepository studentProfileRepository;
 
+    TeacherProfileRepository teacherProfileRepository;
+
     RedisTemplate<String, String> redisTemplate;
 
     EmailService emailService;
@@ -130,7 +127,7 @@ public class AuthenticationService {
         }
 
         if (!Status.ACTIVE.equals(user.getStatus())) {
-            throw new AppException(ErrorEnum.USER_INACTIVE);
+            throw new AppException(ErrorEnum.USER_INACTIVE_OR_BLOCKED);
         }
 
         // 4. Mã hóa và cập nhật mật khẩu
@@ -162,7 +159,7 @@ public class AuthenticationService {
 
         // 3. Kiểm tra trạng thái: Nếu đã ACTIVE thì không cần xác thực nữa
         if (!Status.INACTIVE.equals(user.getStatus())) {
-            throw new AppException(ErrorEnum.USER_ALREADY_ACTIVE);
+            throw new AppException(ErrorEnum.USER_ALREADY_ACTIVE_OR_BLOCKED);
         }
 
         // 4. Vượt qua hết -> Xác thực thành công: Đổi trạng thái User thành ACTIVE
@@ -180,6 +177,7 @@ public class AuthenticationService {
         return AuthenticationResponse.builder()
                 .authenticated(true)
                 .token(token)
+                .isFirstTime(false)
                 .build();
     }
 
@@ -199,12 +197,12 @@ public class AuthenticationService {
                 throw new AppException(ErrorEnum.MUST_LOGIN_WITH_GOOGLE);
             }
             if (!Status.ACTIVE.equals(user.getStatus())) {
-                throw new AppException(ErrorEnum.USER_INACTIVE);
+                throw new AppException(ErrorEnum.USER_INACTIVE_OR_BLOCKED);
             }
         } else {
             // 🛑 Luồng Xác thực đăng ký mới: User phải INACTIVE
             if (!Status.INACTIVE.equals(user.getStatus())) {
-                throw new AppException(ErrorEnum.USER_ALREADY_ACTIVE);
+                throw new AppException(ErrorEnum.USER_ALREADY_ACTIVE_OR_BLOCKED);
             }
         }
 
@@ -215,7 +213,7 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public void register (StudentRegisterRequest request) {
+    public void register (UserRegisterRequest request) {
 
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new AppException(ErrorEnum.USERNAME_EXISTED);
@@ -226,19 +224,20 @@ public class AuthenticationService {
         }
 
         User newUser = userMapper.toUser(request);
-
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
-
         newUser.setStatus(Status.INACTIVE);
 
-        Role studentRole = roleRepository.findByName("STUDENT")
+        Role userRole = roleRepository.findByName(request.getRole())
                 .orElseThrow(() -> new AppException(ErrorEnum.ROLE_NOT_EXIST));
 
-        newUser.addRole(studentRole);
-
+        newUser.addRole(userRole);
         newUser = userRepository.save(newUser);
 
-        studentProfileRepository.save(StudentProfile.builder().user(newUser).build());
+        if ("STUDENT".equals(request.getRole())) {
+            studentProfileRepository.save(StudentProfile.builder().user(newUser).build());
+        } else if ("TEACHER".equals(request.getRole())) {
+            teacherProfileRepository.save(TeacherProfile.builder().user(newUser).build());
+        }
 
         generateAndSendOtp(newUser.getEmail(), newUser.getFullName(), false);
 
@@ -247,22 +246,33 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
+        // 1. Kéo user từ DB lên
         var user = userRepository.findByUsernameWithRolesAndPermissions(request.getUsername())
                 .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
 
+        // 2. Chặn đăng nhập tay nếu là tài khoản Google
         if (!AuthProvider.SYSTEM.equals(user.getAuthProvider())) {
             throw new AppException(ErrorEnum.MUST_LOGIN_WITH_GOOGLE);
         }
 
-        if (!Status.ACTIVE.equals(user.getStatus())) {
-            throw new AppException(ErrorEnum.USER_INACTIVE);
-        }
-
+        // 💥 3. BẢO MẬT: Phải kiểm tra mật khẩu NGAY LẬP TỨC!
         boolean authenticated = passwordEncoder.matches(request.getPassword(), user.getPassword());
         if (!authenticated) {
-            throw new AppException(ErrorEnum.UNAUTHENTICATED);
+            throw new AppException(ErrorEnum.UNAUTHENTICATED); // Sai mật khẩu thì đuổi ra ngay
         }
 
+        // 💥 4. Mật khẩu ĐÚNG rồi mới bắt đầu phân nhánh trạng thái (Làm phẳng If-Else)
+        if (Status.INACTIVE.equals(user.getStatus())) {
+            // Chưa kích hoạt -> Ném lỗi kèm Email để FE bẻ lái sang trang nhập OTP
+            Map<String, String> errorData = Map.of("email", user.getEmail());
+            throw new AppException(ErrorEnum.USER_INACTIVE_OR_BLOCKED, errorData);
+
+        } else if (!Status.ACTIVE.equals(user.getStatus())) {
+            // Bị khóa/ban (BLOCKED...) -> Ném lỗi chung chung, cấm cửa
+            throw new AppException(ErrorEnum.USER_INACTIVE_OR_BLOCKED);
+        }
+
+        // 5. Mọi thứ hoàn hảo -> Sinh Token
         var token = generateToken(user);
 
         log.info("✅ User '{}' đăng nhập thành công.", user.getUsername());
@@ -273,8 +283,6 @@ public class AuthenticationService {
                 .isFirstTime(false)
                 .build();
     }
-
-
 
     @Transactional
     public AuthenticationResponse googleLogin(GoogleLoginRequest request) {
@@ -319,7 +327,7 @@ public class AuthenticationService {
             // TRƯỜNG HỢP 2: TẠO USER MỚI HOÀN TOÀN
             // ==========================================
             else {
-                Role studentRole = roleRepository.findByName("STUDENT")
+                Role userRole = roleRepository.findByName(request.getRole())
                         .orElseThrow(() -> new AppException(ErrorEnum.ROLE_NOT_EXIST));
 
                 String randomSuffix = java.util.UUID.randomUUID().toString().substring(0, 5);
@@ -332,17 +340,18 @@ public class AuthenticationService {
                         .password("googlelogin") // (Lưu ý: Nhớ chặn không cho đăng nhập tay bằng pass này ở hàm login thường nhé)
                         .avatarUrl(pictureUrl)
                         .status(Status.ACTIVE)
-                        .jobTitle("") // Để trống chờ update
+                        .jobTitle("")  // để trống chờ update
+                        .authProvider(AuthProvider.GG)
                         .build();
 
-                newUser.addRole(studentRole);
+                newUser.addRole(userRole);
                 userRepository.save(newUser);
 
-                StudentProfile newProfile = StudentProfile.builder()
-                        .user(newUser)
-                        .level(Level.UNDETERMINED)
-                        .build();
-                studentProfileRepository.save(newProfile);
+                if ("STUDENT".equals(request.getRole())) {
+                    studentProfileRepository.save(StudentProfile.builder().user(newUser).build());
+                } else if ("TEACHER".equals(request.getRole())) {
+                    teacherProfileRepository.save(TeacherProfile.builder().user(newUser).build());
+                }
 
                 return AuthenticationResponse.builder()
                         .authenticated(true)

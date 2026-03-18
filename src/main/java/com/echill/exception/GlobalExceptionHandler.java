@@ -65,12 +65,13 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(value = AppException.class)
-    ResponseEntity<ApiResponse<Void>> handleAppException(AppException ex) {
+    ResponseEntity<ApiResponse<?>> handleAppException(AppException ex) {
         var errorEnum = ex.getErrorEnum();
         return ResponseEntity.status(errorEnum.getStatusCode()).body(
-                ApiResponse.<Void>builder()
+                ApiResponse.builder()
                         .code(errorEnum.getCode())
                         .message(errorEnum.getMessage())
+                        .data(ex.getData())
                         .build()
         );
     }

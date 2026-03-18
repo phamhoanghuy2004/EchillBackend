@@ -1,6 +1,6 @@
 package com.echill.mapper;
 
-import com.echill.dto.request.StudentRegisterRequest;
+import com.echill.dto.request.UserRegisterRequest;
 import com.echill.dto.response.RoleResponse;
 import com.echill.dto.response.UserResponse;
 import com.echill.entity.User;
@@ -20,7 +20,7 @@ public interface UserMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "password", ignore = true)
     @Mapping(target = "userRoles", ignore = true)
-    User toUser(StudentRegisterRequest studentRegisterRequest);
+    User toUser(UserRegisterRequest userRegisterRequest);
 
     // ==========================================
     // 2. TỪ NHÁNH GITHUB (Dùng để trả dữ liệu User kèm Role)
