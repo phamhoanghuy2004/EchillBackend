@@ -10,4 +10,5 @@ import java.util.Optional;
 @Repository
 public interface StudyGoalRepository extends JpaRepository<StudyGoal, Long> {
     Optional<StudyGoal> findByStudentProfileIdAndIsActiveTrue(Long profile);
+    Optional<StudyGoal> findByIdAndStudentProfileIdAndIsActiveTrue(Long id, Long studentProfileId);
 }

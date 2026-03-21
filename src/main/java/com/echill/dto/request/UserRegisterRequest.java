@@ -44,9 +44,6 @@ public class UserRegisterRequest {
     @Size(max = 100, message = "JOB_TITLE_TOO_LONG")
     String jobTitle;
 
-    @URL(message = "AVATAR_URL_INVALID")
-    String avatarUrl;
-
     @NotBlank(message = "ROLE_REQUIRED")
     @Pattern(regexp = "^(STUDENT|TEACHER)$", message = "ROLE_INVALID")
     String role;

@@ -9,10 +9,8 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
@@ -57,9 +55,10 @@ public class AuthenticationController {
                 .build();
     }
 
-    @PostMapping("/register")
-    public ApiResponse<Void> register(@Valid @RequestBody UserRegisterRequest request) {
-        authenticationService.register(request);
+    @PostMapping(value = "/register", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<Void> register(@Valid @RequestPart("data") UserRegisterRequest request,
+                                      @RequestPart(value = "avatar", required = false) MultipartFile avatar) {
+        authenticationService.register(request, avatar);
         return ApiResponse.<Void>builder()
                 .message("User registered successfully!")
                 .build();

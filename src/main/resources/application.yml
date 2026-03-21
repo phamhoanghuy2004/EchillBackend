@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: echill-backend
+  servlet:
+    multipart:
+      max-file-size: 5MB       # Giới hạn 1 file tối đa 5MB để lọt qua cửa Tomcat
+      max-request-size: 10MB
 
   # ===============================
   # DATABASE CONFIGURATION
@@ -84,3 +88,11 @@ otp:
 # ===============================
 google:
   client-id: "38105657400-0bmvkg4d58iq8dv8vi5vl806mbfrm3ig.apps.googleusercontent.com"
+
+# ===============================
+# CLOUDINARY CONFIGURATION
+# ===============================
+cloudinary:
+  cloud-name: ddoixr54l
+  api-key: 229426565388721
+  api-secret: noCY_NJOCL2O81LOyU0Zf0W5-sI
