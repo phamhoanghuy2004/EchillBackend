@@ -1,6 +1,7 @@
 package com.echill.dto.response;
 
 import com.echill.entity.enums.CertType;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
 public class CertificateResponse {
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
     CertType certType;
     Double totalScore;

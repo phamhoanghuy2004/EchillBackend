@@ -20,8 +20,9 @@ public enum StudentErrorEnum implements ErrorCode {
     WRITING_SCORE_INVALID(1049, "Writing score must be between {min} and {max}", HttpStatus.BAD_REQUEST),
     TOTAL_SCORE_INVALID(1050, "Total score is invalid", HttpStatus.BAD_REQUEST),
     PROFILE_NOT_FOUND(1051, "Student profile not found. Please complete your profile first.", HttpStatus.NOT_FOUND),
-    SCORE_REQUIRED(1052, "Score values cannot be null", HttpStatus.BAD_REQUEST);
-
+    SCORE_REQUIRED(1052, "Score values cannot be null", HttpStatus.BAD_REQUEST),
+    GOAL_NOT_FOUND(1053, "Study goal not found or already inactive", HttpStatus.NOT_FOUND),
+    ;
     Integer code;
     String message;
     HttpStatus statusCode;

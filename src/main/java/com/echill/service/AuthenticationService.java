@@ -1,5 +1,6 @@
 package com.echill.service;
 
+import com.echill.constant.CloudinaryFolder;
 import com.echill.dto.request.*;
 import com.echill.dto.response.AuthenticationResponse;
 import com.echill.dto.response.IntrospectResponse;
@@ -35,6 +36,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.text.ParseException;
@@ -90,6 +93,8 @@ public class AuthenticationService {
     RedisTemplate<String, String> redisTemplate;
 
     EmailService emailService;
+
+    CloudinaryService cloudinaryService;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -213,7 +218,7 @@ public class AuthenticationService {
     }
 
     @Transactional
-    public void register (UserRegisterRequest request) {
+    public void register (UserRegisterRequest request, MultipartFile avatar) {
 
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new AppException(ErrorEnum.USERNAME_EXISTED);
@@ -223,9 +228,15 @@ public class AuthenticationService {
             throw new AppException(ErrorEnum.EMAIL_ALREADY_EXISTS);
         }
 
+        String avatarUrl = null;
+        if (avatar != null && !avatar.isEmpty()) {
+            avatarUrl = cloudinaryService.uploadImage(avatar, CloudinaryFolder.AVATAR);
+        }
+
         User newUser = userMapper.toUser(request);
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
         newUser.setStatus(Status.INACTIVE);
+        newUser.setAvatarUrl(avatarUrl);
 
         Role userRole = roleRepository.findByName(request.getRole())
                 .orElseThrow(() -> new AppException(ErrorEnum.ROLE_NOT_EXIST));
@@ -477,6 +488,7 @@ public class AuthenticationService {
                 .expirationTime(Date.from(Instant.now().plus(VALID_DURATION, ChronoUnit.SECONDS)))
                 .jwtID(TsidCreator.getTsid().toString())
                 .claim("scope", buildScope(user))
+                .claim("userId", user.getId())
                 .build();
 
         Payload payload = new Payload(claimsSet.toJSONObject());

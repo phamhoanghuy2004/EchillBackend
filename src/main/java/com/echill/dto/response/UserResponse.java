@@ -1,5 +1,6 @@
 package com.echill.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -13,6 +14,7 @@ import java.util.Set;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserResponse {
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
     String username;
     String email;

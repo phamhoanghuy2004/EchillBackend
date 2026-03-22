@@ -20,6 +20,7 @@ public interface UserMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "password", ignore = true)
     @Mapping(target = "userRoles", ignore = true)
+    @Mapping(target = "avatarUrl", ignore = true)
     User toUser(UserRegisterRequest userRegisterRequest);
 
     // ==========================================
