@@ -9,7 +9,8 @@ import org.springframework.http.HttpStatus;
 @Getter
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public enum ErrorEnum {
+public enum ErrorEnum implements ErrorCode {
+
     UNCATEGORIZED(9999, "Uncategorized", HttpStatus.INTERNAL_SERVER_ERROR),
     INVALID_KEY(1001, "Invalid message key", HttpStatus.INTERNAL_SERVER_ERROR),
     USERNAME_EXISTED(1002, "Username is already in use, please login", HttpStatus.BAD_REQUEST),
@@ -61,6 +62,9 @@ public enum ErrorEnum {
     MUST_LOGIN_WITH_GOOGLE(1039, "You must login with your GG account", HttpStatus.BAD_REQUEST),
     ROLE_REQUIRED(1040, "Role cannot be blank", HttpStatus.BAD_REQUEST),
     ROLE_INVALID(1041, "Role does not exist", HttpStatus.BAD_REQUEST),
+    CANNOT_UPLOAD_IMAGE(1042, "Unable to upload image. Please remove your current image and try uploading again.", HttpStatus.BAD_REQUEST),
+    INVALID_AVATAR_FORMAT(1043, "Invalid image format. Please upload a supported image type (e.g., JPG, PNG).", HttpStatus.BAD_REQUEST),
+    AVATAR_SIZE_TOO_LARGE(1044, "Image size exceeds the allowed limit. Please upload a smaller image.", HttpStatus.BAD_REQUEST)
     ;
 
 

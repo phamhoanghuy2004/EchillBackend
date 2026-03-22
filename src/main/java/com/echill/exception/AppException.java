@@ -7,18 +7,19 @@ import lombok.experimental.NonFinal;
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AppException extends RuntimeException {
-    ErrorEnum errorEnum;
+    ErrorCode errorCode;
+
     @NonFinal
     Object data;
 
-    public AppException(ErrorEnum errorEnum) {
-        super(errorEnum.getMessage());
-        this.errorEnum = errorEnum;
+    public AppException(ErrorCode errorCode) {
+        super(errorCode.getMessage());
+        this.errorCode = errorCode;
     }
 
-    public AppException(ErrorEnum errorEnum, Object data) {
-        super(errorEnum.getMessage());
-        this.errorEnum = errorEnum;
+    public AppException(ErrorCode errorCode, Object data) {
+        super(errorCode.getMessage());
+        this.errorCode = errorCode;
         this.data = data;
     }
 }
