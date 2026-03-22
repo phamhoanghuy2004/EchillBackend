@@ -1,5 +1,6 @@
 package com.echill.service;
 
+import com.echill.constant.CloudinaryFolder;
 import com.echill.dto.request.BlogRequest;
 import com.echill.dto.response.BlogResponse;
 import com.echill.entity.Blog;
@@ -35,12 +36,7 @@ public class BlogService {
 
         String imageUrl = null;
         if (file != null && !file.isEmpty()) {
-            try {
-                imageUrl = cloudinaryService.uploadImage(file);
-            } catch (IOException e) {
-                log.error("Failed to upload image to Cloudinary", e);
-                throw new AppException(TeacherErrorEnum.UPLOAD_IMAGE_FAILED);
-            }
+            imageUrl = cloudinaryService.uploadImage(file, CloudinaryFolder.BLOG_IMAGE);
         }
 
         Blog blog = Blog.builder()
@@ -63,13 +59,8 @@ public class BlogService {
 
         // Nếu có upload file mới thì cập nhật imageUrl, nếu không thì giữ nguyên
         if (file != null && !file.isEmpty()) {
-            try {
-                String imageUrl = cloudinaryService.uploadImage(file);
-                blog.setImageUrl(imageUrl);
-            } catch (IOException e) {
-                log.error("Failed to upload image to Cloudinary", e);
-                throw new AppException(TeacherErrorEnum.BLOG_NOT_FOUND);
-            }
+            String imageUrl = cloudinaryService.uploadImage(file, CloudinaryFolder.BLOG_IMAGE);
+            blog.setImageUrl(imageUrl);
         }
 
         blog = blogRepository.save(blog);
