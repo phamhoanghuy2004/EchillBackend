@@ -84,3 +84,11 @@ otp:
 # ===============================
 google:
   client-id: "38105657400-0bmvkg4d58iq8dv8vi5vl806mbfrm3ig.apps.googleusercontent.com"
+
+# ===============================
+# CLOUDINARY CONFIGURATION
+# ===============================
+cloudinary:
+  cloud_name: ddoixr54l
+  api_key: 229426565388721
+  api_secret: noCY_NJOCL2O81LOyU0Zf0W5-sI

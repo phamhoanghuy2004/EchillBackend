@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = AppException.class)
     ResponseEntity<ApiResponse<?>> handleAppException(AppException ex) {
-        var errorEnum = ex.getErrorEnum();
+        var errorEnum = ex.getErrorCode();
         return ResponseEntity.status(errorEnum.getStatusCode()).body(
                 ApiResponse.builder()
                         .code(errorEnum.getCode())
