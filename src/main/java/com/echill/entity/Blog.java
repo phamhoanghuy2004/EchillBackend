@@ -22,6 +22,9 @@ public class Blog extends BaseEntity {
     @Tsid
     Long id;
 
+    @Column(nullable = false)
+    String title;
+
     @Column(nullable = false, columnDefinition = "TEXT")
     String content;
 
