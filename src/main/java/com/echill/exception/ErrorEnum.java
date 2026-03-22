@@ -63,8 +63,8 @@ public enum ErrorEnum implements ErrorCode {
     ROLE_REQUIRED(1040, "Role cannot be blank", HttpStatus.BAD_REQUEST),
     ROLE_INVALID(1041, "Role does not exist", HttpStatus.BAD_REQUEST),
     CANNOT_UPLOAD_IMAGE(1042, "Unable to upload image. Please remove your current image and try uploading again.", HttpStatus.BAD_REQUEST),
-    INVALID_AVATAR_FORMAT(1043, "Invalid image format. Please upload a supported image type (e.g., JPG, PNG).", HttpStatus.BAD_REQUEST),
-    AVATAR_SIZE_TOO_LARGE(1044, "Image size exceeds the allowed limit. Please upload a smaller image.", HttpStatus.BAD_REQUEST)
+    INVALID_IMAGE_FORMAT(1043, "Invalid image format. Please upload a supported image type (e.g., JPG, PNG).", HttpStatus.BAD_REQUEST),
+    IMAGE_SIZE_TOO_LARGE(1044, "Image size exceeds the allowed limit. Please upload a smaller image.", HttpStatus.BAD_REQUEST)
     ;
 
 

@@ -28,13 +28,13 @@ public class CloudinaryService {
             String contentType = file.getContentType();
             if (contentType == null || !contentType.startsWith("image/")) {
                 log.warn("Cảnh báo: Phát hiện file không hợp lệ được gửi lên: {}", contentType);
-                throw new AppException(ErrorEnum.INVALID_AVATAR_FORMAT);
+                throw new AppException(ErrorEnum.INVALID_IMAGE_FORMAT);
             }
 
             // 2. Kiểm tra dung lượng file (Không quá 2MB)
             if (file.getSize() > MAX_FILE_SIZE) {
                 log.warn("Cảnh báo: File tải lên quá lớn ({} bytes)", file.getSize());
-                throw new AppException(ErrorEnum.AVATAR_SIZE_TOO_LARGE);
+                throw new AppException(ErrorEnum.IMAGE_SIZE_TOO_LARGE);
             }
 
             // Đẩy file lên Cloudinary
