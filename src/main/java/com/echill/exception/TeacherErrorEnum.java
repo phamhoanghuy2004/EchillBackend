@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 public enum TeacherErrorEnum implements ErrorCode {
     BLOG_NOT_FOUND(2001, "Blog not found", HttpStatus.BAD_REQUEST),
     UPLOAD_IMAGE_FAILED(2001, "Up load image failed", HttpStatus.BAD_REQUEST),
+    COURSE_NOT_FOUND(2002, "Course not found", HttpStatus.BAD_REQUEST),
+    CATEGORY_NOT_FOUND(2003, "Category not found", HttpStatus.BAD_REQUEST),
     ;
 
     Integer code;
