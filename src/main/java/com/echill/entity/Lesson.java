@@ -1,5 +1,6 @@
 package com.echill.entity;
 
+import com.echill.entity.enums.VideoStatus;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -12,7 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "lessons")
+@Table(name = "lessons",indexes = {
+        @Index(name = "idx_public_video_id", columnList = "public_video_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -37,10 +40,20 @@ public class Lesson extends BaseEntity {
     @Builder.Default
     Boolean isPreview = false;
 
-    @Column(nullable = false, name = "video_url", length = 1000)
-    String videoUrl;
+    @Column(name = "public_video_id", length = 1000, unique = true)
+    String publicVideoId; // ID trên Cloudinary
 
-    @Column(nullable = false, name = "duration_seconds")
+    @Column(name = "raw_url", length = 1000)
+    String rawUrl;   // Link MP4 gốc, set lúc frontend gọi về
+
+    @Column(name = "hls_url", length = 1000)
+    String hlsUrl;   // Link m3u8 (Sẽ có sau khi webhook gọi về)
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    VideoStatus videoStatus = VideoStatus.NONE;
+
+    @Column(name = "duration_seconds")
     @Builder.Default
     Long durationSeconds = 0L;
 
