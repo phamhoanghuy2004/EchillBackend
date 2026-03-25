@@ -64,7 +64,9 @@ public enum ErrorEnum implements ErrorCode {
     ROLE_INVALID(1041, "Role does not exist", HttpStatus.BAD_REQUEST),
     CANNOT_UPLOAD_IMAGE(1042, "Unable to upload image. Please remove your current image and try uploading again.", HttpStatus.BAD_REQUEST),
     INVALID_IMAGE_FORMAT(1043, "Invalid image format. Please upload a supported image type (e.g., JPG, PNG).", HttpStatus.BAD_REQUEST),
-    IMAGE_SIZE_TOO_LARGE(1044, "Image size exceeds the allowed limit. Please upload a smaller image.", HttpStatus.BAD_REQUEST)
+    IMAGE_SIZE_TOO_LARGE(1044, "Image size exceeds the allowed limit. Please upload a smaller image.", HttpStatus.BAD_REQUEST),
+    RATE_LIMIT_EXCEEDED(1045, "You have reached rate limit", HttpStatus.BAD_REQUEST),
+    LESSON_NOT_FOUND(1046, "Lesson not found", HttpStatus.BAD_REQUEST),
     ;
 
 
