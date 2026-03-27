@@ -67,6 +67,10 @@ public enum ErrorEnum implements ErrorCode {
     IMAGE_SIZE_TOO_LARGE(1044, "Image size exceeds the allowed limit. Please upload a smaller image.", HttpStatus.BAD_REQUEST),
     RATE_LIMIT_EXCEEDED(1045, "You have reached rate limit", HttpStatus.BAD_REQUEST),
     LESSON_NOT_FOUND(1046, "Lesson not found", HttpStatus.BAD_REQUEST),
+    INVALID_FILE_FORMAT(1047, "Invalid file format. Please upload PDF or Word documents.", HttpStatus.BAD_REQUEST),
+    FILE_SIZE_TOO_LARGE(1048, "File size exceeds the allowed limit (10MB).", HttpStatus.BAD_REQUEST),
+    CANNOT_UPLOAD_FILE(1049, "Unable to upload file. Please try again.", HttpStatus.BAD_REQUEST),
+    DOCUMENT_NOT_FOUND(1050, "Document not found", HttpStatus.BAD_REQUEST),
     ;
 
 

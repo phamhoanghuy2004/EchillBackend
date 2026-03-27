@@ -51,6 +51,37 @@ public class CloudinaryService {
         }
     }
 
+    public String uploadDocument(MultipartFile file, String folderName) {
+        try {
+            // 1. Kiểm tra định dạng file (PDF, Word)
+            String contentType = file.getContentType();
+            if (contentType == null || (!contentType.equals("application/pdf") &&
+                    !contentType.equals("application/msword") &&
+                    !contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))) {
+                log.warn("Cảnh báo: Phát hiện định dạng tài liệu không hợp lệ: {}", contentType);
+                throw new AppException(ErrorEnum.INVALID_FILE_FORMAT);
+            }
+
+            // 2. Kiểm tra dung lượng file (Tùy chỉnh, ví dụ 10MB cho tài liệu)
+            if (file.getSize() > 10 * 1024 * 1024) {
+                log.warn("Cảnh báo: Tài liệu tải lên quá lớn ({} bytes)", file.getSize());
+                throw new AppException(ErrorEnum.FILE_SIZE_TOO_LARGE);
+            }
+
+            // Đẩy file lên Cloudinary với resource_type là "raw" cho PDF/Word
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                    "folder", folderName,
+                    "resource_type", "raw"
+            ));
+
+            return uploadResult.get("secure_url").toString();
+
+        } catch (IOException e) {
+            log.error("Lỗi khi upload tài liệu vào thư mục {} lên Cloudinary: ", folderName, e);
+            throw new AppException(ErrorEnum.CANNOT_UPLOAD_FILE);
+        }
+    }
+
     // ========================================================
     // 💥 CÁC HÀM MỚI ĐỂ XÓA ẢNH CŨ TRÊN CLOUDINARY
     // ========================================================
@@ -70,14 +101,31 @@ public class CloudinaryService {
             if (publicId != null) {
                 // 2. Gọi lệnh xóa của Cloudinary
                 cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
-                log.info("Đã dọn dẹp thành công ảnh cũ trên Cloudinary: {}", publicId);
+                log.info("Đã dọn dẹp thành công tài nguyên trên Cloudinary: {}", publicId);
             } else {
                 log.warn("Không thể trích xuất public_id từ URL: {}", imageUrl);
             }
         } catch (Exception e) {
-            // 💥 Bọc thép: Chỉ log ra lỗi chứ KHÔNG throw Exception
-            // Để lỡ Cloudinary lỗi thì user vẫn cập nhật được Profile bình thường trong DB
-            log.error("Lỗi khi xóa ảnh trên Cloudinary với URL {}: ", imageUrl, e);
+            log.error("Lỗi khi xóa tài nguyên trên Cloudinary với URL {}: ", imageUrl, e);
+        }
+    }
+
+    /**
+     * Hàm xóa tài liệu trên Cloudinary (Cần resource_type = raw)
+     */
+    public void deleteDocument(String fileUrl) {
+        if (fileUrl == null || fileUrl.trim().isEmpty()) {
+            return;
+        }
+
+        try {
+            String publicId = extractPublicId(fileUrl);
+            if (publicId != null) {
+                cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "raw"));
+                log.info("Đã xóa tài liệu trên Cloudinary thành công: {}", publicId);
+            }
+        } catch (Exception e) {
+            log.error("Lỗi khi xóa tài liệu trên Cloudinary với URL {}: ", fileUrl, e);
         }
     }
 

@@ -4,6 +4,7 @@ import com.echill.constant.CloudinaryFolder;
 import com.echill.dto.request.CourseRequest;
 import com.echill.dto.response.CourseResponse;
 import com.echill.dto.response.LessonResponse;
+import com.echill.mapper.LessonMapper;
 import com.echill.entity.Category;
 import com.echill.entity.Course;
 import com.echill.entity.User;
@@ -34,6 +35,7 @@ public class CourseService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
+    private final LessonMapper lessonMapper;
 
     @Transactional
     public CourseResponse createCourse(CourseRequest request, MultipartFile file) {
@@ -65,6 +67,34 @@ public class CourseService {
         return mapToResponse(course);
     }
 
+    @Transactional
+    public CourseResponse updateCourse(Long id, CourseRequest request, MultipartFile file) {
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.COURSE_NOT_FOUND));
+
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.CATEGORY_NOT_FOUND));
+
+        if (file != null && !file.isEmpty()) {
+            // Delete old image if exists
+            if (course.getImageUrl() != null) {
+                cloudinaryService.deleteImage(course.getImageUrl());
+            }
+            String imageUrl = cloudinaryService.uploadImage(file, CloudinaryFolder.COURSE_IMAGE);
+            course.setImageUrl(imageUrl);
+        }
+
+        course.setName(request.getName());
+        course.setDescription(request.getDescription());
+        course.setPrice(request.getPrice());
+        course.setOriginalPrice(request.getOriginalPrice());
+        course.setLevel(request.getLevel());
+        course.setCategory(category);
+
+        course = courseRepository.save(course);
+        return mapToResponse(course);
+    }
+
     public List<CourseResponse> getAllCoursesByTeacher() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return courseRepository.findByTeacherUsername(username).stream()
@@ -72,8 +102,9 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public CourseResponse getCourseById(Long id) {
-        Course course = courseRepository.findById(id)
+        Course course = courseRepository.findByIdWithLessons(id)
                 .orElseThrow(() -> new AppException(TeacherErrorEnum.COURSE_NOT_FOUND));
         return mapToResponse(course);
     }
@@ -94,18 +125,7 @@ public class CourseService {
                     course.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDateTime() : null)
                 .lessons(course.getLessons() != null ? 
                         course.getLessons().stream()
-                                .map(l -> LessonResponse.builder()
-                                        .id(l.getId())
-                                        .title(l.getTitle())
-                                        .content(l.getContent())
-                                        .displayOrder(l.getDisplayOrder())
-                                        .isPreview(l.getIsPreview())
-                                        .publicVideoId(l.getPublicVideoId())
-                                        .rawUrl(l.getRawUrl())
-                                        .hlsUrl(l.getHlsUrl())
-                                        .videoStatus(l.getVideoStatus())
-                                        .durationSeconds(l.getDurationSeconds())
-                                        .build())
+                                .map(lessonMapper::toLessonResponse)
                                 .collect(Collectors.toList()) : null)
                 .build();
     }

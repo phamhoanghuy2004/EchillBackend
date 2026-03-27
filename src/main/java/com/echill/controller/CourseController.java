@@ -42,4 +42,15 @@ public class CourseController {
                 .data(courseService.getCourseById(id))
                 .build();
     }
+
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<CourseResponse> updateCourse(
+            @PathVariable Long id,
+            @Valid @ModelAttribute CourseRequest request,
+            @RequestParam(value = "file", required = false) MultipartFile file) {
+
+        return ApiResponse.<CourseResponse>builder()
+                .data(courseService.updateCourse(id, request, file))
+                .build();
+    }
 }

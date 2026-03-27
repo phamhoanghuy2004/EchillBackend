@@ -7,13 +7,16 @@ import com.echill.dto.response.CloudinarySignatureResponse;
 import com.echill.dto.response.LessonResponse;
 import com.echill.dto.response.PermissionResponse;
 import com.echill.service.CloudinaryVideoService;
+
 import com.echill.service.LessonService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -51,6 +54,40 @@ public class LessonController {
         return ApiResponse.<LessonResponse>builder()
                 .message("Tạo nội dung bài học thành công!")
                 .data(lessonService.createLesson(request))
+                .build();
+    }
+
+    @PutMapping("/{lessonId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<LessonResponse> updateLesson(
+            @PathVariable Long lessonId,
+            @Valid @RequestBody LessonCreationRequest request) {
+
+        return ApiResponse.<LessonResponse>builder()
+                .message("Cập nhật bài học thành công!")
+                .data(lessonService.updateLesson(lessonId, request))
+                .build();
+    }
+
+    @PostMapping(value = "/{lessonId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<LessonResponse> uploadDocument(
+            @PathVariable Long lessonId,
+            @RequestParam("title") String title,
+            @RequestParam("file") MultipartFile file) {
+
+        return ApiResponse.<LessonResponse>builder()
+                .message("Tải lên tài liệu thành công!")
+                .data(lessonService.uploadDocument(lessonId, title, file))
+                .build();
+    }
+
+    @DeleteMapping("/documents/{documentId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<Void> deleteDocument(@PathVariable Long documentId) {
+        lessonService.deleteDocument(documentId);
+        return ApiResponse.<Void>builder()
+                .message("Đã xóa tài liệu thành công!")
                 .build();
     }
 }
