@@ -1,7 +1,6 @@
 package com.echill.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -11,13 +10,9 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class BlogRequest {
-
-    @NotBlank(message = "Title is required")
+    @NotBlank(message = "BLOG_TITLE_REQUIRED")
     String title;
 
-    @NotBlank(message = "Content is required")
+    @NotBlank(message = "BLOG_CONTENT_REQUIRED")
     String content;
-
-    @NotNull(message = "User ID is required")
-    Long userId;
 }

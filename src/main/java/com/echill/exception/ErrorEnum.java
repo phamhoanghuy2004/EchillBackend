@@ -67,6 +67,10 @@ public enum ErrorEnum implements ErrorCode {
     IMAGE_SIZE_TOO_LARGE(1044, "Image size exceeds the allowed limit. Please upload a smaller image.", HttpStatus.BAD_REQUEST),
     RATE_LIMIT_EXCEEDED(1045, "You have reached rate limit", HttpStatus.BAD_REQUEST),
     LESSON_NOT_FOUND(1046, "Lesson not found", HttpStatus.BAD_REQUEST),
+    DATABASE_ERROR(1047, "Database error, please try again!", HttpStatus.INTERNAL_SERVER_ERROR),
+    DATA_CONFLICT(1048, "The data has been modified by another process. Please refresh the page and try again.", HttpStatus.CONFLICT),
+    VIDEO_IS_PROCESSING(1049, "Video is processing", HttpStatus.BAD_REQUEST),
+    UPLOAD_AVT_FAILED(1050, "Upload avatar failed", HttpStatus.BAD_REQUEST),
     ;
 
 

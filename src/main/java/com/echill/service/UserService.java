@@ -6,15 +6,13 @@ import com.echill.dto.request.UserUpdateRequest;
 import com.echill.entity.User;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
-import com.echill.repository.UserRepository;
+import com.echill.service.persistence.UserPersistenceService;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -22,63 +20,54 @@ import org.springframework.web.multipart.MultipartFile;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class UserService {
-    UserRepository userRepository;
+
+    UserPersistenceService userPersistenceService;
     CloudinaryService cloudinaryService;
 
-    @Transactional
+    // KHÔNG CÓ @Transactional
     public void completeProfile(CompleteProfileRequest request) {
-        var context = SecurityContextHolder.getContext();
-        String username = context.getAuthentication().getName();
+        // 1. Lấy thẳng ID từ Security Context (Vứt cách lấy Username đi)
+        Long userId = SecurityUtils.getCurrentUserId();
 
-        User user = userRepository.findByUsername(username).orElseThrow(
-                () -> new AppException(ErrorEnum.USER_NOTFOUND)
-        );
-
-        user.setAddress(request.getAddress());
-        user.setDob(request.getDob());
-        user.setJobTitle(request.getJobTitle());
-
-        userRepository.save(user);
+        // 2. Gọi DB cập nhật
+        userPersistenceService.completeUserProfile(userId, request);
     }
 
-
+    // KHÔNG CÓ @Transactional
+    // KHÔNG CÓ @Transactional
     public void update(UserUpdateRequest request, MultipartFile avatar) {
 
-        Long userid = SecurityUtils.getCurrentUserId();
+        Long userId = SecurityUtils.getCurrentUserId();
 
-        // 1. Tìm User trong DB trước (Rất nhanh, tốn 1ms)
-        User user = userRepository.findById(userid).orElseThrow(
-                () -> new AppException(ErrorEnum.USER_NOTFOUND)
-        );
+        // 1. Lấy User để biết link avatar cũ
+        User currentUser = userPersistenceService.getUserById(userId);
+        String oldAvatarUrl = currentUser.getAvatarUrl();
+        String newAvatarUrl = null;
 
-        // 2. Dùng MapStruct để update các trường text cho gọn (nhớ tạo hàm này trong UserMapper)
-        // userMapper.updateUser(user, request);
-        // (Nếu chưa có Mapper thì tạm xài tay như cũ cũng được)
-        user.setFullName(request.getFullName());
-        user.setAddress(request.getAddress());
-        user.setDob(request.getDob());
-        user.setJobTitle(request.getJobTitle());
-
-        // 3. Xử lý Avatar: UPLOAD ẢNH MỚI & XÓA ẢNH CŨ
+        // 2. UPLOAD ẢNH MỚI LÊN CLOUDINARY
         if (avatar != null && !avatar.isEmpty()) {
-            String oldAvatarUrl = user.getAvatarUrl(); // Giữ lại link ảnh cũ
+            newAvatarUrl = cloudinaryService.uploadImage(avatar, CloudinaryFolder.AVATAR);
 
-            // Đẩy ảnh mới lên Cloudinary (Tốn 1-3s, nhưng lúc này DB không bị khóa)
-            String newAvatarUrl = cloudinaryService.uploadImage(avatar, CloudinaryFolder.AVATAR);
-            user.setAvatarUrl(newAvatarUrl);
-
-            // 💥 GỌI HÀM XÓA ẢNH CŨ (Nếu bạn có viết hàm extract publicId và delete trong CloudinaryService)
-            if (oldAvatarUrl != null) {
-                try {
-                    cloudinaryService.deleteImage(oldAvatarUrl);
-                } catch (Exception e) {
-                    // Log lỗi ra thôi, không throw Exception để tránh làm hỏng quá trình update
-                    log.error("Không thể xóa ảnh avatar cũ trên Cloudinary: {}", oldAvatarUrl, e);
-                }
+            // 💥 FIX LỖI SỐ 1 CỦA BẠN: Nếu upload xịt, văng lỗi luôn, dừng toàn bộ quy trình!
+            if (newAvatarUrl == null || newAvatarUrl.isEmpty()) {
+                throw new AppException(ErrorEnum.UPLOAD_AVT_FAILED);
             }
         }
 
-        // 4. Lưu vào DB (Hàm .save() của JpaRepository bản thân nó đã bọc @Transactional sẵn rồi, rất an toàn)
-        userRepository.save(user);
+        // 3. 💥 CẬP NHẬT DATABASE TRƯỚC (Rất quan trọng)
+        // Nếu DB lỗi, nó sẽ văng Exception ở đây và code dừng lại, ảnh cũ chưa bị xóa!
+        userPersistenceService.updateUserInfo(userId, request, newAvatarUrl);
+
+        // 4. 💥 XÓA ẢNH CŨ SAU CÙNG
+        // Chỉ tiến hành xóa khi: CÓ UP ẢNH MỚI + DB ĐÃ LƯU THÀNH CÔNG + CÓ ẢNH CŨ ĐỂ XÓA
+        if (newAvatarUrl != null && oldAvatarUrl != null && !oldAvatarUrl.isEmpty()) {
+            try {
+                cloudinaryService.deleteImage(oldAvatarUrl);
+                log.info("Đã dọn dẹp xong avatar cũ: {}", oldAvatarUrl);
+            } catch (Exception e) {
+                // Xóa lỗi thì kệ nó, rác Cloudinary một tí không sao, trải nghiệm User vẫn mượt!
+                log.error("Không thể xóa ảnh avatar cũ trên Cloudinary: {}", oldAvatarUrl, e);
+            }
+        }
     }
 }

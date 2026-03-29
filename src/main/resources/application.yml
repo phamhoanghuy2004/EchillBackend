@@ -96,3 +96,4 @@ cloudinary:
   cloud-name: dgmlgi7p4
   api-key: 628256499685731
   api-secret: uWiZf7yK-HjxcHpghszH8tzI2P0
+  webhook-url: https://cleistocarpous-britany-unscabrous.ngrok-free.dev/webhook/cloudinary

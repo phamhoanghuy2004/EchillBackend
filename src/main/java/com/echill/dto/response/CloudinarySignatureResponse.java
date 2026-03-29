@@ -27,5 +27,9 @@ public class CloudinarySignatureResponse {
 
     String folder;
 
+    String publicId;
+
+    String notificationUrl;
+
     // Dùng @JsonProperty để lúc convert ra JSON gửi về Frontend, nó tự biến thành api_key, cloud_name giúp code React gọi axios nhàn hơn
 }

@@ -14,10 +14,21 @@ public class AsyncConfig {
     @Bean(name = "emailTaskExecutor")
     public Executor emailTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2); // Luôn duy trì 2 luồng chực chờ gửi mail
-        executor.setMaxPoolSize(5);  // Tối đa 5 luồng hoạt động cùng lúc khi hệ thống tải nặng
-        executor.setQueueCapacity(50); // Nếu > 5 người đăng ký cùng lúc, đưa 50 người tiếp theo vào hàng đợi
-        executor.setThreadNamePrefix("EmailSender-"); // Đặt tên để dễ debug trong Log
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(5);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("EmailSender-");
+        executor.initialize();
+        return executor;
+    }
+
+    @Bean(name = "ioTaskExecutor")
+    public Executor ioTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(10);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("IO-Task-");
         executor.initialize();
         return executor;
     }

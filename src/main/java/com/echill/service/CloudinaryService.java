@@ -8,6 +8,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,7 +21,6 @@ import java.util.Map;
 @Slf4j
 public class CloudinaryService {
     Cloudinary cloudinary;
-    long MAX_FILE_SIZE = 2 * 1024 * 1024;
 
     public String uploadImage(MultipartFile file, String folderName) {
         try {
@@ -32,6 +32,7 @@ public class CloudinaryService {
             }
 
             // 2. Kiểm tra dung lượng file (Không quá 2MB)
+            long MAX_FILE_SIZE = 2 * 1024 * 1024;
             if (file.getSize() > MAX_FILE_SIZE) {
                 log.warn("Cảnh báo: File tải lên quá lớn ({} bytes)", file.getSize());
                 throw new AppException(ErrorEnum.IMAGE_SIZE_TOO_LARGE);
@@ -51,16 +52,13 @@ public class CloudinaryService {
         }
     }
 
-    // ========================================================
-    // 💥 CÁC HÀM MỚI ĐỂ XÓA ẢNH CŨ TRÊN CLOUDINARY
-    // ========================================================
-
     /**
      * Hàm xóa ảnh trên Cloudinary dựa vào URL
      */
+    @Async("ioTaskExecutor")
     public void deleteImage(String imageUrl) {
         if (imageUrl == null || imageUrl.trim().isEmpty()) {
-            return; // Nếu user chưa có ảnh (URL null) thì bỏ qua, không cần xóa
+            return;
         }
 
         try {
@@ -76,7 +74,7 @@ public class CloudinaryService {
             }
         } catch (Exception e) {
             // 💥 Bọc thép: Chỉ log ra lỗi chứ KHÔNG throw Exception
-            // Để lỡ Cloudinary lỗi thì user vẫn cập nhật được Profile bình thường trong DB
+            // Để lỡ Cloudinary lỗi thì user vẫn cập nhật được cập nhật bình thường trong DB
             log.error("Lỗi khi xóa ảnh trên Cloudinary với URL {}: ", imageUrl, e);
         }
     }

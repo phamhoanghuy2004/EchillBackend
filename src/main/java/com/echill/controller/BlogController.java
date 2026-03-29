@@ -58,7 +58,7 @@ public class BlogController {
     @GetMapping
     public ApiResponse<List<BlogResponse>> getAllBlogs() {
         return ApiResponse.<List<BlogResponse>>builder()
-                .data(blogService.getAllBlogs())
+                .data(blogService.getMyBlogs())
                 .build();
     }
 }

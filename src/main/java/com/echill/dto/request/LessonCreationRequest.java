@@ -16,17 +16,17 @@ public class LessonCreationRequest {
     @NotNull(message = "COURSE_ID_REQUIRED")
     Long courseId;
 
-    @NotBlank(message = "TITLE_REQUIRED")
-    @Size(max = 200, message = "TITLE_TOO_LONG")
+    @NotBlank(message = "LESSON_TITLE_REQUIRED")
+    @Size(max = 200, message = "LESSON_TITLE_TOO_LONG")
     String title;
 
-    @NotBlank(message = "CONTENT_REQUIRED")
+    @NotBlank(message = "LESSON_CONTENT_REQUIRED")
     String content;
 
-    @NotNull(message = "DISPLAY_ORDER_REQUIRED")
-    @Min(value = 0, message = "DISPLAY_ORDER_INVALID")
+    @NotNull(message = "LESSON_DISPLAY_ORDER_REQUIRED")
+    @Min(value = 0, message = "LESSON_DISPLAY_ORDER_INVALID")
     Integer displayOrder;
 
-    @NotNull(message = "PREVIEW_REQUIRED")
+    @NotNull(message = "LESSON_PREVIEW_REQUIRED")
     Boolean isPreview;
 }

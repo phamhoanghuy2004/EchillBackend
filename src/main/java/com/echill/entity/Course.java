@@ -42,7 +42,7 @@ public class Course extends BaseEntity {
     @Column(name = "original_price", precision = 12, scale = 0)
     BigDecimal originalPrice;
 
-    @Column(nullable = false, name = "image_url", length = 1000)
+    @Column(name = "image_url", length = 1000)
     String imageUrl;
 
     @Enumerated(EnumType.STRING)

@@ -2,7 +2,8 @@ package com.echill.entity;
 
 import com.echill.entity.enums.AuthProvider;
 import com.echill.entity.enums.Status;
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.echill.exception.AppException;
+import com.echill.exception.ErrorEnum;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -67,6 +68,9 @@ public class User extends BaseEntity {
     @Builder.Default
     Set<UserRole> userRoles = new HashSet<>();
 
+    @Version
+    private Long version;
+
     public void addRole(Role role) {
         if (role != null) {
             UserRole userRole = UserRole.builder()
@@ -115,6 +119,41 @@ public class User extends BaseEntity {
     @Override
     public int hashCode() {
         return Objects.hash(username);
+    }
+
+    // ==========================================
+    // DOMAIN LOGIC (Rich Entity - Chuẩn Senior)
+    // ==========================================
+
+    public void ensureSystemLogin() {
+        if (!AuthProvider.SYSTEM.equals(this.authProvider)) {
+            throw new AppException(ErrorEnum.MUST_LOGIN_WITH_GOOGLE);
+        }
+    }
+
+    public void ensureCanLogin() {
+        if (Status.INACTIVE.equals(this.status)) {
+            throw new AppException(ErrorEnum.USER_INACTIVE_OR_BLOCKED, Map.of("email", this.email));
+        } else if (!Status.ACTIVE.equals(this.status)) {
+            throw new AppException(ErrorEnum.USER_INACTIVE_OR_BLOCKED);
+        }
+    }
+
+    public void ensureActive() {
+        if (!Status.ACTIVE.equals(this.status)) {
+            throw new AppException(ErrorEnum.USER_INACTIVE_OR_BLOCKED);
+        }
+    }
+
+    public void ensureInactive() {
+        if (!Status.INACTIVE.equals(this.status)) {
+            throw new AppException(ErrorEnum.USER_ALREADY_ACTIVE_OR_BLOCKED);
+        }
+    }
+
+    public void activate() {
+        ensureInactive();
+        this.status = Status.ACTIVE;
     }
 
 }

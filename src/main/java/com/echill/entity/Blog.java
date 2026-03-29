@@ -35,4 +35,14 @@ public class Blog extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     User user;
+
+    @Transient
+    public String getExcerpt() {
+        if (this.content == null || this.content.isBlank()) {
+            return "";
+        }
+        return this.content.length() > 100
+                ? this.content.substring(0, 100) + "..."
+                : this.content;
+    }
 }

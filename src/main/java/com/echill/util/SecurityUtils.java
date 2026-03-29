@@ -39,4 +39,11 @@ public class SecurityUtils {
         }
         return authentication.getName();
     }
+
+    public static void validateOwnership(Long ownerId) {
+        Long currentUserId = getCurrentUserId();
+        if (!ownerId.equals(currentUserId)) {
+            throw new AppException(ErrorEnum.UNAUTHORIZED); // Mã lỗi 403 Forbidden
+        }
+    }
 }

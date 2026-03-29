@@ -22,6 +22,7 @@ public class StudentController {
     StudyGoalService studyGoalService;
 
     @GetMapping("/my-profile")
+    @PreAuthorize("hasRole('STUDENT')")
     public ApiResponse<StudentResponse> getMyProfile() {
         return ApiResponse.<StudentResponse>builder()
                 .data(studentService.getMyProfile())

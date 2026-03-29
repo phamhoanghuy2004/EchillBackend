@@ -31,11 +31,11 @@ public class SecurityConfig {
 
             "/users", "/auth/login", "/auth/introspect", "/auth/logout", "/auth/register", "/auth/verify-register-otp",
             "/auth/resend-register-otp", "/auth/google-login", "/auth/forgot-password", "/auth/reset-password",
-            "/webhook/cloudinary"
+            "/webhook/cloudinary", "/ws/**"
     };
 
     static String[] PUBLIC_GET_ENDPOINTS = {
-            "/courses", "/courses/**", "/exams", "/exams/**"
+            "/courses", "/courses/**", "/exams", "/exams/**", "/ws/**"
     };
 
     CustomJwtDecoder customJwtDecoder;

@@ -7,10 +7,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BlogRepository extends JpaRepository<Blog, Long> {
-    List<Blog> findAllByOrderByCreatedAtDesc();
-    @Query("SELECT b FROM Blog b JOIN FETCH b.user u WHERE u.username = :username ORDER BY b.createdAt DESC")
-    List<Blog> findByUsername(@Param("username") String username);
+    @Query("SELECT b FROM Blog b JOIN FETCH b.user u WHERE u.id = :userId ORDER BY b.createdAt DESC")
+    List<Blog> findAllWithUserByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT b FROM Blog b JOIN FETCH b.user WHERE b.id = :id")
+    Optional<Blog> findByIdWithUser(@Param("id") Long id);
+
+
 }

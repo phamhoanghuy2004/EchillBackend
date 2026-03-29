@@ -1,6 +1,8 @@
 package com.echill.entity;
 
 import com.echill.entity.enums.VideoStatus;
+import com.echill.exception.AppException;
+import com.echill.exception.ErrorEnum;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -40,7 +42,7 @@ public class Lesson extends BaseEntity {
     @Builder.Default
     Boolean isPreview = false;
 
-    @Column(name = "public_video_id", length = 1000, unique = true)
+    @Column(name = "public_video_id", length = 150, unique = true)
     String publicVideoId; // ID trên Cloudinary
 
     @Column(name = "raw_url", length = 1000)
@@ -74,5 +76,40 @@ public class Lesson extends BaseEntity {
     public void removeDocument(Document document) {
         documents.remove(document);
         document.setLesson(null);
+    }
+
+    public boolean isVideoProcessing() {
+        return this.videoStatus == VideoStatus.PROCESSING;
+    }
+
+    /**
+     * Hành vi: Bắt đầu quá trình tải video mới lên (Ghi nháp)
+     */
+    public void startVideoProcessing(String newPublicId, String newRawUrl) {
+        // TỰ BẢO VỆ MÌNH: Thằng Lesson tự check trạng thái của chính nó
+        if (this.isVideoProcessing()) {
+            throw new AppException(ErrorEnum.VIDEO_IS_PROCESSING);
+        }
+
+        this.publicVideoId = newPublicId;
+        this.rawUrl = newRawUrl;
+        this.videoStatus = VideoStatus.PROCESSING;
+        // Nếu có logic xóa link cũ (hlsUrl) thì nhét luôn vào đây:
+        // this.hlsUrl = null;
+        // this.durationSeconds = 0L;
+    }
+
+    /**
+     * Hành vi: Xác nhận video đã convert xong từ Webhook Cloudinary
+     */
+    public void finishVideoProcessing(String hlsUrl, Long durationSeconds) {
+
+        if (!this.isVideoProcessing()) {
+            return;
+        }
+
+        this.hlsUrl = hlsUrl;
+        this.durationSeconds = durationSeconds;
+        this.videoStatus = VideoStatus.READY;
     }
 }

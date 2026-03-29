@@ -1,19 +1,21 @@
 package com.echill.controller;
 
+import com.echill.config.CloudinarySignatureValidator;
 import com.echill.entity.Lesson;
-import com.echill.entity.enums.VideoStatus;
-import com.echill.repository.LessonRepository;
+import com.echill.service.persistence.LessonPersistenceService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.transaction.TransactionException;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -22,53 +24,47 @@ import java.util.Map;
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CloudinaryWebhookController {
-    LessonRepository lessonRepository;
+
+    LessonPersistenceService lessonPersistenceService;
+    SimpMessagingTemplate messagingTemplate;
+    CloudinarySignatureValidator signatureValidator;
+    ObjectMapper objectMapper;
 
     @PostMapping
-    public ResponseEntity<Void> handleCloudinaryNotification(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Void> handleCloudinaryNotification(
+            @RequestHeader(value = "X-Cld-Signature", required = false) String signature,
+            @RequestHeader(value = "X-Cld-Timestamp", required = false) String timestamp,
+            @RequestBody String rawPayload
+    ) {
+        if (!signatureValidator.verifySignature(rawPayload, timestamp, signature)) {
+            log.warn("Phát hiện Webhook sai chữ ký! Từ chối phục vụ.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         try {
+            Map<String, Object> payload = objectMapper.readValue(rawPayload, new TypeReference<>() {});
             String notificationType = (String) payload.get("notification_type");
-            String publicId = (String) payload.get("public_id");
 
-            // 💥 Chỉ quan tâm đến event 'eager' (tức là đã convert HLS xong)
             if ("eager".equals(notificationType)) {
-                log.info("✅ Nhận webhook HLS xử lý xong cho video: {}", publicId);
+                Lesson updatedLesson = lessonPersistenceService.processCloudinaryWebhook(payload);
 
-                // Tìm Lesson trong DB dựa vào publicId do Frontend lưu trước đó
-                Lesson lesson = lessonRepository.findByPublicVideoId(publicId).orElse(null);
-
-                if (lesson != null) {
-                    // 1. Móc mảng 'eager' ra để lấy link HLS (.m3u8)
-                    List<Map<String, Object>> eagerArray = (List<Map<String, Object>>) payload.get("eager");
-                    if (eagerArray != null && !eagerArray.isEmpty()) {
-                        String hlsSecureUrl = (String) eagerArray.get(0).get("secure_url");
-                        lesson.setHlsUrl(hlsSecureUrl);
-                    }
-
-                    // 2. Móc 'duration' ra để cập nhật thời lượng (nếu Cloudinary có trả về)
-                    // Lưu ý: Có trường hợp Cloudinary trả ở payload gốc, ta check phòng hờ
-                    if (payload.containsKey("duration")) {
-                        Object durationObj = payload.get("duration");
-                        if (durationObj instanceof Number num) {
-                            lesson.setDurationSeconds(Math.round(num.doubleValue()));
-                        }
-                    }
-
-                    // 3. Đánh dấu hoàn tất và lưu DB
-                    lesson.setVideoStatus(VideoStatus.READY);
-                    lessonRepository.save(lesson);
-
-                    log.info("🎉 Bài học ID: {} đã cập nhật HLS thành công!", lesson.getId());
-                } else {
-                    log.warn("⚠️ Bỏ qua Webhook: Không tìm thấy Lesson nào có publicVideoId: {}", publicId);
+                if (updatedLesson != null) {
+                    messagingTemplate.convertAndSend("/topic/lessons/" + updatedLesson.getId(), Map.of(
+                            "lessonId", updatedLesson.getId(),
+                            "status", "READY",
+                            "hlsUrl", updatedLesson.getHlsUrl(),
+                            "durationSeconds", updatedLesson.getDurationSeconds()
+                    ));
+                    log.info("📡 Đã bắn WebSocket báo READY cho Frontend, Lesson ID: {}", updatedLesson.getId());
                 }
             }
-
-            // Luôn trả về 200 OK để Cloudinary không spam gửi lại
             return ResponseEntity.ok().build();
 
+        } catch (DataAccessException | TransactionException e) {
+            log.error("Lỗi Database. Ép Cloudinary gọi lại (Retry) bằng mã 500", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } catch (Exception e) {
-            log.error("❌ Lỗi nghiêm trọng khi xử lý Webhook Cloudinary", e);
+            log.error("Lỗi Parsing Payload. Bỏ qua để tránh Spam", e);
             return ResponseEntity.ok().build();
         }
     }
