@@ -2,7 +2,9 @@ package com.echill.service.persistence;
 
 import com.echill.dto.request.SaveVideoDraftRequest;
 import com.echill.dto.response.LessonResponse;
+import com.echill.entity.Document;
 import com.echill.entity.Lesson;
+import com.echill.entity.enums.FileType;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.mapper.LessonMapper;

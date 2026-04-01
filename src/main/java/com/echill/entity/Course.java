@@ -45,6 +45,9 @@ public class Course extends BaseEntity {
     @Column(name = "image_url", length = 1000)
     String imageUrl;
 
+    @Column(name = "image_public_id", length = 1000)
+    String imagePublicId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default

@@ -49,4 +49,17 @@ public class LessonController {
                 .message("Đã lưu bản nháp video, đang chờ xử lý...")
                 .build();
     }
+
+    @PutMapping("/{lessonId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<LessonResponse> updateLesson(
+            @PathVariable Long lessonId,
+            @Valid @RequestBody LessonCreationRequest request) {
+
+        return ApiResponse.<LessonResponse>builder()
+                .message("Cập nhật bài học thành công!")
+                .data(lessonService.updateLesson(lessonId, request))
+                .build();
+    }
+
 }

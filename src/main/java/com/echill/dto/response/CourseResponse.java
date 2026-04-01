@@ -1,6 +1,7 @@
 package com.echill.dto.response;
 
 import com.echill.entity.enums.Level;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -13,6 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CourseResponse {
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     String id;
     String name;
     String description;

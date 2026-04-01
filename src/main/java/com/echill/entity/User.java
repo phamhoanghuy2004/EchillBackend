@@ -50,6 +50,9 @@ public class User extends BaseEntity {
     @Column(name = "avatar_url")
     String avatarUrl;
 
+    @Column(name = "avatar_public_id")
+    String avatarPublicId;
+
     @Column(name = "current_coin", nullable = false)
     @Builder.Default
     Long currentCoin = 0L;

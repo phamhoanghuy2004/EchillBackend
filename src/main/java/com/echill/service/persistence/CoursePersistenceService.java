@@ -6,11 +6,9 @@ import com.echill.entity.Course;
 import com.echill.entity.User;
 import com.echill.entity.enums.Status;
 import com.echill.exception.AppException;
-import com.echill.exception.ErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
 import com.echill.repository.CategoryRepository;
 import com.echill.repository.CourseRepository;
-import com.echill.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -26,41 +24,45 @@ public class CoursePersistenceService {
 
     CourseRepository courseRepository;
     CategoryRepository categoryRepository;
-    UserRepository userRepository;
 
-    // 💥 Mở Transaction ở đây, thao tác thuần Database, cực kỳ nhanh!
     @Transactional
-    public Course saveNewCourse(Long teacherId, CourseRequest request, String uploadedImageUrl) {
-        User teacher = userRepository.findById(teacherId)
-                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
-
-        Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new AppException(TeacherErrorEnum.CATEGORY_NOT_FOUND));
-
+    public Course saveNewCourse(User teacher, Category category, CourseRequest request, String uploadedImageUrl, String publicImageId) {
         Course course = Course.builder()
                 .name(request.getName())
                 .description(request.getDescription())
                 .price(request.getPrice())
                 .originalPrice(request.getOriginalPrice())
-                .imageUrl(uploadedImageUrl) // Nhận link URL đã upload
+                .imageUrl(uploadedImageUrl)
+                .imagePublicId(publicImageId)
                 .level(request.getLevel())
                 .category(category)
                 .teacher(teacher)
                 .status(Status.ACTIVE)
                 .build();
-
         return courseRepository.save(course);
     }
 
-    // Gắn readOnly = true để Hibernate tối ưu bộ nhớ, không sinh ra dirty checking
-    @Transactional(readOnly = true)
-    public List<Course> getAllCoursesByTeacherId(Long teacherId) {
-        return courseRepository.findAllByTeacherIdWithDetails(teacherId);
-    }
+    @Transactional
+    public Course updateCourseData(Course course, CourseRequest request, String newImageUrl, String newImagePublicId) {
 
-    @Transactional(readOnly = true)
-    public Course getCourseById(Long courseId) {
-        return courseRepository.findByIdWithDetails(courseId)
-                .orElseThrow(() -> new AppException(TeacherErrorEnum.COURSE_NOT_FOUND));
+        // 💥 Vẫn xài TUYỆT CHIÊU PROXY cho nhẹ DB nhé (Cái này quá ngon không thể bỏ được)
+        Category categoryRef = categoryRepository.getReferenceById(request.getCategoryId());
+
+        // Cập nhật thông tin thẳng vào object truyền xuống
+        course.setName(request.getName());
+        course.setDescription(request.getDescription());
+        course.setPrice(request.getPrice());
+        course.setOriginalPrice(request.getOriginalPrice());
+        course.setLevel(request.getLevel());
+        course.setCategory(categoryRef); // Gán Proxy
+
+        // Nếu có up ảnh mới thì đè URL và PublicID vào
+        if (newImageUrl != null) {
+            course.setImageUrl(newImageUrl);
+            course.setImagePublicId(newImagePublicId);
+        }
+
+        // 💥 Để Spring Data JPA tự động gọi hàm merge() bên dưới, xử lý êm xuôi!
+        return courseRepository.save(course);
     }
 }

@@ -5,10 +5,12 @@ import com.echill.dto.response.LessonResponse;
 import com.echill.entity.Course;
 import com.echill.entity.Lesson;
 import com.echill.exception.AppException;
+import com.echill.exception.ErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
 import com.echill.mapper.LessonMapper;
 import com.echill.repository.CourseRepository;
 import com.echill.repository.LessonRepository;
+import com.echill.service.persistence.LessonPersistenceService;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +28,8 @@ public class LessonService {
     LessonRepository lessonRepository;
     LessonMapper lessonMapper;
     CourseRepository courseRepository;
+    CloudinaryService cloudinaryService;
+    LessonPersistenceService  lessonPersistenceService;
 
     @Transactional
     public LessonResponse createLesson(LessonCreationRequest request) {
@@ -46,4 +51,28 @@ public class LessonService {
 
         return lessonMapper.toLessonResponse(lesson);
     }
+
+    @Transactional
+    public LessonResponse updateLesson(Long lessonId, LessonCreationRequest request) {
+        // 1. Tìm Lesson
+        Lesson lesson = lessonRepository.findByIdWithCourseAndTeacherAndDocuments(lessonId)
+                .orElseThrow(() -> new AppException(ErrorEnum.LESSON_NOT_FOUND));
+
+        SecurityUtils.validateOwnership(lesson.getCourse().getTeacher().getId());
+
+        // 3. Cập nhật thông tin nội dung
+        lesson.setTitle(request.getTitle());
+        lesson.setContent(request.getContent());
+        lesson.setDisplayOrder(request.getDisplayOrder());
+        lesson.setIsPreview(request.getIsPreview());
+
+        // 4. Lưu database
+        lessonRepository.save(lesson);
+        log.info("Đã cập nhật bài học ID: {} thành công", lessonId);
+
+        // 5. Trả về Response
+        return lessonMapper.toLessonResponse(lesson);
+    }
+
+
 }

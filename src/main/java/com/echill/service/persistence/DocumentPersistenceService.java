@@ -1,0 +1,63 @@
+package com.echill.service.persistence;
+
+import com.echill.entity.Document;
+import com.echill.entity.Lesson;
+import com.echill.entity.enums.FileType;
+import com.echill.repository.DocumentRepository;
+import com.echill.repository.LessonRepository;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
+public class DocumentPersistenceService {
+
+    DocumentRepository documentRepository;
+    LessonRepository lessonRepository;
+
+    @Transactional
+    public Document saveNewDocument(Long lessonId, String title, String contentType, String fileUrl, String publicId) {
+
+        // 1. Phân loại File
+        FileType fileType = FileType.PDF;
+        if (contentType != null && (contentType.contains("word") ||
+                contentType.contains("msword") ||
+                contentType.contains("officedocument"))) {
+            fileType = FileType.WORD;
+        }
+
+        // 2. 💥 TUYỆT CHIÊU PROXY: Lấy cái vỏ của Lesson mà không cần query
+        Lesson lessonRef = lessonRepository.getReferenceById(lessonId);
+
+        // 3. Tạo mới Document
+        Document document = Document.builder()
+                .title(title)
+                .fileUrl(fileUrl)
+                .documentPublicId(publicId)
+                .fileType(fileType)
+                .lesson(lessonRef) // Móc khóa ngoại vào Bài học bằng Proxy
+                .build();
+
+        // 4. Lưu trực tiếp vào bảng Document (Thay vì lưu gián tiếp qua Lesson.save như cũ)
+        document = documentRepository.save(document);
+        log.info("Đã lưu tài liệu ID {} cho Bài học ID {}", document.getId(), lessonId);
+
+        return document;
+    }
+
+    @Transactional
+    public void deleteDocument(Document document) {
+
+        // 💥 Xóa trực tiếp entity Document ra khỏi Database.
+        // Lệnh này sẽ sinh ra đúng 1 câu: DELETE FROM document WHERE id = ?
+        documentRepository.delete(document);
+
+        log.info("Đã xóa vĩnh viễn tài liệu ID: {} khỏi Database. File trên Cloudinary sẽ được Cron Job dọn dẹp sau.", document.getId());
+    }
+}

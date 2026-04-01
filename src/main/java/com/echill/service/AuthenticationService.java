@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.text.ParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -45,11 +46,17 @@ public class AuthenticationService {
         if (userRepository.existsByUsername(request.getUsername())) throw new AppException(ErrorEnum.USERNAME_EXISTED);
         if (userRepository.existsByEmail(request.getEmail())) throw new AppException(ErrorEnum.EMAIL_ALREADY_EXISTS);
 
-        String avatarUrl = (avatar != null && !avatar.isEmpty())
-                ? cloudinaryService.uploadImage(avatar, CloudinaryFolder.AVATAR) : null;
+        String avatarUrl = null;
+        String avatarPublicId = null;
+
+        if (avatar != null && !avatar.isEmpty()) {
+            Map<String, String> uploadResult = cloudinaryService.uploadImage(avatar, CloudinaryFolder.AVATAR);
+            avatarUrl = uploadResult.get("url");
+            avatarPublicId = uploadResult.get("publicId");
+        }
         String encodedPassword = passwordEncoder.encode(request.getPassword());
 
-        authPersistenceService.saveNewUser(request, encodedPassword, avatarUrl);
+        authPersistenceService.saveNewUser(request, encodedPassword, avatarUrl, avatarPublicId);
         log.info("Request đăng ký cho {} đã được tiếp nhận.", request.getUsername());
     }
 

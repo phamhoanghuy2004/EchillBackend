@@ -7,6 +7,7 @@ import com.echill.service.CourseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -20,6 +21,7 @@ public class CourseController {
     private final CourseService courseService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('TEACHER')")
     public ApiResponse<CourseResponse> createCourse(
             @Valid @ModelAttribute CourseRequest request,
             @RequestParam(value = "file", required = false) MultipartFile file) {
@@ -40,6 +42,18 @@ public class CourseController {
     public ApiResponse<CourseResponse> getCourseById(@PathVariable Long id) {
         return ApiResponse.<CourseResponse>builder()
                 .data(courseService.getCourseById(id))
+                .build();
+    }
+
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<CourseResponse> updateCourse(
+            @PathVariable Long id,
+            @Valid @ModelAttribute CourseRequest request,
+            @RequestParam(value = "file", required = false) MultipartFile file) {
+
+        return ApiResponse.<CourseResponse>builder()
+                .data(courseService.updateCourse(id, request, file))
                 .build();
     }
 }

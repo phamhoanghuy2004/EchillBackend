@@ -4,7 +4,15 @@ import com.echill.constant.CloudinaryFolder;
 import com.echill.dto.request.CourseRequest;
 import com.echill.dto.response.CourseResponse;
 import com.echill.dto.response.LessonResponse;
+import com.echill.entity.Category;
 import com.echill.entity.Course;
+import com.echill.entity.User;
+import com.echill.exception.AppException;
+import com.echill.exception.ErrorEnum;
+import com.echill.exception.TeacherErrorEnum;
+import com.echill.repository.CategoryRepository;
+import com.echill.repository.CourseRepository;
+import com.echill.repository.UserRepository;
 import com.echill.service.persistence.CoursePersistenceService;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
@@ -16,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -25,38 +34,65 @@ public class CourseService {
 
     CloudinaryService cloudinaryService;
     CoursePersistenceService coursePersistenceService;
+    UserRepository userRepository;
+    CategoryRepository categoryRepository;
+    CourseRepository courseRepository;
 
-    // 💥 KHÔNG CÓ @Transactional Ở ĐÂY NỮA
     public CourseResponse createCourse(CourseRequest request, MultipartFile file) {
-        // 1. Lấy trực tiếp ID từ JWT (Không cần query Username)
         Long teacherId = SecurityUtils.getCurrentUserId();
 
-        // 2. Upload ảnh (Network I/O) - Nếu tốn 3s thì MySQL vẫn rảnh rang
-        String imageUrl = null;
+        User teacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.CATEGORY_NOT_FOUND));
+
+        Map<String, String> uploadResult = null;
         if (file != null && !file.isEmpty()) {
-            imageUrl = cloudinaryService.uploadImage(file, CloudinaryFolder.COURSE_IMAGE);
+            uploadResult = cloudinaryService.uploadImage(file, CloudinaryFolder.COURSE_IMAGE);
         }
 
-        // 3. Đẩy xuống Persistence để lưu DB thật nhanh
-        Course course = coursePersistenceService.saveNewCourse(teacherId, request, imageUrl);
+        String url = (uploadResult != null) ? uploadResult.get("url") : null;
+        String pId = (uploadResult != null) ? uploadResult.get("publicId") : null;
 
-        // 4. Map trả về
+        Course course = coursePersistenceService.saveNewCourse(teacher, category, request, url, pId);
         return mapToResponse(course);
+
+    }
+
+    public CourseResponse updateCourse(Long id, CourseRequest request, MultipartFile file) {
+        Course existingCourse = courseRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.COURSE_NOT_FOUND));
+
+        SecurityUtils.validateOwnership(existingCourse.getTeacher().getId());
+
+        String newImageUrl = null;
+        String newImagePublicId = null;
+
+        if (file != null && !file.isEmpty()) {
+            Map<String, String> uploadResult = cloudinaryService.uploadImage(file, CloudinaryFolder.COURSE_IMAGE);
+            newImageUrl = uploadResult.get("url");
+            newImagePublicId = uploadResult.get("publicId");
+        }
+
+        Course updatedCourse = coursePersistenceService.updateCourseData(existingCourse, request, newImageUrl, newImagePublicId);
+
+        return mapToResponse(updatedCourse);
     }
 
     public List<CourseResponse> getAllCoursesByTeacher() {
         Long teacherId = SecurityUtils.getCurrentUserId();
-        return coursePersistenceService.getAllCoursesByTeacherId(teacherId).stream()
+        return courseRepository.findAllByTeacherIdWithDetails(teacherId).stream()
                 .map(this::mapToResponse)
-                .toList(); // Dùng .toList() của Java 16+ cho lẹ, bỏ Collectors.toList() đi
+                .toList();
     }
 
     public CourseResponse getCourseById(Long id) {
-        Course course = coursePersistenceService.getCourseById(id);
+        Course course= courseRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.COURSE_NOT_FOUND));
         return mapToResponse(course);
     }
 
-    // Hàm Map giờ đã an toàn tuyệt đối, vì dữ liệu đã được JOIN FETCH kéo lên hết rồi
     private CourseResponse mapToResponse(Course course) {
         return CourseResponse.builder()
                 .id(course.getId().toString())

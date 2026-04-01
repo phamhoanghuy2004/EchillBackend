@@ -8,7 +8,6 @@ import com.echill.entity.Lesson;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.repository.LessonRepository;
-import com.echill.service.persistence.LessonPersistenceService;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

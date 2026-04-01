@@ -5,7 +5,12 @@ import com.echill.dto.response.TeacherResponse;
 import com.echill.entity.Certificate;
 import com.echill.entity.TeacherProfile;
 import com.echill.entity.User;
-import com.echill.service.persistence.TeacherPersistenceService;
+import com.echill.exception.AppException;
+import com.echill.exception.ErrorEnum;
+import com.echill.exception.TeacherErrorEnum;
+import com.echill.repository.CertificateRepository;
+import com.echill.repository.TeacherProfileRepository;
+import com.echill.repository.UserRepository;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -21,19 +26,24 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class TeacherService {
 
-    TeacherPersistenceService teacherPersistenceService;
+    UserRepository userRepository;
+    TeacherProfileRepository teacherProfileRepository;
+    CertificateRepository certificateRepository;
 
-    // 💥 KHÔNG CẦN @Transactional Ở ĐÂY
+    // 💥 Không cần @Transactional, Spring Data JPA tự lo vụ readOnly rồi
     public TeacherResponse getMyProfile() {
-        // 1. Lấy thẳng ID từ Security Context (Nhanh, không chạm DB)
+        // 1. Lấy thẳng ID từ Security Context
         Long userId = SecurityUtils.getCurrentUserId();
 
-        // 2. Kéo Data từ Persistence Layer
-        User user = teacherPersistenceService.getUserWithRolesById(userId);
-        TeacherProfile profile = teacherPersistenceService.getProfileByUserId(userId);
+        // 2. Kéo Data trực tiếp từ Repository & Validate tại chỗ
+        User user = userRepository.findByIdWithRolesAndPermissions(userId)
+                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
 
-        // 💥 DỌN DẸP: Không cần check null nữa, cứ thế mà lấy luôn vì profile đã chắc kèo tồn tại!
-        List<Certificate> certificates = teacherPersistenceService.getCertificatesByProfileId(profile.getId());
+        TeacherProfile profile = teacherProfileRepository.findById(userId)
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.PROFILE_NOT_FOUND));
+
+        // Profile chắc chắn tồn tại (nếu không đã throw ở trên), lấy luôn list chứng chỉ
+        List<Certificate> certificates = certificateRepository.findByTeacherProfileId(profile.getId());
 
         // 3. Lấy danh sách Roles
         Set<String> roles = user.getUserRoles().stream()

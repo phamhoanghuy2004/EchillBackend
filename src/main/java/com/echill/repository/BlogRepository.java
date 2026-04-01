@@ -17,5 +17,7 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
     @Query("SELECT b FROM Blog b JOIN FETCH b.user WHERE b.id = :id")
     Optional<Blog> findByIdWithUser(@Param("id") Long id);
 
+    @Query("SELECT c.imagePublicId FROM Course c WHERE c.imagePublicId IS NOT NULL")
+    List<String> findAllImagePublicIds();
 
 }

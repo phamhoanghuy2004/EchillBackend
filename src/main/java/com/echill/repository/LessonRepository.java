@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 
@@ -26,4 +27,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
     Optional<Lesson> findByIdForOwnershipCheck(@Param("lessonId") Long lessonId);
 
     Optional<Lesson> findByPublicVideoId(String publicVideoId);
+
+    @Query("SELECT l.publicVideoId FROM Lesson l WHERE l.publicVideoId IS NOT NULL")
+    List<String> findAllVideoPublicIds();
 }

@@ -31,6 +31,9 @@ public class Blog extends BaseEntity {
     @Column(name = "image_url")
     String imageUrl;
 
+    @Column(name = "image_public_id")
+    String imagePublicId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)

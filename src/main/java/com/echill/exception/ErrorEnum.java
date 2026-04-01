@@ -71,6 +71,11 @@ public enum ErrorEnum implements ErrorCode {
     DATA_CONFLICT(1048, "The data has been modified by another process. Please refresh the page and try again.", HttpStatus.CONFLICT),
     VIDEO_IS_PROCESSING(1049, "Video is processing", HttpStatus.BAD_REQUEST),
     UPLOAD_AVT_FAILED(1050, "Upload avatar failed", HttpStatus.BAD_REQUEST),
+    INVALID_FILE_FORMAT(1051, "Invalid file format. Please upload PDF or Word documents.", HttpStatus.BAD_REQUEST),
+    FILE_SIZE_TOO_LARGE(1052, "File size exceeds the allowed limit (10MB).", HttpStatus.BAD_REQUEST),
+    CANNOT_UPLOAD_FILE(1053, "Unable to upload file. Please try again.", HttpStatus.BAD_REQUEST),
+    DOCUMENT_NOT_FOUND(1054, "Document not found", HttpStatus.BAD_REQUEST),
+    DOCUMENT_REQUIRED(1055, "Document required", HttpStatus.BAD_REQUEST),
     ;
 
 

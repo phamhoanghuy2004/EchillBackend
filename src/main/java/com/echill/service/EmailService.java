@@ -25,7 +25,6 @@ public class EmailService {
     @NonFinal
     String fromEmail;
 
-    // Kiểm tra kết nối SMTP ngay khi khởi tạo Service
     @PostConstruct
     public void checkMailConnection() {
         try {
@@ -38,7 +37,6 @@ public class EmailService {
         }
     }
 
-    // Chỉ định đích danh Thread Pool
     @Async("emailTaskExecutor")
     public void sendOtpEmailAsync (String to, String fullName, String otp) {
         try {
@@ -77,7 +75,6 @@ public class EmailService {
         }
     }
 
-    // Chỉ định đích danh Thread Pool
     @Async("emailTaskExecutor")
     public void sendForgotPasswordEmailAsync(String to, String fullName, String otp) {
         try {

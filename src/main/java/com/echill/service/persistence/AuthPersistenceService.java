@@ -35,11 +35,12 @@ public class AuthPersistenceService {
     private static final String ROLE_TEACHER = "TEACHER";
 
     @Transactional
-    public void saveNewUser(UserRegisterRequest request, String encodedPassword, String avatarUrl) {
+    public void saveNewUser(UserRegisterRequest request, String encodedPassword, String avatarUrl, String avatarPublicId) {
         User user = userMapper.toUser(request);
         user.setPassword(encodedPassword);
         user.setStatus(Status.INACTIVE);
         user.setAvatarUrl(avatarUrl);
+        user.setAvatarPublicId(avatarPublicId);
 
         Role userRole = roleRepository.findByName(request.getRole())
                 .orElseThrow(() -> new AppException(ErrorEnum.ROLE_NOT_EXIST));

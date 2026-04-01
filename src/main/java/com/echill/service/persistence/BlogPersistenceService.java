@@ -18,11 +18,12 @@ public class BlogPersistenceService {
     BlogRepository blogRepository;
 
     @Transactional
-    public Blog saveBlog(BlogRequest request, User user, String imageUrl) {
+    public Blog saveBlog(BlogRequest request, User user, String imageUrl, String imagePublicId) {
         Blog blog = Blog.builder()
                 .title(request.getTitle())
                 .content(request.getContent())
                 .imageUrl(imageUrl)
+                .imagePublicId(imagePublicId)
                 .user(user)
                 .build();
 
@@ -30,11 +31,12 @@ public class BlogPersistenceService {
     }
 
     @Transactional
-    public Blog updateBlog(BlogRequest request, Blog blog, String newImageUrl) {
+    public Blog updateBlog(BlogRequest request, Blog blog, String newImageUrl, String newImagePublicId) {
         blog.setTitle(request.getTitle());
         blog.setContent(request.getContent());
         if (newImageUrl != null) {
             blog.setImageUrl(newImageUrl);
+            blog.setImagePublicId(newImagePublicId);
         }
         return blogRepository.save(blog);
     }

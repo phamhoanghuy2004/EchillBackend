@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -39,11 +39,14 @@ public class BlogService {
                 .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
 
         String imageUrl = null;
+        String imagePublicId = null;
         if (file != null && !file.isEmpty()) {
-            imageUrl = cloudinaryService.uploadImage(file, CloudinaryFolder.BLOG_IMAGE);
+            Map<String, String> uploadResult = cloudinaryService.uploadImage(file, CloudinaryFolder.BLOG_IMAGE);
+            imageUrl = uploadResult.get("url");
+            imagePublicId = uploadResult.get("publicId");
         }
 
-        return blogMapper.toResponse(blogPersistenceService.saveBlog(request, user, imageUrl));
+        return blogMapper.toResponse(blogPersistenceService.saveBlog(request, user, imageUrl, imagePublicId));
     }
 
     public BlogResponse updateBlog(Long id, BlogRequest request, MultipartFile file) {
@@ -52,18 +55,16 @@ public class BlogService {
 
         SecurityUtils.validateOwnership(blog.getUser().getId());
 
-        String oldImageUrl = blog.getImageUrl();
         String newImageUrl = null;
+        String newImagePublicId = null;
 
         if (file != null && !file.isEmpty()) {
-            newImageUrl = cloudinaryService.uploadImage(file, CloudinaryFolder.BLOG_IMAGE);
+            Map<String, String> uploadResult = cloudinaryService.uploadImage(file, CloudinaryFolder.BLOG_IMAGE);
+            newImageUrl = uploadResult.get("url");
+            newImagePublicId = uploadResult.get("publicId");
         }
 
-        blog = blogPersistenceService.updateBlog(request, blog, newImageUrl);
-
-        if (newImageUrl != null && oldImageUrl != null) {
-            cloudinaryService.deleteImage(oldImageUrl);
-        }
+        blog = blogPersistenceService.updateBlog(request, blog, newImageUrl, newImagePublicId);
 
         return blogMapper.toResponse(blog);
     }
@@ -74,11 +75,8 @@ public class BlogService {
 
         SecurityUtils.validateOwnership(blog.getUser().getId());
 
-        String deleteImageUrl = blog.getImageUrl();
-
         blogPersistenceService.deleteBlog(blog);
 
-        cloudinaryService.deleteImage(deleteImageUrl);
     }
 
     public BlogResponse getBlogById(Long id) {

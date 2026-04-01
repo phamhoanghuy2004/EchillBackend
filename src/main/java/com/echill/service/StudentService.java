@@ -5,7 +5,12 @@ import com.echill.dto.response.StudyGoalResponse;
 import com.echill.entity.StudentProfile;
 import com.echill.entity.StudyGoal;
 import com.echill.entity.User;
-import com.echill.service.persistence.StudentPersistenceService;
+import com.echill.exception.AppException;
+import com.echill.exception.ErrorEnum;
+import com.echill.exception.StudentErrorEnum;
+import com.echill.repository.StudentProfileRepository;
+import com.echill.repository.StudyGoalRepository;
+import com.echill.repository.UserRepository;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -20,26 +25,36 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class StudentService {
 
-    StudentPersistenceService studentPersistenceService;
+    UserRepository userRepository;
+    StudentProfileRepository studentProfileRepository;
+    StudyGoalRepository studyGoalRepository;
 
-    // Không có Transactional ở đây
     public StudentResponse getMyProfile() {
-        // 1. 💥 Lấy thẳng ID từ JWT (Nhanh, không chạm DB)
+        // 1. Lấy thẳng ID từ JWT (Nhanh, không chạm DB)
         Long userId = SecurityUtils.getCurrentUserId();
 
-        // 2. Lấy dữ liệu từ Persistence layer
-        User user = studentPersistenceService.getUserWithRolesById(userId);
-        StudentProfile profile = studentPersistenceService.getProfileByUserId(userId);
-        StudyGoal activeGoal = studentPersistenceService.getActiveGoalByProfileId(profile.getId());
+        // 2. Lấy dữ liệu trực tiếp từ Repository & Validate tại chỗ
+        User user = userRepository.findByIdWithRolesAndPermissions(userId)
+                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
 
+        StudentProfile profile = studentProfileRepository.findById(userId)
+                .orElseThrow(() -> new AppException(StudentErrorEnum.PROFILE_NOT_FOUND));
+
+        StudyGoal activeGoal = null;
+        if (profile.getId() != null) {
+            activeGoal = studyGoalRepository.findByStudentProfileIdAndIsActiveTrue(profile.getId())
+                    .orElse(null);
+        }
+
+        // 3. Xử lý Roles
         Set<String> roles = user.getUserRoles().stream()
                 .map(userRole -> userRole.getRole().getName())
                 .collect(Collectors.toSet());
 
+        // 4. Trả về kết quả
         return buildStudentResponse(user, profile, activeGoal, roles);
     }
 
-    // Giữ nguyên hàm Build (Hoặc chuyển sang MapStruct trong tương lai)
     private StudentResponse buildStudentResponse(User user, StudentProfile profile, StudyGoal goal, Set<String> roles) {
         StudyGoalResponse goalResponse = null;
 

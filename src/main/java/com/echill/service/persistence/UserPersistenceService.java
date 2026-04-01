@@ -19,37 +19,19 @@ public class UserPersistenceService {
 
     UserRepository userRepository;
 
-    @Transactional(readOnly = true)
-    public User getUserById(Long userId) {
-        return userRepository.findById(userId).orElseThrow(
-                () -> new AppException(ErrorEnum.USER_NOTFOUND)
-        );
-    }
-
     @Transactional
-    public void completeUserProfile(Long userId, CompleteProfileRequest request) {
-        User user = getUserById(userId);
+    public void updateUserInfo(User user, UserUpdateRequest request, String newAvatarUrl, String newAvatarPublicId) {
 
-        user.setAddress(request.getAddress());
-        user.setDob(request.getDob());
-        user.setJobTitle(request.getJobTitle());
-
-        // Dirty checking sẽ tự lưu, hoặc bạn gọi .save() cho chắc cú đều được
-        userRepository.save(user);
-    }
-
-    @Transactional
-    public void updateUserInfo(Long userId, UserUpdateRequest request, String newAvatarUrl) {
-        User user = getUserById(userId);
-
+        // Cập nhật thông tin
         user.setFullName(request.getFullName());
         user.setAddress(request.getAddress());
         user.setDob(request.getDob());
         user.setJobTitle(request.getJobTitle());
 
-        // Nếu có URL ảnh mới thì cập nhật, không thì giữ nguyên ảnh cũ
+        // Nếu có ảnh mới thì set vào, không thì giữ nguyên ảnh cũ
         if (newAvatarUrl != null) {
             user.setAvatarUrl(newAvatarUrl);
+            user.setAvatarPublicId(newAvatarPublicId); // Nhớ tạo cột này trong Entity User
         }
 
         userRepository.save(user);

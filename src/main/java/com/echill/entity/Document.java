@@ -30,6 +30,9 @@ public class Document extends BaseEntity {
     @Column(nullable = false, name = "file_url", length = 1000)
     String fileUrl;
 
+    @Column(nullable = false, name = "document_public_id", length = 1000)
+    String documentPublicId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "file_type", length = 20)
     @Builder.Default
