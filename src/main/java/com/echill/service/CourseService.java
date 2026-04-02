@@ -1,24 +1,29 @@
 package com.echill.service;
 
 import com.echill.constant.CloudinaryFolder;
+import com.echill.document.CourseDocument;
 import com.echill.dto.request.CourseRequest;
 import com.echill.dto.response.CourseResponse;
 import com.echill.dto.response.LessonResponse;
 import com.echill.entity.Category;
 import com.echill.entity.Course;
 import com.echill.entity.User;
+import com.echill.event.CourseSyncEvent;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
+import com.echill.mapper.document.CourseDocumentMapper;
 import com.echill.repository.CategoryRepository;
 import com.echill.repository.CourseRepository;
 import com.echill.repository.UserRepository;
+import com.echill.repository.elasticsearch.CourseDocumentRepository;
 import com.echill.service.persistence.CoursePersistenceService;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -37,6 +42,7 @@ public class CourseService {
     UserRepository userRepository;
     CategoryRepository categoryRepository;
     CourseRepository courseRepository;
+    ApplicationEventPublisher eventPublisher;
 
     public CourseResponse createCourse(CourseRequest request, MultipartFile file) {
         Long teacherId = SecurityUtils.getCurrentUserId();
@@ -56,6 +62,8 @@ public class CourseService {
         String pId = (uploadResult != null) ? uploadResult.get("publicId") : null;
 
         Course course = coursePersistenceService.saveNewCourse(teacher, category, request, url, pId);
+        eventPublisher.publishEvent(new CourseSyncEvent(course.getId()));
+
         return mapToResponse(course);
 
     }
@@ -76,6 +84,7 @@ public class CourseService {
         }
 
         Course updatedCourse = coursePersistenceService.updateCourseData(existingCourse, request, newImageUrl, newImagePublicId);
+        eventPublisher.publishEvent(new CourseSyncEvent(updatedCourse.getId()));
 
         return mapToResponse(updatedCourse);
     }
