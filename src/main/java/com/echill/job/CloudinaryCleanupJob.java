@@ -3,11 +3,7 @@ package com.echill.job;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.echill.constant.CloudinaryFolder;
-import com.echill.repository.BlogRepository;
-import com.echill.repository.CourseRepository;
-import com.echill.repository.UserRepository;
-import com.echill.repository.DocumentRepository;
-import com.echill.repository.LessonRepository;
+import com.echill.repository.*;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -35,6 +31,7 @@ public class CloudinaryCleanupJob {
     DocumentRepository documentRepository;
     LessonRepository lessonRepository;
     Cloudinary cloudinary;
+    CertificateRepository certificateRepository;
 
     @Scheduled(cron = "0 0 2 * * ?")
     public void cleanupOrphanCourseImages() {
@@ -73,6 +70,13 @@ public class CloudinaryCleanupJob {
         List<String> validIds = lessonRepository.findAllVideoPublicIds();
         // Thay CloudinaryFolder.VIDEO bằng folder hằng số tương ứng của bạn
         processCleanup(CloudinaryFolder.LESSION_VIDEO, validIds, "Lesson Videos", "video"); // 💥 Type: video
+    }
+
+    @Scheduled(cron = "0 0 2 * * ?")
+    public void cleanupOrphanCertificateImages() {
+        log.info("🧹 [CERTIFICATE] Khởi động tiến trình dọn rác ảnh chứng chỉ...");
+        List<String> validIds = certificateRepository.findAllImagePublicIds();
+        processCleanup(CloudinaryFolder.CERTIFICATE_IMAGE, validIds, "Certificate Images", "image"); // Thêm "image"
     }
 
 
