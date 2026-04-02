@@ -76,6 +76,9 @@ public enum ErrorEnum implements ErrorCode {
     CANNOT_UPLOAD_FILE(1053, "Unable to upload file. Please try again.", HttpStatus.BAD_REQUEST),
     DOCUMENT_NOT_FOUND(1054, "Document not found", HttpStatus.BAD_REQUEST),
     DOCUMENT_REQUIRED(1055, "Document required", HttpStatus.BAD_REQUEST),
+    CERTIFICATE_NOT_FOUND(1056, "Certificate not found", HttpStatus.NOT_FOUND),
+    CERT_TYPE_REQUIRED(1057, "Certificate type is required", HttpStatus.BAD_REQUEST),
+    ISSUED_DATE_REQUIRED(1058, "Issued date is required", HttpStatus.BAD_REQUEST),
     ;
 
 

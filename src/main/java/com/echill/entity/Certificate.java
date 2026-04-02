@@ -55,15 +55,21 @@ public class Certificate extends BaseEntity {
     @Column(name = "evidence_url", nullable = false)
     String evidenceUrl;
 
+    @Column(name = "image_public_id")
+    String imagePublicId;
+
     public void updateScores(Double listening, Double reading, Double speaking, Double writing) {
-        // 1. Cập nhật các điểm thành phần
         this.listeningScore = listening != null ? listening : 0.0;
         this.readingScore = reading != null ? reading : 0.0;
         this.speakingScore = speaking != null ? speaking : 0.0;
         this.writingScore = writing != null ? writing : 0.0;
 
-        // 2. Tự động tính tổng điểm (Đảm bảo tính toàn vẹn dữ liệu tuyệt đối)
-        this.totalScore = this.listeningScore + this.readingScore + this.speakingScore + this.writingScore;
+        if (this.certType == CertType.IELTS) {
+            double average = (this.listeningScore + this.readingScore + this.speakingScore + this.writingScore) / 4.0;
+            this.totalScore = Math.ceil(average * 2) / 2.0;
+        } else {
+            this.totalScore = this.listeningScore + this.readingScore + this.speakingScore + this.writingScore;
+        }
     }
 
 }
