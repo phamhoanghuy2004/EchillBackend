@@ -40,7 +40,6 @@ public class CertificateService {
                 .toList();
     }
 
-    @Transactional
     public CertificateResponse createCertificate(CertificateRequest request, MultipartFile evidence) {
         Long userId = SecurityUtils.getCurrentUserId();
         
@@ -53,8 +52,6 @@ public class CertificateService {
             Map<String, String> uploadResult = cloudinaryService.uploadImage(evidence, CloudinaryFolder.CERTIFICATE_IMAGE);
             evidenceUrl = uploadResult.get("url");
             imagePublicId = uploadResult.get("publicId");
-        } else {
-            throw new AppException(ErrorEnum.INVALID_IMAGE_FORMAT); // Evidence is required for new certificate
         }
 
         return certificateMapper.toCertificateResponse(
@@ -62,7 +59,6 @@ public class CertificateService {
         );
     }
 
-    @Transactional
     public CertificateResponse updateCertificate(Long id, CertificateRequest request, MultipartFile evidence) {
         Long userId = SecurityUtils.getCurrentUserId();
 
@@ -87,7 +83,6 @@ public class CertificateService {
         );
     }
 
-    @Transactional
     public void deleteCertificate(Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
 
