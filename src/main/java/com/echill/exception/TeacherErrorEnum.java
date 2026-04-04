@@ -26,6 +26,7 @@ public enum TeacherErrorEnum implements ErrorCode {
     BLOG_TITLE_REQUIRED(2107, "Blog title must not be blank", HttpStatus.BAD_REQUEST),
     BLOG_CONTENT_REQUIRED(2018, "Blog content must not be blank", HttpStatus.BAD_REQUEST),
     PROFILE_NOT_FOUND(2019, "Teacher profile not found. Please complete your profile first.", HttpStatus.NOT_FOUND),
+    CERTIFICATE_REQUIRED(2020, "Certificate must not be null", HttpStatus.NOT_FOUND),
     ;
 
     Integer code;
