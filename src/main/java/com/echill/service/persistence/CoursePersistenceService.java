@@ -5,17 +5,17 @@ import com.echill.entity.Category;
 import com.echill.entity.Course;
 import com.echill.entity.User;
 import com.echill.entity.enums.Status;
-import com.echill.exception.AppException;
-import com.echill.exception.TeacherErrorEnum;
+import com.echill.event.CourseCreatedEvent;
+import com.echill.event.CourseUpdatedEvent;
 import com.echill.repository.CategoryRepository;
 import com.echill.repository.CourseRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +24,7 @@ public class CoursePersistenceService {
 
     CourseRepository courseRepository;
     CategoryRepository categoryRepository;
+    ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public Course saveNewCourse(User teacher, Category category, CourseRequest request, String uploadedImageUrl, String publicImageId) {
@@ -39,7 +40,9 @@ public class CoursePersistenceService {
                 .teacher(teacher)
                 .status(Status.ACTIVE)
                 .build();
-        return courseRepository.save(course);
+        Course savedCourse = courseRepository.save(course);
+        eventPublisher.publishEvent(new CourseCreatedEvent(savedCourse.getId()));
+        return savedCourse;
     }
 
     @Transactional
@@ -62,7 +65,9 @@ public class CoursePersistenceService {
             course.setImagePublicId(newImagePublicId);
         }
 
-        // 💥 Để Spring Data JPA tự động gọi hàm merge() bên dưới, xử lý êm xuôi!
-        return courseRepository.save(course);
+        Course updatedCourse = courseRepository.save(course);
+        eventPublisher.publishEvent(new CourseUpdatedEvent(updatedCourse.getId()));
+
+        return updatedCourse;
     }
 }

@@ -2,9 +2,8 @@ package com.echill.service.persistence;
 
 import com.echill.dto.request.SaveVideoDraftRequest;
 import com.echill.dto.response.LessonResponse;
-import com.echill.entity.Document;
 import com.echill.entity.Lesson;
-import com.echill.entity.enums.FileType;
+import com.echill.event.CourseUpdatedEvent;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.mapper.LessonMapper;
@@ -14,6 +13,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -27,6 +27,7 @@ public class LessonPersistenceService {
 
     LessonRepository lessonRepository;
     LessonMapper lessonMapper;
+    ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public LessonResponse saveVideoDraft(Long lessonId, SaveVideoDraftRequest request) {
@@ -84,8 +85,11 @@ public class LessonPersistenceService {
 
         lesson.finishVideoProcessing(hlsUrl, durationSeconds);
 
+        Lesson savedLesson = lessonRepository.save(lesson);
         log.info("🚀 Hoàn tất Webhook, đã ra lệnh cho Lesson ID: {} chuyển sang READY", lesson.getId());
-        return lessonRepository.save(lesson);
+
+        eventPublisher.publishEvent(new CourseUpdatedEvent(savedLesson.getCourse().getId()));
+        return savedLesson;
     }
 
 }

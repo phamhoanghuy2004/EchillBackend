@@ -1,6 +1,7 @@
 package com.echill.mapper;
 
 import com.echill.dto.response.LessonResponse;
+import com.echill.dto.response.guest.LessonPublicResponse;
 import com.echill.entity.Lesson;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -9,4 +10,9 @@ import org.mapstruct.Mapping;
 public interface LessonMapper {
     @Mapping(source = "course.id", target = "courseId")
     LessonResponse toLessonResponse(Lesson lesson);
+
+    // Hàm này là để map cho Public DTO
+    // Và thằng này sẽ tự động gọi cái hàm chuyển DocumentPublic và lấy data
+    @Mapping(source = "hlsUrl", target = "previewVideoUrl")
+    LessonPublicResponse toLessonPublicResponse(Lesson lesson);
 }

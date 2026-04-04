@@ -4,18 +4,19 @@ import com.echill.dto.request.LessonCreationRequest;
 import com.echill.dto.response.LessonResponse;
 import com.echill.entity.Course;
 import com.echill.entity.Lesson;
+import com.echill.event.CourseUpdatedEvent;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
 import com.echill.mapper.LessonMapper;
 import com.echill.repository.CourseRepository;
 import com.echill.repository.LessonRepository;
-import com.echill.service.persistence.LessonPersistenceService;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,8 +29,7 @@ public class LessonService {
     LessonRepository lessonRepository;
     LessonMapper lessonMapper;
     CourseRepository courseRepository;
-    CloudinaryService cloudinaryService;
-    LessonPersistenceService  lessonPersistenceService;
+    ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public LessonResponse createLesson(LessonCreationRequest request) {
@@ -49,6 +49,8 @@ public class LessonService {
         lessonRepository.save(lesson);
         log.info("Đã tạo mới khung bài học (Text) thành công, Lesson ID: {}", lesson.getId());
 
+        eventPublisher.publishEvent(new CourseUpdatedEvent(course.getId()));
+
         return lessonMapper.toLessonResponse(lesson);
     }
 
@@ -60,6 +62,8 @@ public class LessonService {
 
         SecurityUtils.validateOwnership(lesson.getCourse().getTeacher().getId());
 
+        Long courseId = lesson.getCourse().getId();
+
         // 3. Cập nhật thông tin nội dung
         lesson.setTitle(request.getTitle());
         lesson.setContent(request.getContent());
@@ -69,6 +73,8 @@ public class LessonService {
         // 4. Lưu database
         lessonRepository.save(lesson);
         log.info("Đã cập nhật bài học ID: {} thành công", lessonId);
+
+        eventPublisher.publishEvent(new CourseUpdatedEvent(courseId));
 
         // 5. Trả về Response
         return lessonMapper.toLessonResponse(lesson);

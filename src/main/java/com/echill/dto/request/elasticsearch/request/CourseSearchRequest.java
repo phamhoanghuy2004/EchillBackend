@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @Data
 public class CourseSearchRequest {
 
-    private static final int DEFAULT_SIZE = 10;
+    private static final int DEFAULT_SIZE = 6;
     private static final int MAX_SIZE = 50;
     private static final int DEFAULT_PAGE = 0;
 

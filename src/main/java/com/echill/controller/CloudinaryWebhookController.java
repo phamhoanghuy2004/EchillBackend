@@ -2,6 +2,7 @@ package com.echill.controller;
 
 import com.echill.config.CloudinarySignatureValidator;
 import com.echill.entity.Lesson;
+import com.echill.event.CourseUpdatedEvent;
 import com.echill.service.persistence.LessonPersistenceService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.transaction.TransactionException;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Map;
 
 @RestController
@@ -29,6 +29,7 @@ public class CloudinaryWebhookController {
     SimpMessagingTemplate messagingTemplate;
     CloudinarySignatureValidator signatureValidator;
     ObjectMapper objectMapper;
+
 
     @PostMapping
     public ResponseEntity<Void> handleCloudinaryNotification(

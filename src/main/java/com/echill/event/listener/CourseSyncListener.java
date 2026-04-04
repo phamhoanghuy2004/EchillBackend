@@ -2,7 +2,8 @@ package com.echill.event.listener;
 
 import com.echill.document.CourseDocument;
 import com.echill.entity.Course;
-import com.echill.event.CourseSyncEvent;
+import com.echill.event.CourseCreatedEvent;
+import com.echill.event.CourseUpdatedEvent;
 import com.echill.mapper.document.CourseDocumentMapper;
 import com.echill.repository.CourseRepository;
 import com.echill.repository.elasticsearch.CourseDocumentRepository;
@@ -27,14 +28,13 @@ public class CourseSyncListener {
     CourseRepository courseRepository;
 
     @Async("ioTaskExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true) // 💥 Bật Transaction mới cho luồng Async này
-    public void syncCourseToElasticsearch(CourseSyncEvent event) { // 💥 Nhận Event chứa ID
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, classes = {CourseCreatedEvent.class, CourseUpdatedEvent.class})
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public void syncCourseToElasticsearch(Object event) {
         try {
-            Long courseId = event.courseId();
+            Long courseId = extractCourseId(event);
             log.info("[ES-Sync] Luồng {} đang đồng bộ Course ID: {}", Thread.currentThread().getName(), courseId);
 
-            // 💥 Tự móc data mới cứng từ DB lên (Kéo luôn Category và Teacher để tránh N+1)
             Course savedCourse = courseRepository.findByIdWithDetails(courseId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy Course ID: " + courseId));
 
@@ -46,5 +46,14 @@ public class CourseSyncListener {
         } catch (Exception e) {
             log.error("[ES-Sync] Lỗi đồng bộ Course sang Elasticsearch!", e);
         }
+    }
+
+    private Long extractCourseId(Object event) {
+        if (event instanceof CourseCreatedEvent(Long courseId)) {
+            return courseId;
+        } else if (event instanceof CourseUpdatedEvent(Long courseId)) {
+            return courseId;
+        }
+        throw new IllegalArgumentException("Hệ thống nhận được Event không hợp lệ: " + event.getClass().getName());
     }
 }

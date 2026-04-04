@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -64,7 +65,14 @@ public class Lesson extends BaseEntity {
     @OnDelete(action = OnDeleteAction.CASCADE)
     Course course;
 
+    // ==========================================
+    // 💥 CHỐNG N+1 QUERY BẰNG BATCH SIZE
+    // Khi Mapper sờ vào list documents của Lesson đầu tiên, Hibernate sẽ tự động
+    // gom ID của 50 cái Lesson lại và bắn 1 lệnh:
+    // SELECT * FROM documents WHERE lesson_id IN (1, 2, 3... 50)
+    // ==========================================
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 50)
     @Builder.Default
     List<Document> documents = new ArrayList<>();
 
