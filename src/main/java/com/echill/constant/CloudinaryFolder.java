@@ -6,6 +6,6 @@ public class CloudinaryFolder {
     public static final String COURSE_IMAGE = "echill/courses";
     public static final String LESSION_VIDEO= "echill/lessons";
     public static final String DOCUMENT = "echill/documents";
-
+    public static final String CERTIFICATE_IMAGE = "echill/certificates";
     private CloudinaryFolder() {}
 }

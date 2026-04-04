@@ -1,9 +1,7 @@
-package com.echill.dto.response;
+package com.echill.dto.request;
 
 import com.echill.entity.enums.CertType;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -14,16 +12,16 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CertificateResponse {
-    @JsonSerialize(using = ToStringSerializer.class)
-    @JsonFormat(shape = JsonFormat.Shape.STRING)
-    Long id;
+public class CertificateRequest {
+    @NotNull(message = "CERT_TYPE_REQUIRED")
     CertType certType;
+
     Double totalScore;
     Double listeningScore;
     Double readingScore;
     Double speakingScore;
     Double writingScore;
+
+    @NotNull(message = "ISSUED_DATE_REQUIRED")
     LocalDate issuedDate;
-    String evidenceUrl;
 }

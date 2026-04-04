@@ -1,5 +1,6 @@
 package com.echill.service;
 
+import com.echill.dto.request.TeacherProfileUpdateRequest;
 import com.echill.dto.response.CertificateResponse;
 import com.echill.dto.response.TeacherResponse;
 import com.echill.entity.Certificate;
@@ -16,6 +17,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
@@ -52,6 +54,18 @@ public class TeacherService {
 
         // 4. Map dữ liệu trả về
         return buildTeacherResponse(user, profile, certificates, roles);
+    }
+
+    @Transactional
+    public void updateProfile(TeacherProfileUpdateRequest request) {
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        TeacherProfile profile = teacherProfileRepository.findById(userId)
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.PROFILE_NOT_FOUND));
+
+        profile.setBio(request.getBio());
+        
+        teacherProfileRepository.save(profile);
     }
 
     private TeacherResponse buildTeacherResponse(User user, TeacherProfile profile, List<Certificate> certificates, Set<String> roles) {
