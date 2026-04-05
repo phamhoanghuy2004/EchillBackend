@@ -56,9 +56,11 @@ public class CourseService {
         String pId = (uploadResult != null) ? uploadResult.get("publicId") : null;
 
         Course course = coursePersistenceService.saveNewCourse(teacher, category, request, url, pId);
+
         return mapToResponse(course);
 
     }
+
 
     public CourseResponse updateCourse(Long id, CourseRequest request, MultipartFile file) {
         Course existingCourse = courseRepository.findByIdWithDetails(id)

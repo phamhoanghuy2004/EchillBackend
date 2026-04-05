@@ -8,6 +8,8 @@ spring:
     multipart:
       max-file-size: 5MB       # Giới hạn 1 file tối đa 5MB để lọt qua cửa Tomcat
       max-request-size: 10MB
+  elasticsearch:
+    uris: http://localhost:9200
 
   # ===============================
   # DATABASE CONFIGURATION

@@ -3,12 +3,14 @@ package com.echill.service.persistence;
 import com.echill.entity.Document;
 import com.echill.entity.Lesson;
 import com.echill.entity.enums.FileType;
+import com.echill.event.CourseUpdatedEvent;
 import com.echill.repository.DocumentRepository;
 import com.echill.repository.LessonRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,9 +22,10 @@ public class DocumentPersistenceService {
 
     DocumentRepository documentRepository;
     LessonRepository lessonRepository;
+    ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public Document saveNewDocument(Long lessonId, String title, String contentType, String fileUrl, String publicId) {
+    public Document saveNewDocument(Long lessonId, String title, String contentType, String fileUrl, String publicId, Long courseId) {
 
         // 1. Phân loại File
         FileType fileType = FileType.PDF;
@@ -48,16 +51,20 @@ public class DocumentPersistenceService {
         document = documentRepository.save(document);
         log.info("Đã lưu tài liệu ID {} cho Bài học ID {}", document.getId(), lessonId);
 
+        eventPublisher.publishEvent(new CourseUpdatedEvent(courseId));
+
         return document;
     }
 
     @Transactional
-    public void deleteDocument(Document document) {
+    public void deleteDocument(Document document, Long courseId) {
 
         // 💥 Xóa trực tiếp entity Document ra khỏi Database.
         // Lệnh này sẽ sinh ra đúng 1 câu: DELETE FROM document WHERE id = ?
         documentRepository.delete(document);
 
         log.info("Đã xóa vĩnh viễn tài liệu ID: {} khỏi Database. File trên Cloudinary sẽ được Cron Job dọn dẹp sau.", document.getId());
+
+        eventPublisher.publishEvent(new CourseUpdatedEvent(courseId));
     }
 }

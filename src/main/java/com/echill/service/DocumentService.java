@@ -33,6 +33,8 @@ public class DocumentService {
     DocumentMapper documentMapper;
     DocumentRepository documentRepository;
 
+
+
     public DocumentResponse uploadDocument(Long lessonId, String title, MultipartFile file) {
 
         if(file == null || file.isEmpty()){
@@ -43,6 +45,8 @@ public class DocumentService {
                 .orElseThrow(() -> new AppException(ErrorEnum.LESSON_NOT_FOUND));
 
         SecurityUtils.validateOwnership(lesson.getCourse().getTeacher().getId());
+
+        Long courseId = lesson.getCourse().getId();
 
         // 2. Upload lên mây (Tốn thời gian nhưng DB không bị ảnh hưởng)
         Map<String, String> uploadResult = cloudinaryService.uploadDocument(file, CloudinaryFolder.DOCUMENT);
@@ -55,12 +59,13 @@ public class DocumentService {
 
         // 3. Đẩy ID xuống tầng Persistence lưu (Không truyền Object mồ côi nữa, truyền ID cho lẹ)
         Document savedDoc = documentPersistenceService.saveNewDocument(
-                lesson.getId(), title, file.getContentType(), fileUrl, publicId
+                lesson.getId(), title, file.getContentType(), fileUrl, publicId, courseId
         );
 
         // 4. Trả về đúng 1 cục DocumentResponse nhỏ xíu, payload siêu mượt!
         return documentMapper.toDocumentResponse(savedDoc);
     }
+
 
     public void deleteDocument(Long documentId) {
 
@@ -75,8 +80,11 @@ public class DocumentService {
         // Check quyền
         SecurityUtils.validateOwnership(lesson.getCourse().getTeacher().getId());
 
+        Long courseId = lesson.getCourse().getId();
+
         // 3. Gọi xuống Persistence để xóa Data
-        documentPersistenceService.deleteDocument(document);
+        documentPersistenceService.deleteDocument(document, courseId);
+
     }
 
     public List<DocumentResponse> getDocumentsByLessonId(Long lessonId) {
