@@ -50,6 +50,11 @@ public class TestSet extends BaseEntity {
     @OnDelete(action = OnDeleteAction.CASCADE)
     Lesson lesson;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    User user;
+
     public void addTest(Test test) {
         tests.add(test);
         test.setTestSet(this);

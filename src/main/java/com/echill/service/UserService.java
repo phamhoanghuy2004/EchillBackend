@@ -48,7 +48,6 @@ public class UserService {
         log.info("Đã cập nhật profile thành công cho User ID: {}", userId);
     }
 
-    // 💥 KHÔNG CÓ @Transactional Ở ĐÂY
     public void update(UserUpdateRequest request, MultipartFile avatar) {
 
         Long userId = SecurityUtils.getCurrentUserId();
@@ -62,14 +61,11 @@ public class UserService {
         String newAvatarPublicId = null;
 
         if (avatar != null && !avatar.isEmpty()) {
-            // Giả định cloudinaryService của bạn đã trả về Map chứa url và publicId như lúc nãy chốt
             Map<String, String> uploadResult = cloudinaryService.uploadImage(avatar, CloudinaryFolder.AVATAR);
             newAvatarUrl = uploadResult.get("url");
             newAvatarPublicId = uploadResult.get("publicId");
         }
 
-        // 3. Đẩy nguyên cục data xuống Persistence để lưu
-        // XONG! Không cần dọn rác, kệ cho Cron Job đêm nay lo liệu.
         userPersistenceService.updateUserInfo(currentUser, request, newAvatarUrl, newAvatarPublicId);
     }
 }
