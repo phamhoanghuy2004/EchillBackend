@@ -27,6 +27,18 @@ public enum TeacherErrorEnum implements ErrorCode {
     BLOG_CONTENT_REQUIRED(2018, "Blog content must not be blank", HttpStatus.BAD_REQUEST),
     PROFILE_NOT_FOUND(2019, "Teacher profile not found. Please complete your profile first.", HttpStatus.NOT_FOUND),
     CERTIFICATE_REQUIRED(2020, "Certificate must not be null", HttpStatus.NOT_FOUND),
+    TEST_SET_EXISTED(2021, "Lesson already has a TestSet", HttpStatus.BAD_REQUEST),
+    INVALID_CORRECT_ANSWER(2022, "Correct answer must be A, B, C, or D", HttpStatus.BAD_REQUEST),
+    MISSING_CORRECT_ANSWER_COLUMN(2023, "Correct answer column is missing or empty", HttpStatus.BAD_REQUEST),
+    INVALID_SKILL_TYPE(2024, "Invalid skill type: {skill}", HttpStatus.BAD_REQUEST),
+    EXCEL_PARSE_ERROR(2025, "Error parsing Excel file", HttpStatus.BAD_REQUEST),
+    TEST_SET_NOT_FOUND(2026, "TestSet not found", HttpStatus.NOT_FOUND),
+    TEST_NOT_FOUND(2027, "Test not found", HttpStatus.NOT_FOUND),
+    TAG_NOT_FOUND(2028, "Tag not found", HttpStatus.NOT_FOUND),
+    FILE_EMPTY(2029, "File must not be empty", HttpStatus.BAD_REQUEST),
+    INVALID_FILE_TYPE(2030, "File type invalid", HttpStatus.BAD_REQUEST),
+    INVALID_DURATION(2031, "Duration must be greater than 0", HttpStatus.BAD_REQUEST),
+    INVALID_PASS_SCORE(2032, "Pass score must be between 0 and 100", HttpStatus.BAD_REQUEST),
     ;
 
     Integer code;
