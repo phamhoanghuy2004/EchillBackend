@@ -79,6 +79,19 @@ public enum ErrorEnum implements ErrorCode {
     CERTIFICATE_NOT_FOUND(1056, "Certificate not found", HttpStatus.NOT_FOUND),
     CERT_TYPE_REQUIRED(1057, "Certificate type is required", HttpStatus.BAD_REQUEST),
     ISSUED_DATE_REQUIRED(1058, "Issued date is required", HttpStatus.BAD_REQUEST),
+
+    // ==========================================
+    // CÁC MÃ LỖI CHO VNPAY IPN WEBHOOK
+    // ==========================================
+    VNPAY_ORDER_NOT_FOUND(1059, "Order not found", HttpStatus.BAD_REQUEST),
+    VNPAY_ORDER_ALREADY_CONFIRMED(1060, "Order already confirmed", HttpStatus.BAD_REQUEST),
+    VNPAY_INVALID_AMOUNT(1061, "Invalid amount", HttpStatus.BAD_REQUEST),
+    VNPAY_INVALID_SIGNATURE(1062, "Invalid signature", HttpStatus.BAD_REQUEST),
+    VNPAY_SIGNATURE_GENERATION_FAILED(1063, "Failed to generate signature", HttpStatus.INTERNAL_SERVER_ERROR),
+    CAN_NOT_BUILD_QUERY_URL(1064, "Cannot build query URL", HttpStatus.BAD_REQUEST),
+    TRANSACTION_NOT_FOUND(1065, "Transaction not found", HttpStatus.BAD_REQUEST),
+    INVALID_AMOUNT(1066, "Invalid amount", HttpStatus.BAD_REQUEST),
+    TRANSACTION_INVALID_STATUS(1067, "Invalid transaction status", HttpStatus.BAD_REQUEST),
     ;
 
 

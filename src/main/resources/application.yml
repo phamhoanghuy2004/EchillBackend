@@ -99,3 +99,12 @@ cloudinary:
   api-key: 628256499685731
   api-secret: uWiZf7yK-HjxcHpghszH8tzI2P0
   webhook-url: https://cleistocarpous-britany-unscabrous.ngrok-free.dev/webhook/cloudinary
+
+# ===============================
+# VNpay CONFIGURATION
+# ===============================
+vnpay:
+  tmn-code: 13FBJQZE
+  hash-secret: DV1KKW3LM3T3FA95AJT4COUJ7B9Z8W0O
+  pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: https://front-end-online-e-course.vercel.app/payment/result
