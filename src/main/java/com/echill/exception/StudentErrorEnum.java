@@ -22,6 +22,7 @@ public enum StudentErrorEnum implements ErrorCode {
     PROFILE_NOT_FOUND(1051, "Student profile not found. Please complete your profile first.", HttpStatus.NOT_FOUND),
     SCORE_REQUIRED(1052, "Score values cannot be null", HttpStatus.BAD_REQUEST),
     GOAL_NOT_FOUND(1053, "Study goal not found or already inactive", HttpStatus.NOT_FOUND),
+    ALREADY_OWNED_COURSE(1054, "You already own this course", HttpStatus.CONFLICT),
     ;
     Integer code;
     String message;

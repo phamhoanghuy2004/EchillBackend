@@ -66,6 +66,10 @@ public class Course extends BaseEntity {
     @Builder.Default
     List<Lesson> lessons = new ArrayList<>();
 
+    @Column(name = "total_lessons_count", nullable = false)
+    @Builder.Default
+    Integer totalLessonsCount = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "teacher_id", nullable = false)
     User teacher;

@@ -10,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,12 +30,18 @@ public class Transaction extends BaseEntity {
     @Column(name = "transaction_code", unique = true, length = 100, updatable = false)
     String transactionCode;
 
+    @Column(name = "vnp_transaction_no", unique = true, length = 255, updatable = false)
+    String vnpTransactionNo; // Lưu mã đối soát của VNPAY/Ngân hàng
+
+    // đây là tông số su mà user đã thanh toán trong giao dịch (bao gồmm giảm giá đồ luôn)
     @Column(name = "total_coins_changed", nullable = false, updatable = false)
     Long totalCoinsChanged;
 
+    // đây là tổng số tiền mà user đã thanh toán trong giao dịch (bao gồm giảm giá đồ luôn)
     @Column(name = "total_amount", precision = 12, scale = 0, updatable = false)
     BigDecimal totalAmount;
 
+    // đây là số xu còn lại ngay sau khi giao dịch này thành công (để dành đối chiếu)
     @Column(name = "balance_after")
     Long balanceAfter;
 
@@ -63,6 +70,9 @@ public class Transaction extends BaseEntity {
 
     @Column(name = "discount_amount", precision = 12, scale = 0)
     BigDecimal discountAmount;
+
+    @Column(name = "expired_at")
+    Instant expiredAt;
 
 
     public void addItem(TransactionItem item) {

@@ -1,6 +1,7 @@
 package com.echill.repository;
 
 import com.echill.entity.Course;
+import com.echill.entity.enums.Status;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -37,4 +38,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             "LEFT JOIN FETCH c.lessons l " +
             "WHERE c.id = :id AND c.status = 'ACTIVE'")
     Optional<Course> findActiveCourseWithFullDetails(@Param("id") Long id);
+
+    Optional<Course> findByIdAndStatus(Long id, Status status);
 }
