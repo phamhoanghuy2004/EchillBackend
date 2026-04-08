@@ -36,6 +36,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             "JOIN FETCH c.category " +
             "JOIN FETCH c.teacher " +
             "LEFT JOIN FETCH c.lessons l " +
+            "LEFT JOIN FETCH l.testSet ts " +
             "WHERE c.id = :id AND c.status = 'ACTIVE'")
     Optional<Course> findActiveCourseWithFullDetails(@Param("id") Long id);
 

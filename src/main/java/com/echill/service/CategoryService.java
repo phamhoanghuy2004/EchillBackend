@@ -4,6 +4,7 @@ import com.echill.dto.response.CategoryResponse;
 import com.echill.entity.enums.Status;
 import com.echill.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
 
+    @Cacheable(value = "categories", key = "'all_active'")
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findByStatus(Status.ACTIVE).stream()
                 .map(category -> CategoryResponse.builder()

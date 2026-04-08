@@ -65,16 +65,13 @@ public class Lesson extends BaseEntity {
     @OnDelete(action = OnDeleteAction.CASCADE)
     Course course;
 
-    // ==========================================
-    // 💥 CHỐNG N+1 QUERY BẰNG BATCH SIZE
-    // Khi Mapper sờ vào list documents của Lesson đầu tiên, Hibernate sẽ tự động
-    // gom ID của 50 cái Lesson lại và bắn 1 lệnh:
-    // SELECT * FROM documents WHERE lesson_id IN (1, 2, 3... 50)
-    // ==========================================
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 50)
     @Builder.Default
     List<Document> documents = new ArrayList<>();
+
+    @OneToOne(mappedBy = "lesson", cascade = CascadeType.ALL)
+    TestSet testSet;
 
     public void addDocument(Document document) {
         documents.add(document);
@@ -90,34 +87,41 @@ public class Lesson extends BaseEntity {
         return this.videoStatus == VideoStatus.PROCESSING;
     }
 
+    public boolean isVideoReady() {
+        return this.videoStatus == VideoStatus.READY;
+    }
+
+    public void failVideoProcessing(){
+        this.videoStatus = VideoStatus.FAILED;
+        this.publicVideoId = null;
+        this.rawUrl = null;
+        this.durationSeconds = 0L;
+    }
+
     /**
      * Hành vi: Bắt đầu quá trình tải video mới lên (Ghi nháp)
      */
-    public void startVideoProcessing(String newPublicId, String newRawUrl) {
-        // TỰ BẢO VỆ MÌNH: Thằng Lesson tự check trạng thái của chính nó
+    public void startVideoProcessing(String newPublicId, String newRawUrl, Long durationSeconds) {
         if (this.isVideoProcessing()) {
             throw new AppException(ErrorEnum.VIDEO_IS_PROCESSING);
         }
 
         this.publicVideoId = newPublicId;
         this.rawUrl = newRawUrl;
+        this.durationSeconds = durationSeconds;
         this.videoStatus = VideoStatus.PROCESSING;
-        // Nếu có logic xóa link cũ (hlsUrl) thì nhét luôn vào đây:
-        // this.hlsUrl = null;
-        // this.durationSeconds = 0L;
     }
 
     /**
      * Hành vi: Xác nhận video đã convert xong từ Webhook Cloudinary
      */
-    public void finishVideoProcessing(String hlsUrl, Long durationSeconds) {
+    public void finishVideoProcessing(String hlsUrl) {
 
         if (!this.isVideoProcessing()) {
             return;
         }
 
         this.hlsUrl = hlsUrl;
-        this.durationSeconds = durationSeconds;
         this.videoStatus = VideoStatus.READY;
     }
 }

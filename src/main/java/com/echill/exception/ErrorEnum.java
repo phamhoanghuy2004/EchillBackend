@@ -65,7 +65,7 @@ public enum ErrorEnum implements ErrorCode {
     CANNOT_UPLOAD_IMAGE(1042, "Unable to upload image. Please remove your current image and try uploading again.", HttpStatus.BAD_REQUEST),
     INVALID_IMAGE_FORMAT(1043, "Invalid image format. Please upload a supported image type (e.g., JPG, PNG).", HttpStatus.BAD_REQUEST),
     IMAGE_SIZE_TOO_LARGE(1044, "Image size exceeds the allowed limit. Please upload a smaller image.", HttpStatus.BAD_REQUEST),
-    RATE_LIMIT_EXCEEDED(1045, "You have reached rate limit", HttpStatus.BAD_REQUEST),
+    RATE_LIMIT_EXCEEDED(1045, "You have reached rate limit", HttpStatus.TOO_MANY_REQUESTS),
     LESSON_NOT_FOUND(1046, "Lesson not found", HttpStatus.BAD_REQUEST),
     DATABASE_ERROR(1047, "Database error, please try again!", HttpStatus.INTERNAL_SERVER_ERROR),
     DATA_CONFLICT(1048, "The data has been modified by another process. Please refresh the page and try again.", HttpStatus.CONFLICT),
@@ -92,6 +92,7 @@ public enum ErrorEnum implements ErrorCode {
     TRANSACTION_NOT_FOUND(1065, "Transaction not found", HttpStatus.BAD_REQUEST),
     INVALID_AMOUNT(1066, "Invalid amount", HttpStatus.BAD_REQUEST),
     TRANSACTION_INVALID_STATUS(1067, "Invalid transaction status", HttpStatus.BAD_REQUEST),
+    INVALID_VIDEO_DURATION(1068, "Invalid video duration", HttpStatus.BAD_REQUEST),
     ;
 
 

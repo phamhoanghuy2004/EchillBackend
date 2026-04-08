@@ -38,8 +38,8 @@ public class RedisCacheConfig {
         // 💥 Ghi đè TTL cho cache "courseDetail" -> 1 tiếng
         cacheConfigurations.put("courseDetail", defaultCacheConfiguration().entryTtl(Duration.ofHours(1)));
 
-        // 💥 Ghi đè TTL cho cache "categories" -> 24 tiếng
-        cacheConfigurations.put("categories", defaultCacheConfiguration().entryTtl(Duration.ofHours(24)));
+        // 💥 Ghi đè TTL cho cache "categories" -> 3 ngày
+        cacheConfigurations.put("categories", defaultCacheConfiguration().entryTtl(Duration.ofDays(3)));
 
         // Nếu sau này có cache "topStudents", cho nó sống 15 phút thôi
         cacheConfigurations.put("topStudents", defaultCacheConfiguration().entryTtl(Duration.ofMinutes(15)));

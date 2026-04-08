@@ -13,14 +13,19 @@ public class CloudinarySignatureValidator {
 
     public boolean verifySignature(String rawPayload, String timestamp, String expectedSignature) {
         if (rawPayload == null || timestamp == null || expectedSignature == null) {
+            log.warn("🚨 Webhook thiếu thông tin Payload/Timestamp/Signature!");
             return false;
         }
+
         try {
             NotificationRequestSignatureVerifier verifier = new NotificationRequestSignatureVerifier(apiSecret);
-            return verifier.verifySignature(rawPayload, timestamp, expectedSignature, 7200L);
+
+            long validForSeconds = 300L;
+
+            return verifier.verifySignature(rawPayload, timestamp, expectedSignature, validForSeconds);
 
         } catch (Exception e) {
-            log.error("🚨 Lỗi xác thực Webhook Cloudinary: Chữ ký không hợp lệ!", e);
+            log.error("🚨 Lỗi xác thực Webhook: Chữ ký giả mạo hoặc đã quá hạn 5 phút (Replay Attack)!", e);
             return false;
         }
     }

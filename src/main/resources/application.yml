@@ -6,10 +6,11 @@ spring:
     name: echill-backend
   servlet:
     multipart:
-      max-file-size: 5MB       # Giới hạn 1 file tối đa 5MB để lọt qua cửa Tomcat
+      max-file-size: 5MB
       max-request-size: 10MB
   elasticsearch:
     uris: http://localhost:9200
+
 
   # ===============================
   # DATABASE CONFIGURATION
@@ -98,6 +99,8 @@ cloudinary:
   cloud-name: dgmlgi7p4
   api-key: 628256499685731
   api-secret: uWiZf7yK-HjxcHpghszH8tzI2P0
+  video:
+    eager-profile: sp_full_hd/m3u8
   webhook-url: https://cleistocarpous-britany-unscabrous.ngrok-free.dev/webhook/cloudinary
 
 # ===============================

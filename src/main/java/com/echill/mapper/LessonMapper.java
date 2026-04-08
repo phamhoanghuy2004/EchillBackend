@@ -14,5 +14,7 @@ public interface LessonMapper {
     // Hàm này là để map cho Public DTO
     // Và thằng này sẽ tự động gọi cái hàm chuyển DocumentPublic và lấy data
     @Mapping(source = "hlsUrl", target = "previewVideoUrl")
+    @Mapping(source = "testSet.id", target = "testSetId")
+    @Mapping(target = "hasTest", expression = "java(lesson.getTestSet() != null)")
     LessonPublicResponse toLessonPublicResponse(Lesson lesson);
 }
