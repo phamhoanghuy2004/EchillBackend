@@ -120,7 +120,7 @@ public class ExcelService {
 
         Tag tag = null;
         if (!isEmpty(tagName)) {
-            String cleanTagName = tagName.trim();
+            String cleanTagName = tagName.trim().toLowerCase();
             tag = tagCache.computeIfAbsent(cleanTagName, name ->
                     tagRepository.findByName(name)
                             .orElseGet(() -> tagRepository.save(Tag.builder().name(name).build()))
