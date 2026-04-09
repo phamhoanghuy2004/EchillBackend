@@ -80,5 +80,20 @@ public class LessonService {
         return lessonMapper.toLessonResponse(lesson);
     }
 
+    @Transactional
+    public void deleteLesson(Long lessonId) {
+        Lesson lesson = lessonRepository.findByIdWithCourseAndTeacherAndDocuments(lessonId)
+                .orElseThrow(() -> new AppException(ErrorEnum.LESSON_NOT_FOUND));
+
+        SecurityUtils.validateOwnership(lesson.getCourse().getTeacher().getId());
+
+        Long courseId = lesson.getCourse().getId();
+
+        lessonRepository.delete(lesson);
+        log.info("Đã xóa bài học ID: {} thành công", lessonId);
+
+        eventPublisher.publishEvent(new CourseUpdatedEvent(courseId));
+    }
+
 
 }

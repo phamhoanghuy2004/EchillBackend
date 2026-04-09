@@ -1,6 +1,7 @@
 package com.echill.controller;
 
 import com.echill.dto.request.TestSetRequest;
+import com.echill.dto.request.TestSetUpdateRequest;
 import com.echill.dto.response.ApiResponse;
 import com.echill.dto.response.TestSetDetailWithHistoryResponse;
 import com.echill.dto.response.TestSetResponse;
@@ -38,6 +39,16 @@ public class TestSetController {
     public ApiResponse<TestSetDetailWithHistoryResponse> getTestSetDetailWithHistory(@PathVariable("id") Long testSetId) {
         return ApiResponse.<TestSetDetailWithHistoryResponse>builder()
                 .data(testSetService.getTestSetDetailWithHistory(testSetId))
+                .build();
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<TestSetResponse> updateTestSet(
+            @PathVariable Long id,
+            @RequestBody @Valid TestSetUpdateRequest request) {
+        return ApiResponse.<TestSetResponse>builder()
+                .data(testSetService.updateTestSet(id, request))
                 .build();
     }
 }

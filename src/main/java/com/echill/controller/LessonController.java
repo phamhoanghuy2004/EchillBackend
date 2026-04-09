@@ -62,4 +62,13 @@ public class LessonController {
                 .build();
     }
 
+    @DeleteMapping("/{lessonId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<Void> deleteLesson(@PathVariable Long lessonId) {
+        lessonService.deleteLesson(lessonId);
+        return ApiResponse.<Void>builder()
+                .message("Xóa bài học thành công!")
+                .build();
+    }
+
 }

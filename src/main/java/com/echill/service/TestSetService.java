@@ -2,6 +2,7 @@ package com.echill.service;
 
 import com.echill.dto.request.TestSetRequest;
 import com.echill.dto.response.TestSetDetailWithHistoryResponse;
+import com.echill.dto.request.TestSetUpdateRequest;
 import com.echill.dto.response.TestSetResponse;
 import com.echill.entity.Lesson;
 import com.echill.entity.TestResult;
@@ -73,5 +74,17 @@ public class TestSetService {
         List<TestResult> userHistory = testResultRepository.findHistoryByStudentAndTestSet(currentUserId, testSetId);
 
         return testSetMapper.toDetailWithHistory(testSet, userHistory);
+    }
+
+    @Transactional
+    public TestSetResponse updateTestSet(Long id, TestSetUpdateRequest request) {
+        TestSet testSet = testSetRepository.findById(id)
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.TEST_SET_NOT_FOUND));
+
+        SecurityUtils.validateOwnership(testSet.getUser().getId());
+
+        testSetMapper.updateTestSet(testSet, request);
+
+        return testSetMapper.toResponse(testSetRepository.save(testSet));
     }
 }
