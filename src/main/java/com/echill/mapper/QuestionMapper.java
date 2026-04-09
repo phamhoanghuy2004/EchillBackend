@@ -10,10 +10,13 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring", uses = {AnswerMapper.class})
 public interface QuestionMapper {
     @Mapping(source = "tag.name", target = "tagName")
+    @Mapping(source = "questionGroup", target = "group")
     QuestionResponse toResponse(Question question);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "test", ignore = true)
+    @Mapping(target = "section", ignore = true)
+    @Mapping(target = "questionGroup", ignore = true)
+    @Mapping(target = "orderIndex", ignore = true)
     @Mapping(target = "tag", ignore = true)
     @Mapping(target = "answers", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

@@ -41,10 +41,17 @@ public class Question extends BaseEntity {
     @Column(name = "skill_type", length = 20)
     SkillType skillType;
 
+    @Column(nullable = false, name = "order_index")
+    Integer orderIndex;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "test_id", nullable = false)
+    @JoinColumn(name = "section_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    Test test;
+    TestSection section;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id")
+    QuestionGroup questionGroup;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(

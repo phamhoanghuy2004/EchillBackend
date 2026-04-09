@@ -32,7 +32,7 @@ spring:
       hibernate:
         format_sql: true
         jdbc:
-          batch_size: 30
+          batch_size: 50
         order_inserts: true
         order_updates: true
 
@@ -111,3 +111,8 @@ vnpay:
   hash-secret: DV1KKW3LM3T3FA95AJT4COUJ7B9Z8W0O
   pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
   return-url: https://front-end-online-e-course.vercel.app/payment/result
+
+app:
+  test:
+    default-section-name: "Phần thi mặc định" # Hoặc "Default Section"
+    max-questions-per-file: 2000 # Giới hạn số câu hỏi (Fix lỗi 5)

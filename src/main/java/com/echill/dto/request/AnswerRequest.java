@@ -11,7 +11,7 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AnswerRequest {
-    Long id; // null => tạo mới, có giá trị => cập nhật theo ID
+    Long id;
 
     @NotBlank(message = "ANSWER_CONTENT_REQUIRED")
     String content;
