@@ -1,11 +1,9 @@
 package com.echill.mapper;
 
+import com.echill.dto.request.TestUpdateRequest;
 import com.echill.dto.response.TestResponse;
 import com.echill.entity.Test;
-import org.mapstruct.IterableMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
+import org.mapstruct.*;
 
 import java.util.List;
 
@@ -17,4 +15,11 @@ public interface TestMapper {
 
     @IterableMapping(qualifiedByName = "toResponse")
     List<TestResponse> toResponseList(List<Test> tests);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "testSet", ignore = true)
+    @Mapping(target = "questions", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    void updateTest(@MappingTarget Test test, TestUpdateRequest request);
 }

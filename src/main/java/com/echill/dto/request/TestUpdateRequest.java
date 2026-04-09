@@ -12,8 +12,8 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TestRequest {
-    @NotBlank(message = "TEST_TITLE_REQUIRED")
+public class TestUpdateRequest {
+    @NotBlank(message = "TITLE_REQUIRED")
     String title;
 
     @NotNull(message = "DURATION_REQUIRED")
@@ -24,7 +24,4 @@ public class TestRequest {
     @Min(value = 0, message = "INVALID_PASS_SCORE")
     @Max(value = 100, message = "INVALID_PASS_SCORE")
     Double passScore;
-
-    @NotNull(message = "TEST_SET_ID_REQUIRED")
-    Long testSetId;
 }

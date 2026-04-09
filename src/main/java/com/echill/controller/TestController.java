@@ -1,7 +1,10 @@
 package com.echill.controller;
 
+import com.echill.dto.request.QuestionUpdateRequest;
 import com.echill.dto.request.TestRequest;
+import com.echill.dto.request.TestUpdateRequest;
 import com.echill.dto.response.ApiResponse;
+import com.echill.dto.response.QuestionResponse;
 import com.echill.dto.response.TestResponse;
 import com.echill.service.TestService;
 import jakarta.validation.Valid;
@@ -49,6 +52,34 @@ public class TestController {
         testService.deleteTest(id);
         return ApiResponse.<Void>builder()
                 .message("Test deleted successfully")
+                .build();
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<TestResponse> getTestById(@PathVariable Long id) {
+        return ApiResponse.<TestResponse>builder()
+                .data(testService.getTestById(id))
+                .build();
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<TestResponse> updateTestInfo(
+            @PathVariable Long id,
+            @RequestBody @Valid TestUpdateRequest request) {
+        return ApiResponse.<TestResponse>builder()
+                .data(testService.updateTestInfo(id, request))
+                .build();
+    }
+
+    @PutMapping("/questions/{questionId}")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ApiResponse<QuestionResponse> updateQuestion(
+            @PathVariable Long questionId,
+            @RequestBody @Valid QuestionUpdateRequest request) {
+        return ApiResponse.<QuestionResponse>builder()
+                .data(testService.updateQuestion(questionId, request))
                 .build();
     }
 }

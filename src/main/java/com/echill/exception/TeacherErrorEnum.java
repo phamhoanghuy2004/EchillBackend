@@ -39,6 +39,11 @@ public enum TeacherErrorEnum implements ErrorCode {
     INVALID_FILE_TYPE(2030, "File type invalid", HttpStatus.BAD_REQUEST),
     INVALID_DURATION(2031, "Duration must be greater than 0", HttpStatus.BAD_REQUEST),
     INVALID_PASS_SCORE(2032, "Pass score must be between 0 and 100", HttpStatus.BAD_REQUEST),
+    QUESTION_NOT_FOUND(2033, "Question not found", HttpStatus.NOT_FOUND),
+    TEST_TITLE_REQUIRED(2034, "Test title must not be blank", HttpStatus.BAD_REQUEST),
+    DURATION_REQUIRED(2035, "Duration is required", HttpStatus.BAD_REQUEST),
+    PASS_SCORE_REQUIRED(2036, "Pass score is required", HttpStatus.BAD_REQUEST),
+    TEST_SET_ID_REQUIRED(2037, "Test set ID is required", HttpStatus.BAD_REQUEST),
     ;
 
     Integer code;
