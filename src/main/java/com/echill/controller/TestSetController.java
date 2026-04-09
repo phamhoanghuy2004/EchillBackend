@@ -2,6 +2,7 @@ package com.echill.controller;
 
 import com.echill.dto.request.TestSetRequest;
 import com.echill.dto.response.ApiResponse;
+import com.echill.dto.response.TestSetDetailWithHistoryResponse;
 import com.echill.dto.response.TestSetResponse;
 import com.echill.service.TestSetService;
 import jakarta.validation.Valid;
@@ -30,6 +31,13 @@ public class TestSetController {
     public ApiResponse<TestSetResponse> getTestSetByLessonId(@PathVariable Long lessonId) {
         return ApiResponse.<TestSetResponse>builder()
                 .data(testSetService.getTestSetByLessonId(lessonId))
+                .build();
+    }
+
+    @GetMapping("/{id}/history")
+    public ApiResponse<TestSetDetailWithHistoryResponse> getTestSetDetailWithHistory(@PathVariable("id") Long testSetId) {
+        return ApiResponse.<TestSetDetailWithHistoryResponse>builder()
+                .data(testSetService.getTestSetDetailWithHistory(testSetId))
                 .build();
     }
 }

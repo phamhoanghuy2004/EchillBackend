@@ -1,14 +1,17 @@
 package com.echill.service;
 
 import com.echill.dto.request.TestSetRequest;
+import com.echill.dto.response.TestSetDetailWithHistoryResponse;
 import com.echill.dto.response.TestSetResponse;
 import com.echill.entity.Lesson;
+import com.echill.entity.TestResult;
 import com.echill.entity.TestSet;
 import com.echill.entity.User;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
 import com.echill.repository.LessonRepository;
+import com.echill.repository.TestResultRepository;
 import com.echill.repository.TestSetRepository;
 import com.echill.repository.UserRepository;
 import com.echill.mapper.TestSetMapper;
@@ -19,6 +22,8 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -27,6 +32,7 @@ public class TestSetService {
     LessonRepository lessonRepository;
     UserRepository userRepository;
     TestSetMapper testSetMapper;
+    TestResultRepository testResultRepository;
 
     @Transactional
     public TestSetResponse createTestSet(TestSetRequest request) {
@@ -54,5 +60,18 @@ public class TestSetService {
         TestSet testSet = testSetRepository.findByLessonId(lessonId)
                 .orElseThrow(() -> new AppException(TeacherErrorEnum.TEST_SET_NOT_FOUND));
         return testSetMapper.toResponse(testSet);
+    }
+
+    @Transactional(readOnly = true)
+    public TestSetDetailWithHistoryResponse getTestSetDetailWithHistory(Long testSetId) {
+
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        TestSet testSet = testSetRepository.findById(testSetId)
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.TEST_SET_NOT_FOUND));
+
+        List<TestResult> userHistory = testResultRepository.findHistoryByStudentAndTestSet(currentUserId, testSetId);
+
+        return testSetMapper.toDetailWithHistory(testSet, userHistory);
     }
 }
