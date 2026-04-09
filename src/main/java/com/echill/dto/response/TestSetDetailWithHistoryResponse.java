@@ -1,27 +1,24 @@
 package com.echill.dto.response;
 
-import com.echill.entity.enums.SkillType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.List;
 
-@Data
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class QuestionResponse {
+public class TestSetDetailWithHistoryResponse {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    Long id;
-    String content;
-    String explanation;
-    SkillType skillType;
-    String tagName;
-    Integer orderIndex;
+    Long testSetId;
+    String title;
+    String description;
+    Boolean isPublic;
+    Integer year;
 
-    QuestionGroupResponse group;
-
-    List<AnswerResponse> answers;
+    List<TestResultHistoryResponse> history;
 }

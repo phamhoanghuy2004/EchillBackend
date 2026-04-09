@@ -6,10 +6,11 @@ spring:
     name: echill-backend
   servlet:
     multipart:
-      max-file-size: 5MB       # Giới hạn 1 file tối đa 5MB để lọt qua cửa Tomcat
+      max-file-size: 5MB
       max-request-size: 10MB
   elasticsearch:
     uris: http://localhost:9200
+
 
   # ===============================
   # DATABASE CONFIGURATION
@@ -31,7 +32,7 @@ spring:
       hibernate:
         format_sql: true
         jdbc:
-          batch_size: 30
+          batch_size: 50
         order_inserts: true
         order_updates: true
 
@@ -98,6 +99,8 @@ cloudinary:
   cloud-name: dgmlgi7p4
   api-key: 628256499685731
   api-secret: uWiZf7yK-HjxcHpghszH8tzI2P0
+  video:
+    eager-profile: sp_full_hd/m3u8
   webhook-url: https://cleistocarpous-britany-unscabrous.ngrok-free.dev/webhook/cloudinary
 
 # ===============================
@@ -108,3 +111,8 @@ vnpay:
   hash-secret: DV1KKW3LM3T3FA95AJT4COUJ7B9Z8W0O
   pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
   return-url: https://front-end-online-e-course.vercel.app/payment/result
+
+app:
+  test:
+    default-section-name: "Phần thi mặc định" # Hoặc "Default Section"
+    max-questions-per-file: 2000 # Giới hạn số câu hỏi (Fix lỗi 5)

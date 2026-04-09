@@ -1,5 +1,6 @@
 package com.echill.dto.request;
 
+import com.echill.entity.enums.TestType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -15,6 +16,9 @@ import lombok.experimental.FieldDefaults;
 public class TestRequest {
     @NotBlank(message = "TEST_TITLE_REQUIRED")
     String title;
+
+    @NotNull(message = "TEST_TYPE_REQUIRED")
+    TestType type;
 
     @NotNull(message = "DURATION_REQUIRED")
     @Min(value = 1, message = "INVALID_DURATION")

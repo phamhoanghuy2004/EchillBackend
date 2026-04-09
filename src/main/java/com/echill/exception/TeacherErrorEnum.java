@@ -44,6 +44,14 @@ public enum TeacherErrorEnum implements ErrorCode {
     DURATION_REQUIRED(2035, "Duration is required", HttpStatus.BAD_REQUEST),
     PASS_SCORE_REQUIRED(2036, "Pass score is required", HttpStatus.BAD_REQUEST),
     TEST_SET_ID_REQUIRED(2037, "Test set ID is required", HttpStatus.BAD_REQUEST),
+    INVALID_EXCEL_FORMAT(2038, "Invalid excel format", HttpStatus.BAD_REQUEST),
+    FILE_TOO_LARGE(2039, "File to large", HttpStatus.BAD_REQUEST),
+    MISSING_CORRECT_ANSWER(2040, "Missing correct answer", HttpStatus.BAD_REQUEST),
+    INVALID_ANSWER_ID(2041, "Invalid answer ID", HttpStatus.BAD_REQUEST),
+    INVALID_ANSWER_COUNT(2042, "Invalid answer count", HttpStatus.BAD_REQUEST),
+    DUPLICATE_ANSWER_CONTENT(2043, "Duplicate answer content", HttpStatus.BAD_REQUEST),
+    EXACTLY_ONE_CORRECT_ANSWER_REQUIRED(2044,"Exactly one correct answer is required", HttpStatus.BAD_REQUEST),
+    TAG_CREATION_FAILED(2045,"Tag creation failed", HttpStatus.INTERNAL_SERVER_ERROR)
     ;
 
     Integer code;

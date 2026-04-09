@@ -1,27 +1,18 @@
 package com.echill.dto.response;
 
-import com.echill.entity.enums.SkillType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-
-import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class QuestionResponse {
+public class QuestionGroupResponse {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
-    String content;
-    String explanation;
-    SkillType skillType;
-    String tagName;
-    Integer orderIndex;
-
-    QuestionGroupResponse group;
-
-    List<AnswerResponse> answers;
+    String sharedContent;
+    String sharedAudioUrl;
+    String sharedImageUrl;
 }

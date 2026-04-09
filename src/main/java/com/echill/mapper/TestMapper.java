@@ -7,18 +7,18 @@ import org.mapstruct.*;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", uses = {QuestionMapper.class})
+@Mapper(componentModel = "spring", uses = {TestSectionMapper.class})
 public interface TestMapper {
     @Named("toResponse")
     @Mapping(source = "testSet.id", target = "testSetId")
     TestResponse toResponse(Test test);
 
-    @IterableMapping(qualifiedByName = "toResponse")
     List<TestResponse> toResponseList(List<Test> tests);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "testSet", ignore = true)
-    @Mapping(target = "questions", ignore = true)
+    @Mapping(target = "sections", ignore = true)
+    @Mapping(target = "type", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateTest(@MappingTarget Test test, TestUpdateRequest request);

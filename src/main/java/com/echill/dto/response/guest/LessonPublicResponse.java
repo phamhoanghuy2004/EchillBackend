@@ -22,4 +22,7 @@ public class LessonPublicResponse {
     Long durationSeconds;
     String previewVideoUrl;
     List<DocumentPublicResponse> documents;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    Long testSetId;
+    Boolean hasTest;
 }

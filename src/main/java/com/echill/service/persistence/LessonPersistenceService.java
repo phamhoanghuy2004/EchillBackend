@@ -1,11 +1,13 @@
 package com.echill.service.persistence;
 
+import com.echill.dto.request.CloudinaryWebhookPayload;
 import com.echill.dto.request.SaveVideoDraftRequest;
 import com.echill.dto.response.LessonResponse;
 import com.echill.entity.Lesson;
 import com.echill.event.CourseUpdatedEvent;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
+import com.echill.exception.WebhookRetryException;
 import com.echill.mapper.LessonMapper;
 import com.echill.repository.LessonRepository;
 import com.echill.util.SecurityUtils;
@@ -16,8 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
-import java.util.Map;
+import org.slf4j.MDC;
 
 @Service
 @RequiredArgsConstructor
@@ -31,12 +32,17 @@ public class LessonPersistenceService {
 
     @Transactional
     public LessonResponse saveVideoDraft(Long lessonId, SaveVideoDraftRequest request) {
+        if (request.getDurationSeconds() == null || request.getDurationSeconds() <= 0) {
+            log.error("❌ Lỗi dữ liệu: Thời lượng video không hợp lệ ({}) cho Lesson ID: {}", request.getDurationSeconds(), lessonId);
+            throw new AppException(ErrorEnum.INVALID_VIDEO_DURATION);
+        }
+
         Lesson lesson = lessonRepository.findByIdWithCourseAndTeacherAndDocuments(lessonId)
                 .orElseThrow(() -> new AppException(ErrorEnum.LESSON_NOT_FOUND));
 
         SecurityUtils.validateOwnership(lesson.getCourse().getTeacher().getId());
 
-        lesson.startVideoProcessing(request.getPublicVideoId(), request.getRawUrl());
+        lesson.startVideoProcessing(request.getPublicVideoId(), request.getRawUrl(), request.getDurationSeconds());
         lessonRepository.save(lesson);
 
         log.info("✅ Đã chốt file nháp cho Lesson ID {}. Trạng thái: PROCESSING", lessonId);
@@ -45,51 +51,57 @@ public class LessonPersistenceService {
     }
 
     @Transactional
-    @SuppressWarnings("unchecked")
-    public Lesson processCloudinaryWebhook(Map<String, Object> payload) {
-        String publicId = (String) payload.get("public_id");
-        if (publicId == null) return null;
-
-        Lesson lesson = lessonRepository.findByPublicVideoId(publicId).orElse(null);
-        if (lesson == null) return null;
-
-        if (!lesson.isVideoProcessing()) {
-            log.info("Bỏ qua Webhook: Lesson ID {} đang ở trạng thái {}, không cần xử lý lại!", lesson.getId(), lesson.getVideoStatus());
-            return lesson;
+    public Lesson processCloudinaryWebhook(CloudinaryWebhookPayload payload) {
+        String publicId = payload.getPublicId();
+        if (publicId == null || publicId.trim().isEmpty()) {
+            throw new WebhookRetryException("Webhook thiếu public_id.");
         }
 
-        String hlsUrl = null;
-        List<Map<String, Object>> eagerArray = (List<Map<String, Object>>) payload.get("eager");
-        if (eagerArray != null && !eagerArray.isEmpty()) {
-            Object secureUrlObj = eagerArray.getFirst().get("secure_url");
-            if (secureUrlObj != null) {
-                hlsUrl = secureUrlObj.toString();
-            }
-        }
+        MDC.put("publicId", publicId);
 
-
-        Long durationSeconds = 0L;
         try {
-            double duration = 0.0;
-            if (payload.get("duration") != null) {
-                duration = Double.parseDouble(payload.get("duration").toString());
-            } else if (eagerArray != null && !eagerArray.isEmpty() && eagerArray.getFirst().get("duration") != null) {
-                duration = Double.parseDouble(eagerArray.getFirst().get("duration").toString());
+            Lesson lesson = lessonRepository.findByPublicVideoId(publicId)
+                    .orElseThrow(() -> new WebhookRetryException("Chưa tìm thấy Lesson. Ép Cloudinary Retry!"));
+
+            if (lesson.isVideoReady()) {
+                log.info("♻️ Webhook Duplicate: Video đã READY từ trước.");
+                return null;
             }
-            if (duration > 0) {
-                durationSeconds = (long) Math.round(duration);
+
+            if (!lesson.isVideoProcessing()) {
+                log.warn("Trạng thái không hợp lệ: {}", lesson.getVideoStatus());
+                return null;
             }
-        } catch (NumberFormatException e) {
-            log.warn("Lỗi ép kiểu duration cho publicId: {}", publicId);
+
+            if ("eager_error".equals(payload.getNotificationType())) {
+                log.error("❌ Cloudinary báo lỗi convert. Đưa về FAILED.");
+                lesson.failVideoProcessing();
+                return lessonRepository.save(lesson);
+            }
+
+            String hlsUrl = null;
+            if (payload.getEager() != null) {
+                hlsUrl = payload.getEager().stream()
+                        .filter(item -> "m3u8".equalsIgnoreCase(item.getFormat()))
+                        .map(CloudinaryWebhookPayload.EagerItem::getSecureUrl)
+                        .findFirst()
+                        .orElse(null);
+            }
+
+            if (hlsUrl == null) {
+                throw new WebhookRetryException("Không tìm thấy link m3u8 trong mảng eager. Retry!");
+            }
+
+            lesson.finishVideoProcessing(hlsUrl);
+            Lesson savedLesson = lessonRepository.save(lesson);
+
+            log.info("🚀 Hoàn tất Webhook, chuyển sang READY thành công!");
+            eventPublisher.publishEvent(new CourseUpdatedEvent(savedLesson.getCourse().getId()));
+
+            return savedLesson;
+
+        } finally {
+            MDC.remove("publicId");
         }
-
-        lesson.finishVideoProcessing(hlsUrl, durationSeconds);
-
-        Lesson savedLesson = lessonRepository.save(lesson);
-        log.info("🚀 Hoàn tất Webhook, đã ra lệnh cho Lesson ID: {} chuyển sang READY", lesson.getId());
-
-        eventPublisher.publishEvent(new CourseUpdatedEvent(savedLesson.getCourse().getId()));
-        return savedLesson;
     }
-
 }

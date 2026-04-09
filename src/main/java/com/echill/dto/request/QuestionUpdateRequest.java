@@ -2,6 +2,8 @@ package com.echill.dto.request;
 
 import com.echill.entity.enums.SkillType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.Valid;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -22,5 +24,7 @@ public class QuestionUpdateRequest {
 
     String tagName;
 
+    @NotEmpty(message = "ANSWERS_CANNOT_BE_EMPTY")
+    @Valid
     List<AnswerRequest> answers;
 }
