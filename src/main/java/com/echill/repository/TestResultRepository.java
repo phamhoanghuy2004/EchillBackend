@@ -14,4 +14,12 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
             "WHERE tr.student.id = :userId AND t.testSet.id = :testSetId " +
             "ORDER BY tr.createdAt DESC")
     List<TestResult> findHistoryByStudentAndTestSet(@Param("userId") Long userId, @Param("testSetId") Long testSetId);
+
+    @Query("SELECT COUNT(tr) FROM TestResult tr " +
+            "WHERE tr.student.id = :studentId AND tr.test.testSet.id = :testSetId")
+    long countByStudentAndTestSet(@Param("studentId") Long studentId,
+                                  @Param("testSetId") Long testSetId);
+
+    @Query("SELECT DISTINCT tr.test.id FROM TestResult tr WHERE tr.student.id = :studentId AND tr.test.testSet.id = :testSetId")
+    List<Long> findTakenTestIds(@Param("studentId") Long studentId, @Param("testSetId") Long testSetId);
 }

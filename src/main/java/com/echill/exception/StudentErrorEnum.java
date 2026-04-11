@@ -23,6 +23,13 @@ public enum StudentErrorEnum implements ErrorCode {
     SCORE_REQUIRED(1052, "Score values cannot be null", HttpStatus.BAD_REQUEST),
     GOAL_NOT_FOUND(1053, "Study goal not found or already inactive", HttpStatus.NOT_FOUND),
     ALREADY_OWNED_COURSE(1054, "You already own this course", HttpStatus.CONFLICT),
+    MAX_ATTEMPT_REACHED(1055, "Max attempt reached", HttpStatus.BAD_REQUEST),
+    TEST_NOT_FOUND(1056, "Test not found", HttpStatus.NOT_FOUND),
+    SESSION_EXPIRED_MUST_SUBMIT(1057, "Session expired must submit", HttpStatus.BAD_REQUEST),
+    SESSION_ID_REQUIRED(1058, "Session id cannot be null", HttpStatus.BAD_REQUEST),
+    ALREADY_SUBMITTED(1057, "Already Submitted", HttpStatus.BAD_REQUEST),
+    SESSION_NOT_FOUND(1058, "Session not found", HttpStatus.NOT_FOUND),
+    PAYLOAD_TOO_LARGE(1059, "Payload too large", HttpStatus.BAD_REQUEST),
     ;
     Integer code;
     String message;

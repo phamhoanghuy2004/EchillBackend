@@ -61,6 +61,7 @@ public class Question extends BaseEntity {
     Tag tag;
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
     @Builder.Default
     List<Answer> answers = new ArrayList<>();
 
