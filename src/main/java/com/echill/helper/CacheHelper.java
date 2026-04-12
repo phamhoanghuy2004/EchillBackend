@@ -24,4 +24,14 @@ public class CacheHelper {
             log.info("🧹 Đã dọn dẹp Cache khóa học ID: {}", courseId);
         }
     }
+
+    public void evictTestPractice(Long testId) {
+        if (testId == null) return;
+
+        Cache cache = cacheManager.getCache(CacheNames.TEST_PRACTICE);
+        if (cache != null) {
+            cache.evict(testId);
+            log.info("🔥 Đã dọn dẹp Cache bài kiểm tra ID: {}", testId);
+        }
+    }
 }

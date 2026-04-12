@@ -46,6 +46,7 @@ public class Test extends BaseEntity  {
     TestSet testSet;
 
     @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("orderIndex ASC")
     @Builder.Default
     List<TestSection> sections = new ArrayList<>();
 

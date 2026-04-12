@@ -22,4 +22,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     @Query("SELECT q FROM Question q WHERE q.section.test.id = :testId")
     List<Question> findByTestId(@Param("testId") Long testId);
+
+    @Query("SELECT COUNT(q) FROM Question q JOIN q.section s WHERE s.test.id = :testId")
+    Integer countTotalQuestionsByTestId(@Param("testId") Long testId);
 }

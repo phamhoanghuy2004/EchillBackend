@@ -8,6 +8,9 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "test_results", indexes = {
         @Index(name = "idx_test_result_student", columnList = "student_id")
@@ -46,9 +49,20 @@ public class TestResult extends BaseEntity {
     @Column(nullable = false, name = "time_taken_seconds")
     Integer timeTakenSeconds;
 
+    @Column(name = "correct_answers", nullable = false)
+    @Builder.Default
+    Integer correctAnswers = 0;
+
+    @Column(name = "total_questions", nullable = false)
+    @Builder.Default
+    Integer totalQuestions = 0;
+
     @Column(name = "is_passed", nullable = false)
     @Builder.Default
     Boolean isPassed = false;
+
+    @Column(nullable = false, name = "is_late")
+    Boolean isLate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "student_id", nullable = false)
@@ -60,10 +74,23 @@ public class TestResult extends BaseEntity {
     @OnDelete(action = OnDeleteAction.CASCADE)
     Test test;
 
-    public void evaluateResult(Double targetPassScore) {
+    @OneToMany(mappedBy = "testResult", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    List<UserAnswer> userAnswers = new ArrayList<>();
+
+    public void addUserAnswer(UserAnswer userAnswer) {
+        userAnswers.add(userAnswer);
+        userAnswer.setTestResult(this);
+    }
+
+    public void evaluateResult(Double targetPassScorePercentage) {
         if (this.totalScore == null) {
             this.totalScore = 0.0;
         }
-        this.isPassed = this.totalScore >= targetPassScore;
+
+        // Quy đổi target score từ % (thang 100) về điểm (thang 10)
+        double requiredScoreOnBase10 = targetPassScorePercentage / 10.0;
+
+        this.isPassed = this.totalScore >= requiredScoreOnBase10;
     }
 }

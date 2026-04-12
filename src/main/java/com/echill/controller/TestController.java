@@ -1,11 +1,8 @@
 package com.echill.controller;
 
-import com.echill.dto.request.QuestionUpdateRequest;
-import com.echill.dto.request.TestRequest;
-import com.echill.dto.request.TestUpdateRequest;
-import com.echill.dto.response.ApiResponse;
-import com.echill.dto.response.QuestionResponse;
-import com.echill.dto.response.TestResponse;
+import com.echill.dto.request.*;
+import com.echill.dto.response.*;
+import com.echill.dto.response.guest.TestPracticeResponse;
 import com.echill.service.TestService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -80,6 +77,23 @@ public class TestController {
             @RequestBody @Valid QuestionUpdateRequest request) {
         return ApiResponse.<QuestionResponse>builder()
                 .data(testService.updateQuestion(questionId, request))
+                .build();
+    }
+
+    @GetMapping("/test-set/practice/{testSetId}")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<TestPracticeResponse> getTestPracticeByTestSetId(@PathVariable Long testSetId) {
+        return ApiResponse.<TestPracticeResponse>builder()
+                .data(testService.getRandomTestForPractice(testSetId))
+                .build();
+    }
+
+    @PostMapping("/submit")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<SubmitTestResponse> submitTest(@Valid @RequestBody SubmitTestRequest request) {
+        return ApiResponse.<SubmitTestResponse>builder()
+                .message("Chấm điểm thành công!")
+                .data(testService.submitTest(request))
                 .build();
     }
 }

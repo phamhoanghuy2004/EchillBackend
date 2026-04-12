@@ -1,5 +1,6 @@
 package com.echill.service;
 
+import com.echill.constant.CacheNames;
 import com.echill.dto.response.CategoryResponse;
 import com.echill.entity.enums.Status;
 import com.echill.repository.CategoryRepository;
@@ -15,7 +16,7 @@ import java.util.stream.Collectors;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
 
-    @Cacheable(value = "categories", key = "'all_active'")
+    @Cacheable(cacheNames = CacheNames.CATEGORIES, key = "'all_active'", sync = true)
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findByStatus(Status.ACTIVE).stream()
                 .map(category -> CategoryResponse.builder()

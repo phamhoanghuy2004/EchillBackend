@@ -43,6 +43,7 @@ public class TestSection extends BaseEntity {
     List<QuestionGroup> questionGroups = new ArrayList<>();
 
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("orderIndex ASC")
     @Builder.Default
     List<Question> questions = new ArrayList<>();
 
