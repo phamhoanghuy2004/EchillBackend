@@ -58,6 +58,13 @@ public class BlogController {
     @GetMapping
     public ApiResponse<List<BlogResponse>> getAllBlogs() {
         return ApiResponse.<List<BlogResponse>>builder()
+                .data(blogService.getAllBlogs())
+                .build();
+    }
+
+    @GetMapping("/my-blogs")
+    public ApiResponse<List<BlogResponse>> getMyBlogs() {
+        return ApiResponse.<List<BlogResponse>>builder()
                 .data(blogService.getMyBlogs())
                 .build();
     }
