@@ -26,6 +26,7 @@ public interface TestSetMapper {
     TestSetResponse toResponse(TestSet testSet);
 
     @Mapping(target = "testSetId", expression = "java(testSet.getId())")
+    @Mapping(target = "maxAttempts", expression = "java(com.echill.constant.AppConstants.MAX_TEST_ATTEMPTS)")
     TestSetDetailWithHistoryResponse toDetailWithHistory(TestSet testSet, List<TestResult> history);
 
     @Mapping(target = "id", ignore = true)

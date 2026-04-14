@@ -1,15 +1,22 @@
 package com.echill.service;
 
+import com.echill.dto.request.leaner.GetMyCoursesRequest;
+import com.echill.dto.response.PageResponse;
+import com.echill.dto.response.learner.MyCourseResponse;
 import com.echill.entity.*;
 import com.echill.entity.enums.EnrollmentStatus;
 import com.echill.event.TransactionSuccessEvent;
 import com.echill.repository.EnrollmentRepository;
 import com.echill.repository.TransactionRepository;
+import com.echill.repository.projection.MyCourseProjection;
+import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -66,8 +73,6 @@ public class EnrollmentService {
                 Enrollment enrollment = Enrollment.builder()
                         .student(student)
                         .course(course)
-                        .completedLessonsCount(0)
-                        .isCompleted(false)
                         .enrollmentStatus(EnrollmentStatus.ACTIVE)
                         .build();
 
@@ -86,5 +91,42 @@ public class EnrollmentService {
         } catch (Exception e) {
             log.error("CRITICAL: Lỗi cấp khóa học cho Transaction {}", txId, e);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<MyCourseResponse> getMyLearningCourses(GetMyCoursesRequest request) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        Pageable safePageable = request.getPageable();
+
+        Page<MyCourseProjection> projections = enrollmentRepository.findMyCoursesWithProgress(currentUserId, safePageable);
+
+        Page<MyCourseResponse> responsePage = projections.map(this::mapToResponse);
+
+        return PageResponse.of(responsePage);
+    }
+
+    private MyCourseResponse mapToResponse(MyCourseProjection proj) {
+        int progressPercent = 0;
+
+        if (proj.getTotalLessons() != null && proj.getTotalLessons() > 0) {
+            long completed = proj.getCompletedLessons();
+
+            progressPercent = (int) Math.round((completed * 100.0) / proj.getTotalLessons());
+            progressPercent = Math.min(progressPercent, 100);
+        }
+
+        return MyCourseResponse.builder()
+                .enrollmentId(proj.getEnrollmentId())
+                .courseId(proj.getCourseId())
+                .courseName(proj.getCourseName())
+                .courseImage(proj.getCourseImage())
+                .teacherName(proj.getTeacherName())
+                .teacherAvatar(proj.getTeacherAvatar())
+                .lastAccessedAt(proj.getLastAccessedAt())
+                .totalLessons(proj.getTotalLessons())
+                .completedLessons(proj.getCompletedLessons())
+                .progressPercent(progressPercent)
+                .build();
     }
 }

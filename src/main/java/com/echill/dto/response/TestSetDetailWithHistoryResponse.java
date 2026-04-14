@@ -19,6 +19,7 @@ public class TestSetDetailWithHistoryResponse {
     String description;
     Boolean isPublic;
     Integer year;
+    Integer maxAttempts;
 
     List<TestResultHistoryResponse> history;
 }

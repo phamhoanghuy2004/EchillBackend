@@ -1,5 +1,11 @@
 package com.echill.config;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +31,8 @@ public class RedisCacheConfig {
                 .entryTtl(Duration.ofMinutes(60)) // Mặc định 60 phút
                 .disableCachingNullValues()
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()));
+                // 💥 FIX LỖI: Lắp đạn vào súng! Gọi hàm custom ở dưới lên đây!
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(customJackson2JsonRedisSerializer()));
     }
 
     // 2. Cấu hình CacheManager để phân chia TTL cho từng "cacheNames"
@@ -35,21 +42,34 @@ public class RedisCacheConfig {
         // Tạo một Map để chứa cấu hình TTL riêng cho từng cái tên Cache
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
 
-        // 💥 Ghi đè TTL cho cache "courseDetail" -> 1 tiếng
         cacheConfigurations.put("courseDetail", defaultCacheConfiguration().entryTtl(Duration.ofHours(1)));
-
-        // 💥 Ghi đè TTL cho cache "categories" -> 3 ngày
         cacheConfigurations.put("categories", defaultCacheConfiguration().entryTtl(Duration.ofDays(3)));
-
-        // 💥 THÊM MỚI: Cache cho bài thi (Sống 7 ngày vì ít khi thay đổi đề)
         cacheConfigurations.put("testPractice", defaultCacheConfiguration().entryTtl(Duration.ofDays(7)));
-
-        // Nếu sau này có cache "topStudents", cho nó sống 15 phút thôi
+        cacheConfigurations.put("testReviewCache", defaultCacheConfiguration().entryTtl(Duration.ofDays(30)));
         cacheConfigurations.put("topStudents", defaultCacheConfiguration().entryTtl(Duration.ofMinutes(15)));
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultCacheConfiguration()) // Gắn cấu hình mặc định
                 .withInitialCacheConfigurations(cacheConfigurations) // Gắn cấu hình riêng lẻ
                 .build();
+    }
+
+    // 💥 3. HÀM CHẾ TẠO SERIALIZER SIÊU CẤP (Support Method)
+    private GenericJackson2JsonRedisSerializer customJackson2JsonRedisSerializer() {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // Cấp quyền cho Jackson đọc mọi properties (private/public)
+        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+
+        // Ghi kèm Class Type vào JSON để lúc Redis nhả ra nó biết ép kiểu về đúng DTO
+        objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
+
+        // Dạy cho Jackson hiểu LocalDateTime (Khắc phục lỗi SerializationException)
+        objectMapper.registerModule(new JavaTimeModule());
+
+        // Ép Jackson ghi ngày tháng ra dạng String ISO-8601 ("2026-04-13T19:54:37") cho đẹp
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        return new GenericJackson2JsonRedisSerializer(objectMapper);
     }
 }

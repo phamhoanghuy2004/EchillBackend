@@ -6,7 +6,9 @@ import com.echill.dto.request.*;
 import com.echill.dto.response.QuestionResponse;
 import com.echill.dto.response.SubmitTestResponse;
 import com.echill.dto.response.TestResponse;
+import com.echill.dto.response.TestResultHistoryResponse;
 import com.echill.dto.response.guest.TestPracticeResponse;
+import com.echill.dto.response.guest.TestReviewDetailResponse;
 import com.echill.entity.*;
 import com.echill.entity.enums.AnswerOption;
 import com.echill.entity.enums.TestSessionStatus;
@@ -15,16 +17,15 @@ import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.StudentErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
-import com.echill.mapper.AnswerMapper;
-import com.echill.mapper.QuestionMapper;
-import com.echill.mapper.TestPracticeMapper;
+import com.echill.mapper.*;
 import com.echill.policy.SubmissionPolicy;
 import com.echill.repository.*;
-import com.echill.mapper.TestMapper;
+import com.echill.service.evaluation.ScoreCalculator;
 import com.echill.service.impl.TestEvaluationService;
 import com.echill.service.persistence.TestPersistService;
-import com.echill.service.persistence.TestResultPersistenceService;
 import com.echill.util.SecurityUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.cache.annotation.Cacheable;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -66,7 +67,9 @@ public class TestService {
     UserRepository userRepository;
     SubmissionPolicy submissionPolicy;
     TestEvaluationService evaluationService;
-    TestResultPersistenceService persistenceService;
+    TestResultMapper testResultMapper;
+    ObjectMapper objectMapper;
+    ScoreCalculator scoreCalculator;
 
     @Lazy
     @Autowired
@@ -161,6 +164,8 @@ public class TestService {
                 .orElseThrow(() -> new AppException(TeacherErrorEnum.TEST_NOT_FOUND));
 
         SecurityUtils.validateOwnership(test.getTestSet().getUser().getId());
+
+        log.info("Get test: {}", test);
 
         return testMapper.toResponse(test);
     }
@@ -277,33 +282,20 @@ public class TestService {
         return questionMapper.toResponse(questionRepository.save(question));
     }
 
-    @Transactional
     public TestPracticeResponse getRandomTestForPractice(Long testSetId) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
-
-        userRepository.findByIdWithLock(currentUserId)
-                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
 
         Optional<TestSession> activeSessionOpt = testSessionRepository
                 .findFirstByStudentIdAndTestSetIdAndStatusOrderByCreatedAtDesc(
                         currentUserId, testSetId, TestSessionStatus.IN_PROGRESS
                 );
 
-        Long selectedTestId;
-        Long activeSessionId;
-        TestPracticeResponse cachedResponse; // Khai báo 1 lần ở ngoài
+        TestSession activeSession;
+        TestPracticeResponse fullResponse;
 
         if (activeSessionOpt.isPresent()) {
-            TestSession activeSession = activeSessionOpt.get();
-
-            if (activeSession.getEndTime().isAfter(LocalDateTime.now())) {
-                selectedTestId = activeSession.getTest().getId(); // Lấy ID qua Proxy, không tốn query
-                activeSessionId = activeSession.getId();
-                // Lấy cache cho session đang làm dở
-                cachedResponse = self.getCachedTestPractice(selectedTestId);
-            } else {
-                throw new AppException(StudentErrorEnum.SESSION_EXPIRED_MUST_SUBMIT);
-            }
+            activeSession = activeSessionOpt.get();
+            fullResponse = parseSnapshotSafe(activeSession);
         } else {
             long attempts = testResultRepository.countByStudentAndTestSet(currentUserId, testSetId);
             if (attempts >= AppConstants.MAX_TEST_ATTEMPTS) {
@@ -325,42 +317,83 @@ public class TestService {
                 availableTestIds = allTestIds;
             }
 
-            int randomIndex = java.util.concurrent.ThreadLocalRandom.current().nextInt(availableTestIds.size());
-            selectedTestId = availableTestIds.get(randomIndex);
+            Long selectedTestId = availableTestIds.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(availableTestIds.size()));
 
-            // Chỉ gọi cache 1 lần duy nhất cho test mới
-            cachedResponse = self.getCachedTestPractice(selectedTestId);
-            Test testProxy = testRepository.getReferenceById(selectedTestId); // Proxy siêu nhẹ
+            fullResponse = self.getCachedTestPractice(selectedTestId);
+            Test testProxy = testRepository.getReferenceById(selectedTestId);
+
+            String snapshotJson;
+            try {
+                snapshotJson = objectMapper.writeValueAsString(fullResponse);
+            } catch (Exception e) {
+                throw new AppException(ErrorEnum.UNCATEGORIZED);
+            }
+
+            String lockKey = "USER_" + currentUserId + "_TESTSET_" + testSetId;
 
             TestSession newSession = TestSession.builder()
                     .studentId(currentUserId)
                     .test(testProxy)
                     .testSetId(testSetId)
                     .startTime(LocalDateTime.now())
-                    .endTime(LocalDateTime.now().plusMinutes(cachedResponse.getDurationMinutes()))
+                    .endTime(LocalDateTime.now().plusMinutes(fullResponse.getDurationMinutes()))
                     .status(TestSessionStatus.IN_PROGRESS)
+                    .activeLock(lockKey)
+                    .testSnapshot(snapshotJson)
                     .build();
 
-            // Đảm bảo bạn có Unique Index dưới DB để chặn double-click ở dòng này
-            newSession = testSessionRepository.save(newSession);
+            try {
+                activeSession = self.saveNewSessionSafe(newSession);
+            } catch (DataIntegrityViolationException e) {
+                log.warn("Race condition detected for user {}. Fetching existing session.", currentUserId);
+                activeSession = testSessionRepository
+                        .findFirstByStudentIdAndTestSetIdAndStatusOrderByCreatedAtDesc(
+                                currentUserId, testSetId, TestSessionStatus.IN_PROGRESS
+                        ).orElseThrow(() -> new AppException(ErrorEnum.UNCATEGORIZED));
 
-            activeSessionId = newSession.getId();
+                fullResponse = parseSnapshotSafe(activeSession);
+            }
         }
 
-        // Đã có cachedResponse (dù là session cũ hay mới tạo), clone luôn
-        TestPracticeResponse safeResponse = testPracticeMapper.clonePracticeResponse(cachedResponse);
+        if (activeSession.getEndTime().isBefore(LocalDateTime.now())) {
+            throw new AppException(StudentErrorEnum.SESSION_EXPIRED_MUST_SUBMIT);
+        }
 
-        // Xáo trộn đáp án an toàn trên Object đã clone
-        safeResponse.getSections().forEach(section ->
-                section.getQuestions().forEach(question -> {
-                    if (question.getAnswers() != null && !question.getAnswers().isEmpty()) {
-                        java.util.Collections.shuffle(question.getAnswers());
-                    }
-                })
-        );
+        TestPracticeResponse safeResponse = testPracticeMapper.clonePracticeResponse(fullResponse);
+        cleanUpAnswersForClient(safeResponse);
+        safeResponse.setSessionId(activeSession.getId());
 
-        safeResponse.setSessionId(activeSessionId);
         return safeResponse;
+    }
+
+    @Transactional
+    public TestSession saveNewSessionSafe(TestSession session) {
+        return testSessionRepository.saveAndFlush(session);
+    }
+
+    private TestPracticeResponse parseSnapshotSafe(TestSession session) {
+        try {
+            return objectMapper.readValue(session.getTestSnapshot(), TestPracticeResponse.class);
+        } catch (Exception e) {
+            log.error("Lỗi Parse JSON bài thi. SessionId: {}", session.getId(), e);
+            throw new AppException(ErrorEnum.UNCATEGORIZED);
+        }
+    }
+
+    private void cleanUpAnswersForClient(TestPracticeResponse response) {
+        if (response.getSections() != null) {
+            response.getSections().forEach(section -> {
+                if (section.getQuestions() != null) {
+                    section.getQuestions().forEach(question -> {
+                        question.setExplanation(null);
+                        if (question.getAnswers() != null && !question.getAnswers().isEmpty()) {
+                            question.getAnswers().forEach(ans -> ans.setIsCorrect(null));
+                            java.util.Collections.shuffle(question.getAnswers());
+                        }
+                    });
+                }
+            });
+        }
     }
 
     @Cacheable(cacheNames = "testPractice", key = "#testId", sync = true)
@@ -372,57 +405,79 @@ public class TestService {
         return testPracticeMapper.toPracticeResponse(test);
     }
 
-    @Transactional
     public SubmitTestResponse submitTest(SubmitTestRequest request) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
         Map<Long, Long> submittedAnswers = request.getAnswers() != null ? request.getAnswers() : Map.of();
 
-        // 1. Validate Policy
         submissionPolicy.validatePayload(submittedAnswers);
 
-        // 2. Load and Lock (Chống Race Condition & Tránh query Test dư thừa)
-        TestSession session = testSessionRepository.findByIdWithLockAndFetchTest(request.getSessionId())
+        TestSession session = testSessionRepository.findById(request.getSessionId())
                 .orElseThrow(() -> new AppException(StudentErrorEnum.SESSION_NOT_FOUND));
 
         validateOwnership(session, currentUserId);
 
-        // 3. Đánh giá thời gian
+        if (session.getStatus() == TestSessionStatus.COMPLETED) {
+            TestResult existingResult = testResultRepository.findBySessionId(session.getId())
+                    .orElseThrow(() -> new AppException(StudentErrorEnum.ALREADY_SUBMITTED));
+            return buildResponse(existingResult);
+        }
+
         LocalDateTime now = LocalDateTime.now();
         boolean isLate = submissionPolicy.isLate(session.getEndTime(), now);
-        int timeTaken = (int) ChronoUnit.SECONDS.between(session.getStartTime(), now);
+        int timeTaken = Math.max(0, (int) ChronoUnit.SECONDS.between(session.getStartTime(), now));
 
-        // 4. Chấm điểm (Delegate to EvaluationService)
-        Test test = session.getTest();
-        var evalCtx = evaluationService.evaluate(test.getId(), submittedAnswers, isLate);
+        TestPracticeResponse snapshotTest;
+        String userAnswersJson;
+        try {
+            snapshotTest = objectMapper.readValue(session.getTestSnapshot(), TestPracticeResponse.class);
+            userAnswersJson = objectMapper.writeValueAsString(submittedAnswers);
+        } catch (Exception e) {
+            log.error("Lỗi Parse JSON bài thi. SessionId: {}", session.getId(), e);
+            throw new AppException(ErrorEnum.UNCATEGORIZED);
+        }
 
-        // 5. Chuẩn bị Entity
+        var evalCtx = evaluationService.evaluateWithSnapshot(snapshotTest, submittedAnswers);
+
+        int finalCorrectAnswers = isLate ? 0 : evalCtx.correctCount();
+        double finalScore = scoreCalculator.calculate(finalCorrectAnswers, evalCtx.totalQuestions(), isLate);
+
         TestResult testResult = TestResult.builder()
                 .student(userRepository.getReferenceById(currentUserId))
-                .test(test)
+                .test(session.getTest())
+                .sessionId(session.getId())
                 .timeTakenSeconds(timeTaken)
                 .isLate(isLate)
-                .totalScore(evalCtx.finalScore())
-                .correctAnswers(isLate ? 0 : evalCtx.correctCount())
+                .totalScore(finalScore)
+                .correctAnswers(finalCorrectAnswers)
                 .totalQuestions(evalCtx.totalQuestions())
+                .testSnapshot(session.getTestSnapshot())
+                .userAnswersSnapshot(userAnswersJson)
                 .build();
-        testResult.evaluateResult(test.getPassScore());
 
-        // 6. Lưu Data (Delegate to PersistenceService - Tránh N+1)
-        testResult = persistenceService.persistResult(testResult, submittedAnswers, evalCtx.allQuestionIds(), evalCtx.correctnessMap());
+        testResult.evaluateResult(snapshotTest.getPassScore());
 
-        // 7. Đóng Session
-        session.setStatus(TestSessionStatus.COMPLETED);
-        testSessionRepository.save(session);
+        testResult = self.saveResultAndCloseSession(testResult, session.getId());
 
         return buildResponse(testResult);
+    }
+
+    @Transactional
+    public TestResult saveResultAndCloseSession(TestResult result, Long sessionId) {
+        int updatedRows = testSessionRepository.updateStatusConditionally(
+                sessionId, TestSessionStatus.COMPLETED, TestSessionStatus.IN_PROGRESS
+        );
+
+        if (updatedRows == 0) {
+            return testResultRepository.findBySessionId(sessionId)
+                    .orElseThrow(() -> new AppException(StudentErrorEnum.ALREADY_SUBMITTED));
+        }
+
+        return testResultRepository.save(result);
     }
 
     private void validateOwnership(TestSession session, Long currentUserId) {
         if (!session.getStudentId().equals(currentUserId)) {
             throw new AppException(ErrorEnum.UNAUTHORIZED);
-        }
-        if (session.getStatus() == TestSessionStatus.COMPLETED) {
-            throw new AppException(StudentErrorEnum.ALREADY_SUBMITTED);
         }
     }
 
@@ -437,6 +492,50 @@ public class TestService {
                 .isLate(isLate)
                 .isPassed(result.getIsPassed())
                 .message(isLate ? "Bài nộp quá hạn quy định. Điểm: 0" : "Nộp bài thành công!")
+                .build();
+    }
+
+    public TestReviewDetailResponse getTestReviewDetails(Long resultId) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+        return self.getCachedReviewDetails(resultId, currentUserId);
+    }
+
+    @Cacheable(value = "testReviewCache", key = "#resultId + '-' + #currentUserId")
+    @Transactional(readOnly = true)
+    public TestReviewDetailResponse getCachedReviewDetails(Long resultId, Long currentUserId) {
+
+        TestResult testResult = testResultRepository.findByIdWithDetails(resultId)
+                .orElseThrow(() -> new AppException(StudentErrorEnum.TEST_RESULT_NOT_FOUND));
+
+        if (!testResult.getStudent().getId().equals(currentUserId)) {
+            throw new AppException(ErrorEnum.UNAUTHORIZED);
+        }
+
+        TestPracticeResponse fullTestWithAnswers;
+        Map<Long, Long> rawAnswers;
+
+        try {
+            fullTestWithAnswers = objectMapper.readValue(
+                    testResult.getTestSnapshot(),
+                    TestPracticeResponse.class
+            );
+
+            rawAnswers = objectMapper.readValue(
+                    testResult.getUserAnswersSnapshot(),
+                    new TypeReference<Map<Long, Long>>() {}
+            );
+
+        } catch (Exception e) {
+            log.error("Lỗi phục hồi JSON snapshot cho resultId: {}", resultId, e);
+            throw new AppException(ErrorEnum.UNCATEGORIZED);
+        }
+
+        TestResultHistoryResponse summary = testResultMapper.toHistoryResponse(testResult);
+
+        return TestReviewDetailResponse.builder()
+                .summary(summary)
+                .testData(fullTestWithAnswers)
+                .userAnswers(rawAnswers)
                 .build();
     }
 }

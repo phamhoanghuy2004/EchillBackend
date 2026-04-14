@@ -13,8 +13,11 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "enrollments", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"student_id", "course_id"})
-})
+        @UniqueConstraint(columnNames = {"student_id", "course_id"})},
+        indexes = {
+                @Index(name = "idx_student_access", columnList = "student_id, last_accessed_at DESC")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,14 +38,6 @@ public class Enrollment extends BaseEntity {
     @JoinColumn(name = "course_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     Course course;
-
-    @Column(name = "completed_lessons_count", nullable = false)
-    @Builder.Default
-    Integer completedLessonsCount = 0;
-
-    @Column(name = "is_completed", nullable = false)
-    @Builder.Default
-    Boolean isCompleted = false;
 
     @Column(name = "enrollment_status", nullable = false)
     @Enumerated(EnumType.STRING)
@@ -70,52 +65,6 @@ public class Enrollment extends BaseEntity {
         this.lastAccessedAt = Instant.now();
     }
 
-    /**
-     * 💥 2. HÀM MỚI: Tăng số lượng bài học hoàn thành lên 1
-     */
-    public void incrementCompletedLesson() {
-        this.completedLessonsCount++;
-        checkCourseCompletion();
-    }
-
-    /**
-     * HÀM MỚI: Dành cho trường hợp Giảng viên update video bắt học lại -> Bị trừ đi 1 bài
-     */
-    public void decrementCompletedLesson() {
-        if (this.completedLessonsCount > 0) {
-            this.completedLessonsCount--;
-        }
-        checkCourseCompletion(); // Có thể bị tụt từ Đã Hoàn Thành -> Chưa Hoàn thành
-    }
-
-    /**
-     * Kiểm tra chốt sổ chứng chỉ, nếu mà số bài học đã hoàn thành enrollment bằng với tổng số bài học ở khóa học
-     * thì đánh dấu là nó đã hoàn thành
-     */
-    private void checkCourseCompletion() {
-        if (this.course != null && this.course.getTotalLessonsCount() != null && this.course.getTotalLessonsCount() > 0) {
-            this.isCompleted = this.completedLessonsCount >= this.course.getTotalLessonsCount();
-        }
-    }
-
-    /**
-     * 💥 3. TUYỆT CHIÊU: Trả về phần trăm tiến độ bằng cách tính toán ảo trên RAM
-     * Hàm này sẽ được gọi khi bạn Map sang DTO trả về cho Frontend
-     */
-    @Transient
-    public Double getDerivedProgressPercent() {
-        if (this.course == null || this.course.getTotalLessonsCount() == null || this.course.getTotalLessonsCount() == 0) {
-            return 0.0;
-        }
-
-        // Tránh lỗi chia vượt quá 100% nếu logic có chút sai sót (Safe fallback)
-        if (this.completedLessonsCount >= this.course.getTotalLessonsCount()) {
-            return 100.0;
-        }
-
-        // Công thức: (Số bài đã xong * 100) / Tổng số bài
-        return (this.completedLessonsCount * 100.0) / this.course.getTotalLessonsCount();
-    }
 
     public void unlockCourse() {
         if (this.enrollmentStatus == EnrollmentStatus.LOCKED) {

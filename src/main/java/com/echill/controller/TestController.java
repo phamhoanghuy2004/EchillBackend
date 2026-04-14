@@ -3,6 +3,7 @@ package com.echill.controller;
 import com.echill.dto.request.*;
 import com.echill.dto.response.*;
 import com.echill.dto.response.guest.TestPracticeResponse;
+import com.echill.dto.response.guest.TestReviewDetailResponse;
 import com.echill.service.TestService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -94,6 +95,14 @@ public class TestController {
         return ApiResponse.<SubmitTestResponse>builder()
                 .message("Chấm điểm thành công!")
                 .data(testService.submitTest(request))
+                .build();
+    }
+
+    @GetMapping("/results/{resultId}/review")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<TestReviewDetailResponse> getTestReviewDetails(@PathVariable Long resultId) {
+        return ApiResponse.<TestReviewDetailResponse>builder()
+                .data(testService.getTestReviewDetails(resultId))
                 .build();
     }
 }

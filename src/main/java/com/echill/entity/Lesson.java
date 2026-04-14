@@ -73,6 +73,10 @@ public class Lesson extends BaseEntity {
     @OneToOne(mappedBy = "lesson", cascade = CascadeType.ALL)
     TestSet testSet;
 
+    @Column(name = "version", nullable = false)
+    @Builder.Default
+    private Integer version = 1;
+
     public void addDocument(Document document) {
         documents.add(document);
         document.setLesson(this);
@@ -123,5 +127,9 @@ public class Lesson extends BaseEntity {
 
         this.hlsUrl = hlsUrl;
         this.videoStatus = VideoStatus.READY;
+    }
+
+    public void incrementVersion() {
+        this.version++;
     }
 }
