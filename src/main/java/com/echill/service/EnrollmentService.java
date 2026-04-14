@@ -2,12 +2,20 @@ package com.echill.service;
 
 import com.echill.dto.request.leaner.GetMyCoursesRequest;
 import com.echill.dto.response.PageResponse;
+import com.echill.dto.response.learner.CurriculumResponse;
+import com.echill.dto.response.learner.LessonItemResponse;
 import com.echill.dto.response.learner.MyCourseResponse;
 import com.echill.entity.*;
 import com.echill.entity.enums.EnrollmentStatus;
+import com.echill.entity.enums.LessonStatus;
+import com.echill.entity.enums.VideoStatus;
 import com.echill.event.TransactionSuccessEvent;
+import com.echill.exception.AppException;
+import com.echill.exception.StudentErrorEnum;
 import com.echill.repository.EnrollmentRepository;
+import com.echill.repository.LessonRepository;
 import com.echill.repository.TransactionRepository;
+import com.echill.repository.projection.LessonWithProgressProjection;
 import com.echill.repository.projection.MyCourseProjection;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
@@ -35,6 +43,7 @@ import java.util.Set;
 public class EnrollmentService {
     EnrollmentRepository enrollmentRepository;
     TransactionRepository transactionRepository;
+    LessonRepository lessonRepository;
 
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -129,4 +138,73 @@ public class EnrollmentService {
                 .progressPercent(progressPercent)
                 .build();
     }
+
+    @Transactional
+    public CurriculumResponse getCourseCurriculum(Long courseId) {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        Enrollment enrollment = enrollmentRepository.findByStudentIdAndCourseId(currentUserId, courseId)
+                .orElseThrow(() -> new AppException(StudentErrorEnum.NOT_ENROLLED));
+
+        if (enrollment.getEnrollmentStatus() != EnrollmentStatus.ACTIVE) {
+            throw new AppException(StudentErrorEnum.COURSE_LOCKED);
+        }
+
+        enrollment.recordAccess();
+
+        Course course = enrollment.getCourse();
+
+        List<LessonWithProgressProjection> projections = lessonRepository
+                .findLessonsWithProgress(courseId, enrollment.getId());
+
+        List<LessonItemResponse> lessonItems = projections.stream().map(proj ->
+                LessonItemResponse.builder()
+                        .lessonId(proj.getLessonId())
+                        .title(proj.getTitle())
+                        .displayOrder(proj.getDisplayOrder())
+                        .durationSeconds(proj.getDurationSeconds())
+                        .hasVideo(VideoStatus.READY.equals(proj.getVideoStatus()))
+                        .hasDocument(proj.getHasDocument())
+                        .hasTest(proj.getHasTest())
+                        .status(calculateLessonStatus(proj))
+                        .lastWatchedSecond(proj.getLastWatchedSecond())
+                        .build()
+        ).toList();
+
+        long completedCount = lessonItems.stream()
+                .filter(item -> LessonStatus.COMPLETED.equals(item.getStatus()))
+                .count();
+
+        int totalRealLessons = lessonItems.size();
+
+        int progressPercent = 0;
+        if (totalRealLessons > 0) {
+            progressPercent = (int) Math.round((completedCount * 100.0) / totalRealLessons);
+            progressPercent = Math.min(progressPercent, 100);
+        }
+
+        return CurriculumResponse.builder()
+                .courseId(course.getId())
+                .courseName(course.getName())
+                .totalLessons(totalRealLessons)
+                .completedLessons(completedCount)
+                .progressPercent(progressPercent)
+                .lessons(lessonItems)
+                .build();
+    }
+
+    private LessonStatus calculateLessonStatus(LessonWithProgressProjection proj) {
+        if (proj.getProgressId() == null) {
+            return LessonStatus.NOT_STARTED;
+        }
+        if (Boolean.TRUE.equals(proj.getIsCompleted())) {
+            if (proj.getVersionCompleted() != null && proj.getVersionCompleted().equals(proj.getLessonVersion())) {
+                return LessonStatus.COMPLETED;
+            } else {
+                return LessonStatus.OUTDATED;
+            }
+        }
+        return LessonStatus.IN_PROGRESS;
+    }
+
 }

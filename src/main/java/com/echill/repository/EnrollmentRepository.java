@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
 import java.util.Set;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
@@ -51,7 +52,6 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
                 s.avatarUrl,
                 c.name,
                 c.id,
-                e.completedLessonsCount,
                 c.totalLessonsCount,
                 e.createdAt
             )
@@ -63,5 +63,11 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     Page<TeacherStudentResponse> findStudentStatistics(
             @Param("teacherId") Long teacherId,
             Pageable pageable
+    );
+
+    @Query("SELECT e FROM Enrollment e JOIN FETCH e.course WHERE e.student.id = :studentId AND e.course.id = :courseId")
+    Optional<Enrollment> findByStudentIdAndCourseId(
+            @Param("studentId") Long studentId,
+            @Param("courseId") Long courseId
     );
 }

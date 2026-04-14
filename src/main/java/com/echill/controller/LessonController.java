@@ -5,6 +5,7 @@ import com.echill.dto.request.SaveVideoDraftRequest;
 import com.echill.dto.response.ApiResponse;
 import com.echill.dto.response.CloudinarySignatureResponse;
 import com.echill.dto.response.LessonResponse;
+import com.echill.dto.response.learner.CurriculumResponse;
 import com.echill.service.CloudinaryVideoService;
 import com.echill.service.LessonService;
 import com.echill.service.persistence.LessonPersistenceService;
@@ -70,5 +71,4 @@ public class LessonController {
                 .message("Xóa bài học thành công!")
                 .build();
     }
-
 }
