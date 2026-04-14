@@ -2,7 +2,9 @@ package com.echill.service;
 
 import com.echill.dto.request.TeacherProfileUpdateRequest;
 import com.echill.dto.response.CertificateResponse;
+import com.echill.dto.response.PageResponse;
 import com.echill.dto.response.TeacherResponse;
+import com.echill.dto.response.TeacherStudentResponse;
 import com.echill.entity.Certificate;
 import com.echill.entity.TeacherProfile;
 import com.echill.entity.User;
@@ -10,12 +12,14 @@ import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
 import com.echill.repository.CertificateRepository;
+import com.echill.repository.EnrollmentRepository;
 import com.echill.repository.TeacherProfileRepository;
 import com.echill.repository.UserRepository;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +35,7 @@ public class TeacherService {
     UserRepository userRepository;
     TeacherProfileRepository teacherProfileRepository;
     CertificateRepository certificateRepository;
+    EnrollmentRepository enrollmentRepository;
 
     // 💥 Không cần @Transactional, Spring Data JPA tự lo vụ readOnly rồi
     public TeacherResponse getMyProfile() {
@@ -66,6 +71,12 @@ public class TeacherService {
         profile.setBio(request.getBio());
         
         teacherProfileRepository.save(profile);
+    }
+
+    // ✅ Gọn đến mức tối — DB xử lý toàn bộ, không stream, không mapping thủ công
+    public PageResponse<TeacherStudentResponse> getStudentStatistics(Pageable pageable) {
+        Long teacherId = SecurityUtils.getCurrentUserId();
+        return PageResponse.of(enrollmentRepository.findStudentStatistics(teacherId, pageable));
     }
 
     private TeacherResponse buildTeacherResponse(User user, TeacherProfile profile, List<Certificate> certificates, Set<String> roles) {
