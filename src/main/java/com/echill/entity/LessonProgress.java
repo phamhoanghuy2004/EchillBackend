@@ -13,8 +13,11 @@ import org.hibernate.annotations.OnDeleteAction;
 @Entity
 // BẢO VỆ DATABASE: Đảm bảo 1 lần ghi danh chỉ có 1 tiến độ cho 1 bài học
 @Table(name = "lesson_progresses", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"enrollment_id", "lesson_id"})
-})
+        @UniqueConstraint(columnNames = {"enrollment_id", "lesson_id"})},
+        indexes = {
+                @Index(name = "idx_progress_calc_full", columnList = "enrollment_id, is_completed, version_completed")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -52,6 +55,9 @@ public class LessonProgress extends BaseEntity {
     @Builder.Default
     Boolean isCompleted = false;
 
+    @Column(name = "version_completed")
+    private Integer versionCompleted;
+
     // ==========================================
     // HELPER METHODS (Đóng gói nghiệp vụ Tiến độ)
     // ==========================================
@@ -69,10 +75,11 @@ public class LessonProgress extends BaseEntity {
     /**
      * Đánh dấu bài học này đã hoàn thành toàn bộ (Xem xong Video + Pass Quiz)
      */
-    public void markAsCompleted() {
+    public void markAsCompleted(Integer currentLessonVersion) {
         this.isVideoWatched = true;
         this.isQuizPassed = true;
         this.isCompleted = true;
+        this.versionCompleted = currentLessonVersion; // CHỐT SỔ VERSION LÚC HOÀN THÀNH
     }
 
     /**
@@ -87,5 +94,15 @@ public class LessonProgress extends BaseEntity {
      */
     public void markQuizPassed() {
         this.isQuizPassed = true;
+    }
+
+    /**
+     * Helper kiểm tra xem tiến độ này đã bị Outdated (Lỗi thời) do Teacher update bài chưa?
+     * True = Hợp lệ (Tính vào %). False = Bắt học lại (Không tính %).
+     */
+    public boolean isValidCompletion(Integer currentLessonVersion) {
+        return Boolean.TRUE.equals(this.isCompleted)
+                && this.versionCompleted != null
+                && this.versionCompleted.equals(currentLessonVersion);
     }
 }

@@ -5,6 +5,7 @@ import com.echill.entity.enums.TestSessionStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -17,7 +18,13 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
             TestSessionStatus status
     );
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT s FROM TestSession s JOIN FETCH s.test WHERE s.id = :sessionId")
-    Optional<TestSession> findByIdWithLockAndFetchTest(@Param("sessionId") Long sessionId);
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE TestSession ts SET ts.status = :newStatus, ts.activeLock = NULL " +
+            "WHERE ts.id = :sessionId AND ts.status = :oldStatus")
+    int updateStatusConditionally(
+            @Param("sessionId") Long sessionId,
+            @Param("newStatus") TestSessionStatus newStatus,
+            @Param("oldStatus") TestSessionStatus oldStatus
+    );
+
 }

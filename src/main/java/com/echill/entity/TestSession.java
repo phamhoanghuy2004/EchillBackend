@@ -9,7 +9,9 @@ import lombok.experimental.SuperBuilder;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "test_sessions")
+@Table(name = "test_sessions", indexes = {
+        @Index(name = "idx_session_composite", columnList = "student_id, test_set_id, status")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -33,6 +35,12 @@ public class TestSession extends BaseEntity {
 
     LocalDateTime endTime;
 
+    @Column(name = "test_snapshot", columnDefinition = "LONGTEXT", nullable = false)
+    String testSnapshot;
+
     @Enumerated(EnumType.STRING)
     TestSessionStatus status;
+
+    @Column(name = "active_lock", unique = true)
+    String activeLock;
 }

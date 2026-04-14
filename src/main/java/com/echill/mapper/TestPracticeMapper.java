@@ -17,6 +17,7 @@ public interface TestPracticeMapper {
     @Mapping(source = "questionGroup", target = "group")
     QuestionPracticeResponse toQuestionPracticeResponse(Question question);
 
+    @Mapping(source = "isCorrect", target = "isCorrect")
     AnswerPracticeResponse toAnswerPracticeResponse(Answer answer);
 
     QuestionGroupPracticeResponse toGroupPracticeResponse(QuestionGroup group);

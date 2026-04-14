@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TestResultRepository extends JpaRepository<TestResult, Long> {
 
@@ -22,4 +23,13 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
 
     @Query("SELECT DISTINCT tr.test.id FROM TestResult tr WHERE tr.student.id = :studentId AND tr.test.testSet.id = :testSetId")
     List<Long> findTakenTestIds(@Param("studentId") Long studentId, @Param("testSetId") Long testSetId);
+
+    @Query("SELECT tr FROM TestResult tr " +
+            "JOIN FETCH tr.student " +
+            "JOIN FETCH tr.test " +
+            "WHERE tr.id = :resultId")
+    Optional<TestResult> findByIdWithDetails(@Param("resultId") Long resultId);
+
+
+    Optional<TestResult> findBySessionId(Long sessionId);
 }

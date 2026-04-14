@@ -115,22 +115,28 @@ public class Course extends BaseEntity {
         lesson.setCourse(null);
     }
 
-
     @Transient
     public Integer getDiscountPercent() {
-        // Nếu không có giá gốc, hoặc giá gốc = 0, hoặc giá bán >= giá gốc -> KHÔNG GIẢM GIÁ (0%)
         if (this.originalPrice == null
                 || this.originalPrice.compareTo(BigDecimal.ZERO) == 0
                 || this.price.compareTo(this.originalPrice) >= 0) {
             return 0;
         }
-
-        // Công thức: ((Giá gốc - Giá bán) / Giá gốc) * 100
         BigDecimal discountAmount = this.originalPrice.subtract(this.price);
         BigDecimal percentage = discountAmount.divide(this.originalPrice, 2, RoundingMode.HALF_UP)
                 .multiply(new BigDecimal("100"));
 
         return percentage.intValue();
+    }
+
+    public void incrementTotalLessons() {
+        this.totalLessonsCount++;
+    }
+
+    public void decrementTotalLessons() {
+        if (this.totalLessonsCount > 0) {
+            this.totalLessonsCount--;
+        }
     }
 
 }

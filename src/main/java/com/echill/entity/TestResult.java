@@ -74,14 +74,14 @@ public class TestResult extends BaseEntity {
     @OnDelete(action = OnDeleteAction.CASCADE)
     Test test;
 
-    @OneToMany(mappedBy = "testResult", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    List<UserAnswer> userAnswers = new ArrayList<>();
+    @Column(name = "session_id", unique = true, nullable = false)
+    Long sessionId;
 
-    public void addUserAnswer(UserAnswer userAnswer) {
-        userAnswers.add(userAnswer);
-        userAnswer.setTestResult(this);
-    }
+    @Column(name = "test_snapshot", columnDefinition = "LONGTEXT", nullable = false)
+    String testSnapshot;
+
+    @Column(name = "user_answers_snapshot", columnDefinition = "LONGTEXT", nullable = false)
+    String userAnswersSnapshot;
 
     public void evaluateResult(Double targetPassScorePercentage) {
         if (this.totalScore == null) {
