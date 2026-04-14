@@ -14,6 +14,9 @@ public interface BlogRepository extends JpaRepository<Blog, Long> {
     @Query("SELECT b FROM Blog b JOIN FETCH b.user u WHERE u.id = :userId ORDER BY b.createdAt DESC")
     List<Blog> findAllWithUserByUserId(@Param("userId") Long userId);
 
+    @Query("SELECT b FROM Blog b JOIN FETCH b.user u ORDER BY b.createdAt DESC")
+    List<Blog> findAllWithUser();
+
     @Query("SELECT b FROM Blog b JOIN FETCH b.user WHERE b.id = :id")
     Optional<Blog> findByIdWithUser(@Param("id") Long id);
 

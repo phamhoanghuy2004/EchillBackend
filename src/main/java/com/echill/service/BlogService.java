@@ -90,4 +90,9 @@ public class BlogService {
         return  blogs.stream().map(blogMapper::toResponse).toList();
     }
 
+    public List<BlogResponse> getAllBlogs() {
+        List<Blog> blogs = blogRepository.findAllWithUser();
+        return blogs.stream().map(blogMapper::toResponse).toList();
+    }
+
 }

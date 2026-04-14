@@ -1,5 +1,6 @@
 package com.echill.repository;
 
+import com.echill.dto.response.TeacherStudentResponse;
 import com.echill.entity.Course;
 import com.echill.entity.Enrollment;
 import com.echill.entity.User;
@@ -41,4 +42,26 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     """)
     Page<MyCourseProjection> findMyCoursesWithProgress(@Param("studentId") Long studentId, Pageable pageable);
 
+    // ✅ DTO Projection chuẩn senior: DB xử lý tất cả, không load full entity, hỗ trợ phân trang
+    @Query("""
+            SELECT new com.echill.dto.response.TeacherStudentResponse(
+                e.id,
+                s.fullName,
+                s.email,
+                s.avatarUrl,
+                c.name,
+                c.id,
+                e.completedLessonsCount,
+                c.totalLessonsCount,
+                e.createdAt
+            )
+            FROM Enrollment e
+            JOIN e.student s
+            JOIN e.course c
+            WHERE c.teacher.id = :teacherId
+            """)
+    Page<TeacherStudentResponse> findStudentStatistics(
+            @Param("teacherId") Long teacherId,
+            Pageable pageable
+    );
 }
