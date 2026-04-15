@@ -65,4 +65,28 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
             @Param("courseId") Long courseId,
             @Param("enrollmentId") Long enrollmentId
     );
+
+    @Query("""
+        SELECT CASE WHEN EXISTS (
+            SELECT l.id 
+            FROM Lesson l
+            LEFT JOIN LessonProgress lp ON lp.lesson.id = l.id AND lp.enrollment.id = :enrollmentId
+            WHERE l.course.id = :courseId
+              AND l.displayOrder < :currentDisplayOrder
+              AND (lp.id IS NULL OR lp.isCompleted = false)
+        ) THEN true ELSE false END
+    """)
+    boolean existsUncompletedPreviousLessons(
+            @Param("courseId") Long courseId,
+            @Param("enrollmentId") Long enrollmentId,
+            @Param("currentDisplayOrder") Integer currentDisplayOrder
+    );
+
+    @Query("""
+        SELECT DISTINCT l FROM Lesson l 
+        LEFT JOIN FETCH l.documents 
+        LEFT JOIN FETCH l.testSet 
+        WHERE l.id = :lessonId
+    """)
+    Optional<Lesson> findLessonWithDetailsById(@Param("lessonId") Long lessonId);
 }

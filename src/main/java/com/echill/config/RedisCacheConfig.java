@@ -47,6 +47,7 @@ public class RedisCacheConfig {
         cacheConfigurations.put("testPractice", defaultCacheConfiguration().entryTtl(Duration.ofDays(7)));
         cacheConfigurations.put("testReviewCache", defaultCacheConfiguration().entryTtl(Duration.ofDays(30)));
         cacheConfigurations.put("topStudents", defaultCacheConfiguration().entryTtl(Duration.ofMinutes(15)));
+        cacheConfigurations.put("lessonDetails", defaultCacheConfiguration().entryTtl(Duration.ofDays(1)));
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultCacheConfiguration()) // Gắn cấu hình mặc định

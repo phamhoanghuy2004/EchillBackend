@@ -2,6 +2,7 @@ package com.echill.mapper;
 
 import com.echill.dto.response.LessonResponse;
 import com.echill.dto.response.guest.LessonPublicResponse;
+import com.echill.dto.response.learner.LessonDetailResponse;
 import com.echill.entity.Lesson;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -17,4 +18,6 @@ public interface LessonMapper {
     @Mapping(source = "testSet.id", target = "testSetId")
     @Mapping(target = "hasTest", expression = "java(lesson.getTestSet() != null)")
     LessonPublicResponse toLessonPublicResponse(Lesson lesson);
+
+    LessonDetailResponse toLessonDetailResponse(Lesson lesson);
 }

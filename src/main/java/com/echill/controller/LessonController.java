@@ -6,7 +6,10 @@ import com.echill.dto.response.ApiResponse;
 import com.echill.dto.response.CloudinarySignatureResponse;
 import com.echill.dto.response.LessonResponse;
 import com.echill.dto.response.learner.CurriculumResponse;
+import com.echill.dto.response.learner.LessonDetailResponse;
+import com.echill.entity.enums.LessonStatus;
 import com.echill.service.CloudinaryVideoService;
+import com.echill.service.EnrollmentService;
 import com.echill.service.LessonService;
 import com.echill.service.persistence.LessonPersistenceService;
 import jakarta.validation.Valid;
@@ -16,6 +19,9 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/lessons")
 @RequiredArgsConstructor
@@ -24,6 +30,7 @@ public class LessonController {
     CloudinaryVideoService cloudinaryVideoService;
     LessonService lessonService;
     LessonPersistenceService lessonPersistenceService;
+    EnrollmentService enrollmentService;
 
     @GetMapping("/generateVideoUploadSignature")
     @PreAuthorize("hasAnyRole('TEACHER')")
@@ -69,6 +76,32 @@ public class LessonController {
         lessonService.deleteLesson(lessonId);
         return ApiResponse.<Void>builder()
                 .message("Xóa bài học thành công!")
+                .build();
+    }
+
+    @PostMapping("/{lessonId}/start")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<Map<String, Object>> startLesson(@PathVariable("lessonId") Long lessonId) {
+
+        enrollmentService.startLesson(lessonId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("lessonId", lessonId.toString());
+        response.put("status", LessonStatus.IN_PROGRESS);
+
+        return ApiResponse.<Map<String, Object>>builder()
+                .message("Bắt đầu bài học thành công!")
+                .data(response)
+                .build();
+
+    }
+
+    @GetMapping("/{lessonId}")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<LessonDetailResponse> getLessonDetailForStudy(@PathVariable("lessonId") Long lessonId) {
+        return ApiResponse.<LessonDetailResponse>builder()
+                .message("Lấy thông tin bài học thành công")
+                .data(enrollmentService.getLessonDetailForStudy(lessonId))
                 .build();
     }
 }

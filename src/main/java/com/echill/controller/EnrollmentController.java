@@ -12,6 +12,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,6 +24,7 @@ public class EnrollmentController {
     EnrollmentService enrollmentService;
 
     @GetMapping("/my-course")
+    @PreAuthorize("hasRole('STUDENT')")
     public ApiResponse<PageResponse<MyCourseResponse>> searchCourses(
             @ModelAttribute GetMyCoursesRequest request) { // Dùng @ModelAttribute để nhận query params từ URL
 
@@ -35,6 +37,7 @@ public class EnrollmentController {
     }
 
     @GetMapping("/{courseId}/curriculum")
+    @PreAuthorize("hasRole('STUDENT')")
     public ApiResponse<CurriculumResponse> getCourseCurriculum(
             @PathVariable("courseId") Long courseId) {
         return ApiResponse.<CurriculumResponse>builder()
