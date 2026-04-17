@@ -35,6 +35,8 @@ public enum StudentErrorEnum implements ErrorCode {
     COURSE_LOCKED(1062, "Course locked", HttpStatus.BAD_REQUEST),
     PREVIOUS_LESSON_NOT_COMPLETED(1063, "Previous lesson is not completed", HttpStatus.BAD_REQUEST),
     LESSON_NOT_STARTED(1064, "Lesson is not started", HttpStatus.BAD_REQUEST),
+    LESSON_NOT_READY(1065, "Lesson is not ready", HttpStatus.BAD_REQUEST),
+    NOT_ENOUGH_PROGRESS(1066, "Not enough progress to complete this course", HttpStatus.BAD_REQUEST),
 
     ;
     Integer code;

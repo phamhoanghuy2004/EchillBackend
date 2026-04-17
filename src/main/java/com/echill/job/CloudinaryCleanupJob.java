@@ -72,7 +72,7 @@ public class CloudinaryCleanupJob {
         processCleanup(CloudinaryFolder.LESSION_VIDEO, validIds, "Lesson Videos", "video"); // 💥 Type: video
     }
 
-    @Scheduled(cron = "0 0 2 * * ?")
+    @Scheduled(cron = "0 30 2 * * ?")
     public void cleanupOrphanCertificateImages() {
         log.info("🧹 [CERTIFICATE] Khởi động tiến trình dọn rác ảnh chứng chỉ...");
         List<String> validIds = certificateRepository.findAllImagePublicIds();
