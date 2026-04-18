@@ -12,6 +12,7 @@ import com.echill.dto.response.guest.TestReviewDetailResponse;
 import com.echill.entity.*;
 import com.echill.entity.enums.AnswerOption;
 import com.echill.entity.enums.TestSessionStatus;
+import com.echill.event.QuizPassedEvent;
 import com.echill.event.TestUpdatedEvent;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
@@ -456,13 +457,13 @@ public class TestService {
 
         testResult.evaluateResult(snapshotTest.getPassScore());
 
-        testResult = self.saveResultAndCloseSession(testResult, session.getId());
+        testResult = self.saveResultAndCloseSession(testResult, session.getId(), session.getTestSetId());
 
         return buildResponse(testResult);
     }
 
     @Transactional
-    public TestResult saveResultAndCloseSession(TestResult result, Long sessionId) {
+    public TestResult saveResultAndCloseSession(TestResult result, Long sessionId, Long testSetId) {
         int updatedRows = testSessionRepository.updateStatusConditionally(
                 sessionId, TestSessionStatus.COMPLETED, TestSessionStatus.IN_PROGRESS
         );
@@ -472,7 +473,19 @@ public class TestService {
                     .orElseThrow(() -> new AppException(StudentErrorEnum.ALREADY_SUBMITTED));
         }
 
-        return testResultRepository.save(result);
+        TestResult savedResult =  testResultRepository.save(result);
+
+        if (Boolean.TRUE.equals(savedResult.getIsPassed())) {
+            log.info("📢 Bắn event QuizPassed cho Student: {} - TestSet: {}",
+                    savedResult.getStudent().getId(), testSetId);
+
+            eventPublisher.publishEvent(new QuizPassedEvent(
+                    savedResult.getStudent().getId(),
+                    testSetId
+            ));
+        }
+
+        return savedResult;
     }
 
     private void validateOwnership(TestSession session, Long currentUserId) {

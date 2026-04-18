@@ -8,6 +8,8 @@ import com.echill.dto.response.CloudinarySignatureResponse;
 import com.echill.dto.response.LessonResponse;
 import com.echill.dto.response.learner.CurriculumResponse;
 import com.echill.dto.response.learner.LessonDetailResponse;
+import com.echill.dto.response.learner.ProgressStatusResponse;
+import com.echill.dto.response.learner.VideoCompleteResponse;
 import com.echill.entity.enums.LessonStatus;
 import com.echill.service.CloudinaryVideoService;
 import com.echill.service.EnrollmentService;
@@ -122,24 +124,22 @@ public class LessonController {
     }
 
     @GetMapping("/{lessonId}/progress")
-    public ApiResponse<Integer> getCurrentProgress(@PathVariable Long lessonId) {
+    public ApiResponse<ProgressStatusResponse> getCurrentProgress(@PathVariable Long lessonId) {
 
-        Integer currentSecond = progressRedisService.getCurrentProgress(lessonId);
+        ProgressStatusResponse response = progressRedisService.getCurrentProgress(lessonId);
 
-        return ApiResponse.<Integer>builder()
+        return ApiResponse.<ProgressStatusResponse>builder()
                 .message("Lấy tiến độ video thành công!")
-                .data(currentSecond)
+                .data(response)
                 .build();
     }
 
 
     @PostMapping("/{lessonId}/complete")
-    public ApiResponse<Void> completeVideoProgress(@PathVariable Long lessonId) {
-
-        lessonProgressService.markVideoAsWatched(lessonId);
-
-        return ApiResponse.<Void>builder()
+    public ApiResponse<VideoCompleteResponse> completeVideoProgress(@PathVariable Long lessonId) {
+        return ApiResponse.<VideoCompleteResponse>builder()
                 .message("Chúc mừng! Đã hoàn thành video bài học.")
+                .data(lessonProgressService.markVideoAsWatched(lessonId))
                 .build();
     }
 }

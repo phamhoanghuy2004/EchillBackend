@@ -1,6 +1,7 @@
 package com.echill.repository;
 
 import com.echill.entity.LessonProgress;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -30,4 +31,7 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
     Optional<LessonProgress> findProgressWithLessonAndTestSet(
             @Param("lessonId") Long lessonId,
             @Param("userId") Long userId);
+
+    @EntityGraph(attributePaths = {"lesson"})
+    Optional<LessonProgress> findWithLessonByLessonIdAndEnrollmentStudentId(Long lessonId, Long studentId);
 }

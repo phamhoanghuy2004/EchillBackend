@@ -1,5 +1,7 @@
 package com.echill.service.redis;
 
+import com.echill.dto.response.learner.ProgressStatusResponse;
+import com.echill.entity.LessonProgress;
 import com.echill.exception.AppException;
 import com.echill.exception.StudentErrorEnum; // Đảm bảo bạn có Enum lỗi phù hợp
 import com.echill.repository.LessonProgressRepository;
@@ -133,32 +135,39 @@ public class ProgressRedisService {
     /**
      * Lấy tiến độ hiện tại (Dùng khi F5 hoặc mở bài học)
      */
-    public Integer getCurrentProgress(Long lessonId) {
+    public ProgressStatusResponse getCurrentProgress(Long lessonId) {
         Long userId = SecurityUtils.getCurrentUserId();
         String dataKey = PROGRESS_KEY_PREFIX + lessonId + "_" + userId;
 
-        // Ưu tiên móc từ RAM (Redis) cho tốc độ Real-time
+        LessonProgress progress = progressRepository.findByLessonIdAndEnrollmentStudentId(lessonId, userId)
+                .orElseThrow(() -> new AppException(StudentErrorEnum.LESSON_NOT_STARTED));
+
+        boolean isWatched = Boolean.TRUE.equals(progress.getIsVideoWatched());
+        boolean isQuizPassed = Boolean.TRUE.equals(progress.getIsQuizPassed());
+        int currentSecond = progress.getLastWatchedSecond();
+
         Object secObj = redisTemplate.opsForHash().get(dataKey, "sec");
+
         if (secObj != null) {
             log.debug("⚡ Cache Hit: Tiến độ {}s (User: {}, Lesson: {})", secObj, userId, lessonId);
-            return Integer.parseInt(secObj.toString());
+            currentSecond = Integer.parseInt(secObj.toString());
+        } else {
+            log.debug("🐌 Cache Miss: Query DB tiến độ (User: {}, Lesson: {})", userId, lessonId);
+            try {
+                long currentTimestampSec = getCurrentRedisTimeSeconds();
+                redisTemplate.opsForHash().putIfAbsent(dataKey, "sec", String.valueOf(currentSecond));
+                redisTemplate.opsForHash().putIfAbsent(dataKey, "ts", String.valueOf(currentTimestampSec));
+                redisTemplate.expire(dataKey, Duration.ofSeconds(CACHE_TTL_SECONDS));
+            } catch (Exception e) {
+                log.warn("⚠️ Rehydrate Cache thất bại, bỏ qua...", e);
+            }
         }
 
-        // Cache Miss: Vét dưới MySQL lên và nhét lại vào RAM (Rehydration)
-        log.debug("🐌 Cache Miss: Query DB tiến độ (User: {}, Lesson: {})", userId, lessonId);
-        return progressRepository.findByLessonIdAndEnrollmentStudentId(lessonId, userId)
-                .map(p -> {
-                    int lastWatched = p.getLastWatchedSecond();
-                    try {
-                        long currentTimestampSec = getCurrentRedisTimeSeconds();
-                        redisTemplate.opsForHash().putIfAbsent(dataKey, "sec", String.valueOf(lastWatched));
-                        redisTemplate.opsForHash().putIfAbsent(dataKey, "ts", String.valueOf(currentTimestampSec));
-                        redisTemplate.expire(dataKey, Duration.ofSeconds(CACHE_TTL_SECONDS));
-                    } catch (Exception e) {
-                        log.warn("⚠️ Rehydrate Cache thất bại, bỏ qua...", e);
-                    }
-                    return lastWatched;
-                }).orElse(0);
+        return ProgressStatusResponse.builder()
+                .currentSecond(currentSecond)
+                .isVideoWatched(isWatched)
+                .isQuizPassed(isQuizPassed)
+                .build();
     }
 
     // ==========================================
