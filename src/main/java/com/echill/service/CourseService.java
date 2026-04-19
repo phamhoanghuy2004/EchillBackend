@@ -6,12 +6,15 @@ import com.echill.dto.response.CourseResponse;
 import com.echill.dto.response.LessonResponse;
 import com.echill.entity.Category;
 import com.echill.entity.Course;
+import com.echill.entity.Tag;
 import com.echill.entity.User;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
+import com.echill.mapper.TagMapper;
 import com.echill.repository.CategoryRepository;
 import com.echill.repository.CourseRepository;
+import com.echill.repository.TagRepository;
 import com.echill.repository.UserRepository;
 import com.echill.service.persistence.CoursePersistenceService;
 import com.echill.util.SecurityUtils;
@@ -23,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +41,8 @@ public class CourseService {
     UserRepository userRepository;
     CategoryRepository categoryRepository;
     CourseRepository courseRepository;
+    TagRepository tagRepository;
+    TagMapper tagMapper;
 
     public CourseResponse createCourse(CourseRequest request, MultipartFile file) {
         Long teacherId = SecurityUtils.getCurrentUserId();
@@ -47,6 +53,15 @@ public class CourseService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new AppException(TeacherErrorEnum.CATEGORY_NOT_FOUND));
 
+        List<Tag> validTags = new ArrayList<>();
+        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            validTags = tagRepository.findAllById(request.getTagIds());
+
+            if (validTags.size() != request.getTagIds().size()) {
+                throw new AppException(TeacherErrorEnum.TAG_NOT_FOUND);
+            }
+        }
+
         Map<String, String> uploadResult = null;
         if (file != null && !file.isEmpty()) {
             uploadResult = cloudinaryService.uploadImage(file, CloudinaryFolder.COURSE_IMAGE);
@@ -55,7 +70,7 @@ public class CourseService {
         String url = (uploadResult != null) ? uploadResult.get("url") : null;
         String pId = (uploadResult != null) ? uploadResult.get("publicId") : null;
 
-        Course course = coursePersistenceService.saveNewCourse(teacher, category, request, url, pId);
+        Course course = coursePersistenceService.saveNewCourse(teacher, category, validTags, request, url, pId);
 
         return mapToResponse(course);
 
@@ -125,6 +140,13 @@ public class CourseService {
                                 .durationSeconds(l.getDurationSeconds())
                                 .build())
                         .toList())
+
+                .tags(course.getTags() == null || course.getTags().isEmpty()
+                        ? List.of()
+                        : course.getTags().stream()
+                        .map(tagMapper::toResponse)
+                        .toList())
+
                 .build();
     }
 }

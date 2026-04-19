@@ -7,6 +7,7 @@ import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -26,5 +27,6 @@ public class CourseResponse {
     String categoryName;
     String teacherName;
     LocalDateTime createdAt;
+    List<TagResponse> tags;
     java.util.List<LessonResponse> lessons;
 }
