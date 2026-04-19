@@ -1,5 +1,6 @@
 package com.echill.entity;
 
+import com.echill.entity.enums.MessageType;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,6 +30,15 @@ public class Message extends BaseEntity {
 
     @Column(name = "sent_at", nullable = false)
     java.time.Instant sentAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "message_type", nullable = false, length = 20)
+    @Builder.Default
+    MessageType messageType = MessageType.TEXT;
+
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    Boolean isDeleted = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id", nullable = false)
