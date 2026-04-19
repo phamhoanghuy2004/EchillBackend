@@ -122,6 +122,7 @@ public class CourseService {
                 .categoryId(course.getCategory().getId())
                 .categoryName(course.getCategory().getName())
                 .teacherName(course.getTeacher().getFullName())
+                .teacherId(course.getTeacher().getId())
                 .createdAt(course.getCreatedAt() != null ?
                         course.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDateTime() : null)
                 .lessons(course.getLessons() == null || course.getLessons().isEmpty()

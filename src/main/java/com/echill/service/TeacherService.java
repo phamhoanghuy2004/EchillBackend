@@ -73,10 +73,10 @@ public class TeacherService {
         teacherProfileRepository.save(profile);
     }
 
-    // ✅ Gọn đến mức tối — DB xử lý toàn bộ, không stream, không mapping thủ công
-    public PageResponse<TeacherStudentResponse> getStudentStatistics(Pageable pageable) {
+    // ✅ Trả về List để Frontend tự xử lý bộ lọc theo yêu cầu
+    public List<TeacherStudentResponse> getStudentStatistics() {
         Long teacherId = SecurityUtils.getCurrentUserId();
-        return PageResponse.of(enrollmentRepository.findStudentStatistics(teacherId, pageable));
+        return enrollmentRepository.findStudentStatistics(teacherId);
     }
 
     private TeacherResponse buildTeacherResponse(User user, TeacherProfile profile, List<Certificate> certificates, Set<String> roles) {
