@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Set;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
@@ -42,26 +43,30 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     """)
     Page<MyCourseProjection> findMyCoursesWithProgress(@Param("studentId") Long studentId, Pageable pageable);
 
-    // ✅ DTO Projection chuẩn senior: DB xử lý tất cả, không load full entity, hỗ trợ phân trang
+
     @Query("""
             SELECT new com.echill.dto.response.TeacherStudentResponse(
                 e.id,
+                s.id,
                 s.fullName,
                 s.email,
                 s.avatarUrl,
                 c.name,
                 c.id,
-                e.completedLessonsCount,
+                COALESCE(SUM(CASE WHEN lp.isCompleted = true 
+                                  AND lp.versionCompleted IS NOT NULL 
+                                  AND lp.versionCompleted = l.version 
+                             THEN 1L ELSE 0L END), 0L),
                 c.totalLessonsCount,
                 e.createdAt
             )
             FROM Enrollment e
             JOIN e.student s
             JOIN e.course c
+            LEFT JOIN LessonProgress lp ON lp.enrollment = e
+            LEFT JOIN lp.lesson l
             WHERE c.teacher.id = :teacherId
+            GROUP BY e.id, s.id, s.fullName, s.email, s.avatarUrl, c.name, c.id, c.totalLessonsCount, e.createdAt
             """)
-    Page<TeacherStudentResponse> findStudentStatistics(
-            @Param("teacherId") Long teacherId,
-            Pageable pageable
-    );
+    List<TeacherStudentResponse> findStudentStatistics(@Param("teacherId") Long teacherId);
 }

@@ -43,11 +43,9 @@ public class TeacherController {
 
     @GetMapping("/student-statistics")
     @PreAuthorize("hasRole('TEACHER')")
-    public ApiResponse<PageResponse<TeacherStudentResponse>> getStudentStatistics(
-             @PageableDefault(size = 10) Pageable pageable
-    ) {
-        return ApiResponse.<PageResponse<TeacherStudentResponse>>builder()
-                .data(teacherService.getStudentStatistics(pageable))
+    public ApiResponse<List<TeacherStudentResponse>> getStudentStatistics() {
+        return ApiResponse.<List<TeacherStudentResponse>>builder()
+                .data(teacherService.getStudentStatistics())
                 .build();
     }
 }

@@ -1,6 +1,6 @@
 package com.echill.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.echill.entity.enums.ParticipantRole;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -11,7 +11,7 @@ import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "participants", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"conversation_id", "user_id"}) // 1 người không thể join 1 nhóm 2 lần
+        @UniqueConstraint(columnNames = {"conversation_id", "user_id"})
 })
 @Getter
 @Setter
@@ -19,10 +19,15 @@ import org.hibernate.annotations.OnDeleteAction;
 @AllArgsConstructor
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Participant  extends BaseEntity {
+public class Participant extends BaseEntity {
+
     @Id
     @Tsid
     Long id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20)
+    ParticipantRole role;
 
     @Column(name = "last_seen_at")
     java.time.Instant lastSeenAt;

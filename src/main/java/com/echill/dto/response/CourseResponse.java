@@ -25,6 +25,8 @@ public class CourseResponse {
     Long categoryId;
     String categoryName;
     String teacherName;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    Long teacherId;
     LocalDateTime createdAt;
     java.util.List<LessonResponse> lessons;
 }

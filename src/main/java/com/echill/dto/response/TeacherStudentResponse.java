@@ -13,7 +13,10 @@ import java.time.Instant;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class TeacherStudentResponse {
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    Long studentId;
     String name;
     String email;
     String avatar;
@@ -23,24 +26,32 @@ public class TeacherStudentResponse {
     @JsonFormat(pattern = "dd/MM/yyyy", timezone = "Asia/Ho_Chi_Minh")
     Instant joinDate;
 
-    // ✅ Constructor cho JPQL DTO Projection — DB xử lý, không cần stream().map()
-    public TeacherStudentResponse(Long id, String name, String email, String avatar,
+    public TeacherStudentResponse(Long id, Long studentId, String name, String email, String avatar,
                                   String courseName, Long courseId,
-                                  Integer completedLessons, Integer totalLessons,
+                                  Long completedLessons, Integer totalLessons,
                                   Instant joinDate) {
         this.id = id;
+        this.studentId = studentId;
         this.name = name;
         this.email = email;
         this.avatar = avatar;
         this.courseName = courseName;
         this.courseId = courseId;
-        // Tính progress % ngay tại đây, tránh @Transient method
+        // Tính progress %
         if (totalLessons != null && totalLessons > 0) {
-            int raw = (completedLessons != null ? completedLessons : 0) * 100 / totalLessons;
+            int raw = (int) ((completedLessons != null ? completedLessons : 0L) * 100 / totalLessons);
             this.progress = Math.min(raw, 100);
         } else {
             this.progress = 0;
         }
         this.joinDate = joinDate;
+    }
+
+    // Secondary constructor for int compatibility
+    public TeacherStudentResponse(Long id, Long studentId, String name, String email, String avatar,
+                                  String courseName, Long courseId,
+                                  int completedLessons, Integer totalLessons,
+                                  Instant joinDate) {
+        this(id, studentId, name, email, avatar, courseName, courseId, (long) completedLessons, totalLessons, joinDate);
     }
 }
