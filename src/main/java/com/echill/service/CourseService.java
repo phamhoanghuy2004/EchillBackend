@@ -83,6 +83,15 @@ public class CourseService {
 
         SecurityUtils.validateOwnership(existingCourse.getTeacher().getId());
 
+        List<Tag> validTags = new ArrayList<>();
+        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            validTags = tagRepository.findAllById(request.getTagIds());
+
+            if (validTags.size() != request.getTagIds().size()) {
+                throw new AppException(TeacherErrorEnum.TAG_NOT_FOUND);
+            }
+        }
+
         String newImageUrl = null;
         String newImagePublicId = null;
 
@@ -92,7 +101,7 @@ public class CourseService {
             newImagePublicId = uploadResult.get("publicId");
         }
 
-        Course updatedCourse = coursePersistenceService.updateCourseData(existingCourse, request, newImageUrl, newImagePublicId);
+        Course updatedCourse = coursePersistenceService.updateCourseData(existingCourse, request, validTags, newImageUrl, newImagePublicId);
 
         return mapToResponse(updatedCourse);
     }
@@ -150,4 +159,6 @@ public class CourseService {
 
                 .build();
     }
+
+
 }

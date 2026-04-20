@@ -18,6 +18,8 @@ public class QuestionResponse {
     String content;
     String explanation;
     SkillType skillType;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    Long tagId;
     String tagName;
     Integer orderIndex;
 

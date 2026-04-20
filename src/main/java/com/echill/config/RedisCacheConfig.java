@@ -44,6 +44,7 @@ public class RedisCacheConfig {
         cacheConfigurations.put("testReviewCache", defaultCacheConfiguration().entryTtl(Duration.ofDays(30)));
         cacheConfigurations.put("topStudents", defaultCacheConfiguration().entryTtl(Duration.ofMinutes(15)));
         cacheConfigurations.put("lessonDetails", defaultCacheConfiguration().entryTtl(Duration.ofDays(1)));
+        cacheConfigurations.put("tags", defaultCacheConfiguration().entryTtl(Duration.ofDays(30)));
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultCacheConfiguration())

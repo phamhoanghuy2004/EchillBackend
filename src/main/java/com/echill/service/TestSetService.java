@@ -37,22 +37,27 @@ public class TestSetService {
 
     @Transactional
     public TestSetResponse createTestSet(TestSetRequest request) {
-        Lesson lesson = lessonRepository.findById(request.getLessonId())
-                .orElseThrow(() -> new AppException(ErrorEnum.LESSON_NOT_FOUND));
-
-        // Validate: Lesson already has a TestSet
-        if (testSetRepository.findByLessonId(request.getLessonId()).isPresent()) {
-            throw new AppException(TeacherErrorEnum.TEST_SET_EXISTED);
-        }
-
         Long userId = SecurityUtils.getCurrentUserId();
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+
+        User user = userRepository.getReferenceById(userId);
 
         TestSet testSet = testSetMapper.toEntity(request);
-        testSet.setLesson(lesson);
         testSet.setUser(user);
-        if (testSet.getIsPublic() == null) testSet.setIsPublic(true);
+
+        if (testSet.getIsPublic() == null) {
+            testSet.setIsPublic(true);
+        }
+
+        if (request.getLessonId() != null) {
+            Lesson lesson = lessonRepository.findById(request.getLessonId())
+                    .orElseThrow(() -> new AppException(ErrorEnum.LESSON_NOT_FOUND));
+
+            if (testSetRepository.findByLessonId(request.getLessonId()).isPresent()) {
+                throw new AppException(TeacherErrorEnum.TEST_SET_EXISTED);
+            }
+
+            testSet.setLesson(lesson);
+        }
 
         return testSetMapper.toResponse(testSetRepository.save(testSet));
     }

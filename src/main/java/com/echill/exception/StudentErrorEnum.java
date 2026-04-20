@@ -37,7 +37,7 @@ public enum StudentErrorEnum implements ErrorCode {
     LESSON_NOT_STARTED(1064, "Lesson is not started", HttpStatus.BAD_REQUEST),
     LESSON_NOT_READY(1065, "Lesson is not ready", HttpStatus.BAD_REQUEST),
     NOT_ENOUGH_PROGRESS(1066, "Not enough progress to complete this course", HttpStatus.BAD_REQUEST),
-
+    SKILL_PROFILE_NOT_FOUND(1067, "Skill profile not found", HttpStatus.NOT_FOUND),
     ;
     Integer code;
     String message;

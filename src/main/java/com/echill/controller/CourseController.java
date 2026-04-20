@@ -92,4 +92,12 @@ public class CourseController {
                 .data(courseQueryService.getCourseDetail(id))
                 .build();
     }
+
+    @GetMapping("/recommendations/combo-path")
+    public ApiResponse<List<CourseCardResponse>> getRecommendedComboPathForCurrentUser() {
+        return ApiResponse.<List<CourseCardResponse>>builder()
+                .data(courseSearchService.getRecommendedComboForCurrentUser())
+                .build();
+    }
+
 }

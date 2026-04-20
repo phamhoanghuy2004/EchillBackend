@@ -21,7 +21,7 @@ public class TestSetController {
     TestSetService testSetService;
 
     @PostMapping
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
     public ApiResponse<TestSetResponse> createTestSet(@RequestBody @Valid TestSetRequest request) {
         return ApiResponse.<TestSetResponse>builder()
                 .data(testSetService.createTestSet(request))

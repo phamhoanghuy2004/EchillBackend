@@ -12,7 +12,9 @@ import com.echill.dto.response.guest.TestReviewDetailResponse;
 import com.echill.entity.*;
 import com.echill.entity.enums.AnswerOption;
 import com.echill.entity.enums.TestSessionStatus;
+import com.echill.entity.enums.TestType;
 import com.echill.event.QuizPassedEvent;
+import com.echill.event.TestEvaluatedEvent;
 import com.echill.event.TestUpdatedEvent;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
@@ -457,13 +459,13 @@ public class TestService {
 
         testResult.evaluateResult(snapshotTest.getPassScore());
 
-        testResult = self.saveResultAndCloseSession(testResult, session.getId(), session.getTestSetId());
+        testResult = self.saveResultAndCloseSession(testResult, session.getId(), session.getTestSetId(), evalCtx.tagProficiencyScores(), snapshotTest.getType());
 
         return buildResponse(testResult);
     }
 
     @Transactional
-    public TestResult saveResultAndCloseSession(TestResult result, Long sessionId, Long testSetId) {
+    public TestResult saveResultAndCloseSession(TestResult result, Long sessionId, Long testSetId, Map<Long, Double> tagScores, TestType testType) {
         int updatedRows = testSessionRepository.updateStatusConditionally(
                 sessionId, TestSessionStatus.COMPLETED, TestSessionStatus.IN_PROGRESS
         );
@@ -482,6 +484,14 @@ public class TestService {
             eventPublisher.publishEvent(new QuizPassedEvent(
                     savedResult.getStudent().getId(),
                     testSetId
+            ));
+        }
+
+        if (tagScores != null && !tagScores.isEmpty()) {
+            eventPublisher.publishEvent(new TestEvaluatedEvent(
+                    savedResult.getStudent().getId(),
+                    tagScores,
+                    testType
             ));
         }
 

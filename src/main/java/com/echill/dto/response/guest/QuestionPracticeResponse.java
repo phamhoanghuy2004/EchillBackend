@@ -21,6 +21,8 @@ public class QuestionPracticeResponse {
     Long id;
     String content;
     SkillType skillType;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    Long tagId;
     String tagName;
     Integer orderIndex;
 

@@ -2,14 +2,20 @@ package com.echill.service;
 
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.echill.document.CourseDocument;
 import com.echill.dto.request.elasticsearch.request.CourseSearchRequest;
 import com.echill.dto.request.elasticsearch.response.CourseCardResponse;
+import com.echill.entity.StudentProfile;
+import com.echill.entity.UserSkillProfile;
 import com.echill.entity.enums.CourseSortType;
+import com.echill.entity.enums.Level;
 import com.echill.entity.enums.Status;
+import com.echill.entity.enums.TagGroup;
 import com.echill.mapper.document.CourseDocumentMapper;
+import com.echill.repository.StudentProfileRepository;
+import com.echill.repository.UserSkillProfileRepository;
+import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -28,6 +34,8 @@ import co.elastic.clients.elasticsearch._types.FieldValue;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +44,17 @@ import java.util.List;
 public class CourseSearchService {
     ElasticsearchOperations elasticsearchOperations;
     CourseDocumentMapper courseDocumentMapper;
+    StudentProfileRepository studentProfileRepository;
+    UserSkillProfileRepository userSkillProfileRepository;
+
+    private static final List<Level> BEGINNER_PATH =
+            List.of(Level.BEGINNER, Level.INTERMEDIATE, Level.ADVANCED);
+
+    private static final List<Level> INTERMEDIATE_PATH =
+            List.of(Level.INTERMEDIATE, Level.ADVANCED);
+
+    private static final List<Level> ADVANCED_PATH =
+            List.of(Level.ADVANCED);
 
     public Page<CourseCardResponse> searchCourses(CourseSearchRequest request) {
 
@@ -128,5 +147,100 @@ public class CourseSearchService {
         log.info(responses.toString());
 
         return new PageImpl<>(responses, pageable, searchHits.getTotalHits());
+    }
+
+    public List<CourseCardResponse> getRecommendedComboForCurrentUser() {
+
+        Long userId = SecurityUtils.getCurrentUserId();
+        log.info("🎯 Bắt đầu trích xuất hồ sơ năng lực để đề xuất lộ trình cho User: {}", userId);
+
+        Level currentLevel = studentProfileRepository.findByUserId(userId)
+                .map(StudentProfile::getLevel)
+                .orElse(Level.UNDETERMINED);
+
+        List<UserSkillProfile> userSkills = userSkillProfileRepository.findByUserIdAndTagGroup(userId, TagGroup.ENGLISH_TOEIC);
+
+        Map<Long, Double> tagProficiencies = userSkills.stream()
+                .collect(Collectors.toMap(
+                        p -> p.getTag().getId(),
+                        UserSkillProfile::getProficiencyPercentage
+                ));
+
+        return suggestComboPathForUser(currentLevel, tagProficiencies);
+    }
+
+    public List<CourseCardResponse> suggestComboPathForUser(Level currentLevel, Map<Long, Double> tagProficiencies) {
+        log.info("🔍 [MSEARCH] Tìm lộ trình cho Level {} với bản đồ năng lực (tagIds): {}", currentLevel, tagProficiencies);
+
+        List<CourseCardResponse> recommendedPath = new ArrayList<>();
+        List<Level> targetLevels = getNextLevels(currentLevel);
+
+        if (targetLevels.isEmpty()) return recommendedPath;
+
+        List<co.elastic.clients.elasticsearch._types.query_dsl.Query> baseShouldQueries = new ArrayList<>();
+
+        if (tagProficiencies != null && !tagProficiencies.isEmpty()) {
+            for (Map.Entry<Long, Double> entry : tagProficiencies.entrySet()) {
+                float boostWeight = (float) (100.0 - entry.getValue());
+                if (boostWeight > 10.0f) {
+                    baseShouldQueries.add(co.elastic.clients.elasticsearch._types.query_dsl.Query.of(q -> q.term(t -> t
+                            .field("tagIds")
+                            .value(entry.getKey())
+                            .boost(boostWeight)
+                    )));
+                }
+            }
+        }
+
+        List<org.springframework.data.elasticsearch.core.query.Query> multiQueries = new ArrayList<>();
+
+        for (Level targetLvl : targetLevels) {
+            BoolQuery.Builder boolQuery = new BoolQuery.Builder();
+
+            boolQuery.filter(f -> f.term(t -> t.field("status").value(Status.ACTIVE.name())));
+            boolQuery.filter(f -> f.term(t -> t.field("level").value(targetLvl.name())));
+
+            if (!baseShouldQueries.isEmpty()) {
+                boolQuery.should(baseShouldQueries);
+                boolQuery.minimumShouldMatch("0");
+            }
+
+            NativeQueryBuilder queryBuilder = NativeQuery.builder()
+                    .withQuery(boolQuery.build()._toQuery())
+                    .withPageable(PageRequest.of(0, 1))
+                    .withSort(s -> s.score(sc -> sc.order(SortOrder.Desc)));
+
+            multiQueries.add(queryBuilder.build());
+        }
+
+
+        List<SearchHits<CourseDocument>> multiSearchHits =
+                elasticsearchOperations.multiSearch(multiQueries, CourseDocument.class);
+
+        for (int i = 0; i < multiSearchHits.size(); i++) {
+            SearchHits<CourseDocument> hits = multiSearchHits.get(i);
+            Level lvl = targetLevels.get(i);
+
+            if (hits.hasSearchHits()) {
+                CourseDocument bestMatchCourse = hits.getSearchHits().getFirst().getContent();
+                recommendedPath.add(courseDocumentMapper.toResponse(bestMatchCourse));
+            } else {
+                log.warn("⚠️ Không tìm thấy khóa học ACTIVE nào phù hợp cho Level: {}", lvl);
+            }
+        }
+
+        return recommendedPath;
+    }
+
+    private List<Level> getNextLevels(Level currentLevel) {
+        if (currentLevel == null) {
+            return BEGINNER_PATH;
+        }
+
+        return switch (currentLevel) {
+            case UNDETERMINED, BEGINNER -> BEGINNER_PATH;
+            case INTERMEDIATE -> INTERMEDIATE_PATH;
+            case ADVANCED -> ADVANCED_PATH;
+        };
     }
 }

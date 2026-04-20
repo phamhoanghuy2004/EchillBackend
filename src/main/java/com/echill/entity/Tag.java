@@ -1,11 +1,9 @@
 package com.echill.entity;
 
+import com.echill.entity.enums.TagGroup;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.hypersistence.utils.hibernate.id.Tsid;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
@@ -27,6 +25,11 @@ public class Tag extends BaseEntity   {
 
     @Column(nullable = false, unique = true, length = 100)
     String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tag_group", length = 50, nullable = false)
+    @Builder.Default
+    TagGroup tagGroup = TagGroup.ENGLISH_TOEIC;
 
     @Override
     public boolean equals(Object o) {

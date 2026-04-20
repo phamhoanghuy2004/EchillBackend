@@ -16,4 +16,6 @@ public interface StudentProfileRepository extends JpaRepository<StudentProfile,L
             "LEFT JOIN FETCH ur.role " +
             "WHERE u.username = :username")
     Optional<StudentProfile> findByUserUsernameWithUser(@Param("username") String username);
+
+    Optional<StudentProfile> findByUserId(Long userId);
 }

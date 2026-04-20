@@ -1,5 +1,6 @@
 package com.echill.dto.response;
 
+import com.echill.entity.enums.TagGroup;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -14,4 +15,8 @@ public class TagResponse {
     Long id;
 
     String name;
+
+    TagGroup tagGroup;
+
+    String groupDisplayName;
 }

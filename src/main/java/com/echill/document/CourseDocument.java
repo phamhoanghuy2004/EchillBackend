@@ -10,6 +10,7 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Document(indexName = "idx_courses_v2")
 @Getter
@@ -64,4 +65,7 @@ public class CourseDocument {
 
     @Field(type = FieldType.Keyword)
     Status status;
+
+    @Field(type = FieldType.Long)
+    List<Long> tagIds;
 }

@@ -54,7 +54,7 @@ public class CoursePersistenceService {
     }
 
     @Transactional
-    public Course updateCourseData(Course course, CourseRequest request, String newImageUrl, String newImagePublicId) {
+    public Course updateCourseData(Course course, CourseRequest request, List<Tag> validTags, String newImageUrl, String newImagePublicId) {
 
         // 💥 Vẫn xài TUYỆT CHIÊU PROXY cho nhẹ DB nhé (Cái này quá ngon không thể bỏ được)
         Category categoryRef = categoryRepository.getReferenceById(request.getCategoryId());
@@ -66,6 +66,12 @@ public class CoursePersistenceService {
         course.setOriginalPrice(request.getOriginalPrice());
         course.setLevel(request.getLevel());
         course.setCategory(categoryRef); // Gán Proxy
+
+        course.clearTags();
+
+        if (validTags != null && !validTags.isEmpty()) {
+            validTags.forEach(course::addTag);
+        }
 
         // Nếu có up ảnh mới thì đè URL và PublicID vào
         if (newImageUrl != null) {

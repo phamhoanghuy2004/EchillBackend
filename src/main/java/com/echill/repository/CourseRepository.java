@@ -41,4 +41,10 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     Optional<Course> findActiveCourseWithFullDetails(@Param("id") Long id);
 
     Optional<Course> findByIdAndStatus(Long id, Status status);
+
+    @Query("SELECT t.id FROM Course c JOIN c.tags t WHERE c.id = :courseId")
+    List<Long> findTagIdsByCourseId(@Param("courseId") Long courseId);
+
+    @Query("SELECT c.id, t.id FROM Course c JOIN c.tags t")
+    List<Object[]> findAllCourseTagPairs();
 }

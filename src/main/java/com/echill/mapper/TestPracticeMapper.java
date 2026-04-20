@@ -14,6 +14,7 @@ public interface TestPracticeMapper {
     TestSectionPracticeResponse toSectionPracticeResponse(TestSection section);
 
     @Mapping(source = "tag.name", target = "tagName")
+    @Mapping(source = "tag.id", target = "tagId")
     @Mapping(source = "questionGroup", target = "group")
     QuestionPracticeResponse toQuestionPracticeResponse(Question question);
 
