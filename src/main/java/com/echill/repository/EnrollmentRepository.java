@@ -10,7 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
+import java.util.Optional;
 import java.util.List;
 import java.util.Set;
 
@@ -69,4 +69,12 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
             GROUP BY e.id, s.id, s.fullName, s.email, s.avatarUrl, c.name, c.id, c.totalLessonsCount, e.createdAt
             """)
     List<TeacherStudentResponse> findStudentStatistics(@Param("teacherId") Long teacherId);
+
+
+    @Query("SELECT e FROM Enrollment e JOIN FETCH e.course WHERE e.student.id = :studentId AND e.course.id = :courseId")
+    Optional<Enrollment> findByStudentIdAndCourseId(
+            @Param("studentId") Long studentId,
+            @Param("courseId") Long courseId
+    );
+
 }

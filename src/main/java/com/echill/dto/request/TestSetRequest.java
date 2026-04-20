@@ -21,6 +21,5 @@ public class TestSetRequest {
 
     Integer year;
 
-    @NotNull(message = "LESSON_ID_REQUIRED")
     Long lessonId;
 }

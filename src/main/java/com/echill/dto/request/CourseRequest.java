@@ -4,10 +4,12 @@ import com.echill.entity.enums.Level;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @Builder
@@ -34,4 +36,7 @@ public class CourseRequest {
 
     @NotNull(message = "Category ID is required")
     Long categoryId;
+
+    @Size(max = 3, message = "Mỗi khóa học chỉ được chọn tối đa 3 kỹ năng trọng tâm để đảm bảo chất lượng giảng dạy!")
+    List<Long> tagIds;
 }

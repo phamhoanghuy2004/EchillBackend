@@ -31,6 +31,13 @@ public enum StudentErrorEnum implements ErrorCode {
     SESSION_NOT_FOUND(1058, "Session not found", HttpStatus.NOT_FOUND),
     PAYLOAD_TOO_LARGE(1059, "Payload too large", HttpStatus.BAD_REQUEST),
     TEST_RESULT_NOT_FOUND(1060, "Test result not found", HttpStatus.NOT_FOUND),
+    NOT_ENROLLED(1061, "Not enrolled", HttpStatus.BAD_REQUEST),
+    COURSE_LOCKED(1062, "Course locked", HttpStatus.BAD_REQUEST),
+    PREVIOUS_LESSON_NOT_COMPLETED(1063, "Previous lesson is not completed", HttpStatus.BAD_REQUEST),
+    LESSON_NOT_STARTED(1064, "Lesson is not started", HttpStatus.BAD_REQUEST),
+    LESSON_NOT_READY(1065, "Lesson is not ready", HttpStatus.BAD_REQUEST),
+    NOT_ENOUGH_PROGRESS(1066, "Not enough progress to complete this course", HttpStatus.BAD_REQUEST),
+    SKILL_PROFILE_NOT_FOUND(1067, "Skill profile not found", HttpStatus.NOT_FOUND),
     ;
     Integer code;
     String message;

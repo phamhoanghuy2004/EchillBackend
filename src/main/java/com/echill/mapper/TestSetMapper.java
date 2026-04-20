@@ -4,6 +4,7 @@ import com.echill.dto.request.TestSetRequest;
 import com.echill.dto.response.TestSetDetailWithHistoryResponse;
 import com.echill.dto.request.TestSetUpdateRequest;
 import com.echill.dto.response.TestSetResponse;
+import com.echill.dto.response.learner.TestSetShortcutDto;
 import com.echill.entity.TestResult;
 import com.echill.entity.TestSet;
 import org.mapstruct.Mapper;
@@ -36,4 +37,6 @@ public interface TestSetMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "tests", ignore = true)
     void updateTestSet(@MappingTarget TestSet testSet, TestSetUpdateRequest request);
+
+    TestSetShortcutDto toShortcutDto(TestSet testSet);
 }

@@ -25,7 +25,7 @@ public class VideoCleanupTask {
      * 💥 Chạy mỗi 30 phút để giải phóng các Lesson bị kẹt ở trạng thái PROCESSING.
      * fixedRate = 1800000 ms (30 phút)
      */
-    @Scheduled(fixedRate = 1800000)
+//    @Scheduled(fixedRate = 1800000)
     @Transactional
     public void releaseStuckProcessingLessons() {
         log.info("🧹 Cron Job: Bắt đầu quét các bài học bị kẹt trạng thái PROCESSING...");

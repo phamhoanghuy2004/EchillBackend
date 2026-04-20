@@ -27,7 +27,7 @@ public class TestController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER','STUDENT')")
     public ApiResponse<TestResponse> createTest(
             @RequestPart("data") @Valid TestRequest request,
             @RequestPart("file") MultipartFile file) {

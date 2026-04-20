@@ -17,7 +17,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "lessons",indexes = {
-        @Index(name = "idx_public_video_id", columnList = "public_video_id")
+        @Index(name = "idx_public_video_id", columnList = "public_video_id"),
+        @Index(name = "idx_lesson_course_order", columnList = "course_id, display_order")
 })
 @Getter
 @Setter

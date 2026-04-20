@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -38,8 +40,12 @@ public class CourseSyncListener {
             Course savedCourse = courseRepository.findByIdWithDetails(courseId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy Course ID: " + courseId));
 
+            List<Long> tagIds = courseRepository.findTagIdsByCourseId(courseId);
+
             CourseDocument doc = courseDocumentMapper.toDocument(savedCourse);
             doc.setDiscountPercent(savedCourse.getDiscountPercent());
+            doc.setTagIds(tagIds);
+
             courseDocumentRepository.save(doc);
 
             log.info("[ES-Sync] Đồng bộ thành công!");

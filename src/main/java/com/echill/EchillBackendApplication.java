@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableJpaAuditing
-//@EnableScheduling
+@EnableScheduling
 @EnableAsync
 public class EchillBackendApplication {
 

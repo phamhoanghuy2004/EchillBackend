@@ -17,7 +17,7 @@ import java.util.Date;
 public class TokenCleanupJob {
     InvalidatedTokenRepository invalidatedTokenRepository;
 
-    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(cron = "0 40 2 * * ?")
     public void cleanUpExpiredTokens() {
         log.info("⏳ Bắt đầu Job dọn dẹp các token rác đã hết hạn trong Blacklist...");
 

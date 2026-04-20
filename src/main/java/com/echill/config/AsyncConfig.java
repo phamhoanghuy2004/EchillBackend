@@ -32,4 +32,15 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    @Bean(name = "skillProfileTaskExecutor")
+    public Executor skillProfileTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(5);
+        executor.setQueueCapacity(500);
+        executor.setThreadNamePrefix("SkillProfile-Task-");
+        executor.initialize();
+        return executor;
+    }
 }

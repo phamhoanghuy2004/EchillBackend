@@ -10,6 +10,7 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring", uses = {AnswerMapper.class})
 public interface QuestionMapper {
     @Mapping(source = "tag.name", target = "tagName")
+    @Mapping(source = "tag.id", target = "tagId")
     @Mapping(source = "questionGroup", target = "group")
     QuestionResponse toResponse(Question question);
 

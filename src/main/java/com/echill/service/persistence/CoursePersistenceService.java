@@ -3,6 +3,7 @@ package com.echill.service.persistence;
 import com.echill.dto.request.CourseRequest;
 import com.echill.entity.Category;
 import com.echill.entity.Course;
+import com.echill.entity.Tag;
 import com.echill.entity.User;
 import com.echill.entity.enums.Status;
 import com.echill.event.CourseCreatedEvent;
@@ -16,6 +17,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +30,7 @@ public class CoursePersistenceService {
     ApplicationEventPublisher eventPublisher;
 
     @Transactional
-    public Course saveNewCourse(User teacher, Category category, CourseRequest request, String uploadedImageUrl, String publicImageId) {
+    public Course saveNewCourse(User teacher, Category category, List<Tag> tags, CourseRequest request, String uploadedImageUrl, String publicImageId) {
         Course course = Course.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -40,13 +43,18 @@ public class CoursePersistenceService {
                 .teacher(teacher)
                 .status(Status.ACTIVE)
                 .build();
+
+        if (tags != null && !tags.isEmpty()) {
+            tags.forEach(course::addTag);
+        }
+
         Course savedCourse = courseRepository.save(course);
         eventPublisher.publishEvent(new CourseCreatedEvent(savedCourse.getId()));
         return savedCourse;
     }
 
     @Transactional
-    public Course updateCourseData(Course course, CourseRequest request, String newImageUrl, String newImagePublicId) {
+    public Course updateCourseData(Course course, CourseRequest request, List<Tag> validTags, String newImageUrl, String newImagePublicId) {
 
         // 💥 Vẫn xài TUYỆT CHIÊU PROXY cho nhẹ DB nhé (Cái này quá ngon không thể bỏ được)
         Category categoryRef = categoryRepository.getReferenceById(request.getCategoryId());
@@ -58,6 +66,12 @@ public class CoursePersistenceService {
         course.setOriginalPrice(request.getOriginalPrice());
         course.setLevel(request.getLevel());
         course.setCategory(categoryRef); // Gán Proxy
+
+        course.clearTags();
+
+        if (validTags != null && !validTags.isEmpty()) {
+            validTags.forEach(course::addTag);
+        }
 
         // Nếu có up ảnh mới thì đè URL và PublicID vào
         if (newImageUrl != null) {
