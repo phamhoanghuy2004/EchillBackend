@@ -48,4 +48,12 @@ public class StudentController {
                 .build();
     }
 
+    @GetMapping("/my-goal")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ApiResponse<StudyGoalResponse> getMyActiveGoal() {
+        return ApiResponse.<StudyGoalResponse>builder()
+                .data(studyGoalService.getMyActiveGoal())
+                .build();
+    }
+
 }

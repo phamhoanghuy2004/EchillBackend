@@ -64,4 +64,16 @@ public class StudyGoalService {
         // Dirty checking tự động lưu xuống DB, chỉ cần map ra trả về
         return studyGoalMapper.toStudyGoalResponse(existingGoal);
     }
+
+    @Transactional(readOnly = true)
+    public StudyGoalResponse getMyActiveGoal() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        log.debug("[StudyGoal] Đang lấy mục tiêu active của userId: {}", userId);
+
+        // Sử dụng luôn hàm findByStudentProfileIdAndIsActiveTrue đã có sẵn
+        StudyGoal activeGoal = studyGoalRepository.findByStudentProfileIdAndIsActiveTrue(userId)
+                .orElseThrow(() -> new AppException(StudentErrorEnum.GOAL_NOT_FOUND));
+
+        return studyGoalMapper.toStudyGoalResponse(activeGoal);
+    }
 }
