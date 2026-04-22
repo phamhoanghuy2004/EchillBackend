@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
@@ -14,16 +15,18 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     @Query("SELECT t FROM Transaction t WHERE t.transactionCode = :code")
     Optional<Transaction> findByTransactionCodeForUpdate(@Param("code") String code);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
-        SELECT t FROM Transaction t 
-        JOIN t.items i 
-        WHERE t.user.id = :userId 
-          AND i.course.id = :courseId 
+        SELECT t FROM Transaction t
+        JOIN t.items i
+        WHERE t.user.id = :userId
+          AND i.course.id = :courseId
           AND t.status = 'PENDING'
     """)
-    Optional<Transaction> findPendingTransactionByUserAndCourseForUpdate(
+    Optional<Transaction> findPendingTransactionByUserAndCourse(
             @Param("userId") Long userId,
             @Param("courseId") Long courseId
     );
+
+    @Query("SELECT t FROM Transaction t JOIN FETCH t.items WHERE t.user.id = :userId AND t.status = 'PENDING'")
+    List<Transaction> findAllPendingTransactionsByUser(@Param("userId") Long userId);
 }
