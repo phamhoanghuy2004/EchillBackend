@@ -25,4 +25,14 @@ public interface CourseMapper {
     @Mapping(source = "teacher.avatarUrl", target = "teacherAvatarUrl")
     CourseDetailResponse toDetailResponse(Course course);
 
+    @Mapping(source = "category.id", target = "categoryId")
+    @Mapping(source = "category.name", target = "categoryName")
+    @Mapping(source = "category.description", target = "categoryDescription")
+    @Mapping(source = "teacher.id", target = "teacherId")
+    @Mapping(source = "teacher.fullName", target = "teacherName")
+    @Mapping(source = "teacher.avatarUrl", target = "teacherAvatarUrl")
+    com.echill.dto.request.elasticsearch.response.CourseCardResponse toCardResponse(Course course);
+
+    List<com.echill.dto.request.elasticsearch.response.CourseCardResponse> toCardResponseList(List<Course> courses);
+
 }

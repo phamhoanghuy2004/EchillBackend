@@ -1,8 +1,10 @@
 package com.echill.service;
 
+import com.echill.constant.CacheNames;
 import com.echill.constant.CloudinaryFolder;
 import com.echill.dto.request.BlogRequest;
 import com.echill.dto.response.BlogResponse;
+import com.echill.dto.response.PageResponse;
 import com.echill.entity.Blog;
 import com.echill.entity.User;
 import com.echill.exception.AppException;
@@ -17,10 +19,13 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -90,9 +95,17 @@ public class BlogService {
         return  blogs.stream().map(blogMapper::toResponse).toList();
     }
 
-    public List<BlogResponse> getAllBlogs() {
-        List<Blog> blogs = blogRepository.findAllWithUser();
-        return blogs.stream().map(blogMapper::toResponse).toList();
+    public PageResponse<BlogResponse> getAllBlogs(int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page - 1, size);
+        org.springframework.data.domain.Page<Blog> blogPage = blogRepository.findAllWithUser(pageRequest);
+
+        return PageResponse.of(blogPage.map(blogMapper::toResponse));
     }
 
+    @Cacheable(cacheNames = CacheNames.LATEST_BLOGS, key = "'top3_blog_v3'")
+    public List<BlogResponse> getLatestBlogs() {
+        log.info("⚡ CHẠY VÀO DB ĐỂ LẤY 3 BLOG MỚI NHẤT (CACHE MISS)");
+        List<Blog> blogs = blogRepository.findLatestBlogs(PageRequest.of(0, 3));
+        return blogs.stream().map(blogMapper::toResponse).collect(Collectors.toList());
+    }
 }
