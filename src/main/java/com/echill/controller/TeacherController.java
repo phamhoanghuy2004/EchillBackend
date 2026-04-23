@@ -48,4 +48,11 @@ public class TeacherController {
                 .data(teacherService.getStudentStatistics())
                 .build();
     }
+
+    @GetMapping("/all")
+    public ApiResponse<List<TeacherResponse>> getAllTeachers() {
+        return ApiResponse.<List<TeacherResponse>>builder()
+                .data(teacherService.getAllTeachers())
+                .build();
+    }
 }

@@ -93,6 +93,13 @@ public class CourseController {
                 .build();
     }
 
+    @GetMapping("/all")
+    public ApiResponse<java.util.List<com.echill.dto.request.elasticsearch.response.CourseCardResponse>> getAllCourses() {
+        return ApiResponse.<java.util.List<com.echill.dto.request.elasticsearch.response.CourseCardResponse>>builder()
+                .data(courseQueryService.getAllCourses())
+                .build();
+    }
+
     @GetMapping("/recommendations/combo-path")
     public ApiResponse<List<CourseCardResponse>> getRecommendedComboPathForCurrentUser() {
         return ApiResponse.<List<CourseCardResponse>>builder()

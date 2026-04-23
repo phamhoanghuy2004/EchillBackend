@@ -45,6 +45,9 @@ public class RedisCacheConfig {
         cacheConfigurations.put("topStudents", defaultCacheConfiguration().entryTtl(Duration.ofMinutes(15)));
         cacheConfigurations.put("lessonDetails", defaultCacheConfiguration().entryTtl(Duration.ofDays(1)));
         cacheConfigurations.put("tags", defaultCacheConfiguration().entryTtl(Duration.ofDays(30)));
+        cacheConfigurations.put("allCourses", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache danh sách khóa học 24h
+        cacheConfigurations.put("allTeachers", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache danh sách giáo viên 24h
+        cacheConfigurations.put("latestBlogs", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache blog mới nhất 24h
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultCacheConfiguration())
