@@ -65,11 +65,15 @@ public class Voucher extends BaseEntity {
     @Builder.Default
     Boolean isActive = true;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "creator_id", nullable = false)
+    User creator;
+
     public boolean isValid() {
         Instant now = Instant.now();
         return isActive
-                && now.isAfter(startDate)
-                && now.isBefore(endDate)
+                && (now.compareTo(startDate) >= 0) // Lớn hơn hoặc bằng
+                && (now.compareTo(endDate) <= 0)   // Nhỏ hơn hoặc bằng
                 && (usageLimit == null || usedCount < usageLimit);
     }
 }

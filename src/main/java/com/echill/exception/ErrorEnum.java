@@ -93,6 +93,12 @@ public enum ErrorEnum implements ErrorCode {
     INVALID_AMOUNT(1066, "Invalid amount", HttpStatus.BAD_REQUEST),
     TRANSACTION_INVALID_STATUS(1067, "Invalid transaction status", HttpStatus.BAD_REQUEST),
     INVALID_VIDEO_DURATION(1068, "Invalid video duration", HttpStatus.BAD_REQUEST),
+    VOUCHER_DATE_INVALID(1069, "Voucher date is invalid", HttpStatus.BAD_REQUEST),
+    VOUCHER_PERCENT_INVALID(1070, "Voucher percent is invalid", HttpStatus.BAD_REQUEST),
+    VOUCHER_CODE_EXISTED(1071, "Voucher code existed", HttpStatus.BAD_REQUEST),
+    VOUCHER_MAX_DISCOUNT_REQUIRED(1072, "Voucher max discount is required", HttpStatus.BAD_REQUEST),
+    VOUCHER_NOT_FOUND(1073, "Voucher not found", HttpStatus.BAD_REQUEST),
+    VOUCHER_ALREADY_USED(1074, "Voucher already used", HttpStatus.BAD_REQUEST),
     ;
 
 
