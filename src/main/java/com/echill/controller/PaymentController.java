@@ -31,7 +31,7 @@ public class PaymentController {
             @Valid @RequestBody CheckoutRequest requestBody,
             HttpServletRequest request) {
 
-        String paymentUrl = paymentService.initiatePayment(requestBody.getCourseIds(), request);
+        String paymentUrl = paymentService.initiatePayment(requestBody.getCourseIds(), requestBody.getVoucherCode(), request);
 
         return ApiResponse.<String>builder()
                 .message("Tạo URL thanh toán VNPAY thành công")

@@ -17,4 +17,6 @@ public class CheckoutRequest {
     @NotNull(message = "Danh sách khóa học không được để null")
     @NotEmpty(message = "Vui lòng chọn ít nhất 1 khóa học để thanh toán")
     List<Long> courseIds;
+
+    String voucherCode;
 }

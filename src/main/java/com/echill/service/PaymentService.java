@@ -4,6 +4,7 @@ import com.echill.config.VnpayConfig;
 import com.echill.constant.VnpayConstant;
 import com.echill.dto.response.VnpayIpnResponse;
 import com.echill.entity.*;
+import com.echill.entity.enums.DiscountType;
 import com.echill.entity.enums.EnrollmentStatus;
 import com.echill.entity.enums.TransactionStatus;
 import com.echill.entity.enums.TransactionType;
@@ -11,10 +12,7 @@ import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.StudentErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
-import com.echill.repository.CourseRepository;
-import com.echill.repository.EnrollmentRepository;
-import com.echill.repository.TransactionRepository;
-import com.echill.repository.UserRepository;
+import com.echill.repository.*;
 import com.echill.util.SecurityUtils;
 import com.echill.util.VnpayUtil;
 import com.github.f4b6a3.tsid.TsidCreator;
@@ -44,6 +42,7 @@ public class PaymentService {
     CourseRepository courseRepository;
     EnrollmentRepository enrollmentRepository;
     UserRepository userRepository;
+    VoucherRepository voucherRepository;
 
     private static final String VNPAY_ORDER_TYPE = "other";
     private static final String CURRENCY_VND = "VND";
@@ -51,47 +50,93 @@ public class PaymentService {
     private static final DateTimeFormatter VNPAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     @Transactional
-    public String initiatePayment(List<Long> courseIds, HttpServletRequest request) {
+    public String initiatePayment(List<Long> courseIds, String voucherCode, HttpServletRequest request) {
+        // 1. Authenticate & Fetch Data
+        User currentUser = getCurrentUserSecurely();
+        List<Course> courses = validateAndFetchCourses(courseIds);
+        validateOwnership(currentUser, courseIds);
 
-        User currentUser = userRepository.findByIdWithLock(SecurityUtils.getCurrentUserId())
+        // 2. Calculate Base Money
+        BigDecimal totalOriginalPrice = calculateTotalOriginalPrice(courses);
+
+        // 3. Handle Voucher Policy (Atomic Lock)
+        Voucher voucher = null;
+        BigDecimal discountAmount = BigDecimal.ZERO;
+
+        if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+            voucher = voucherRepository.findVoucherByCode(voucherCode.trim().toUpperCase())
+                    .orElseThrow(() -> new AppException(ErrorEnum.VOUCHER_NOT_FOUND));
+
+            voucher.validateApplicability(totalOriginalPrice, courses.size());
+
+            discountAmount = voucher.calculateDiscount(totalOriginalPrice);
+        }
+
+        // 4. Final Money
+        BigDecimal finalPayablePrice = totalOriginalPrice.subtract(discountAmount).max(BigDecimal.ZERO);
+
+        // 5. Handle Pending Transactions (Clean up & Release side effects)
+        Transaction matchingPendingTxn = resolvePendingTransactions(currentUser, courseIds, voucher);
+        if (matchingPendingTxn != null) {
+            log.info("[PAYMENT_REUSED] UserId: {}, TxnCode: {}", currentUser.getId(), matchingPendingTxn.getTransactionCode());
+            return createVnpayPaymentUrl(matchingPendingTxn, request);
+        }
+
+        if (voucher != null) {
+            int updatedRows = voucherRepository.atomicReserveVoucherSlot(voucher.getCode());
+            if (updatedRows == 0) {
+                throw new AppException(ErrorEnum.VOUCHER_USAGE_LIMIT_EXCEEDED);
+            }
+        }
+
+        // 6. Create New Transaction
+        Transaction newTransaction = createNewTransaction(currentUser, courses, voucher, discountAmount, finalPayablePrice);
+
+        // 7. Audit Log Cấp Production
+        log.info("[PAYMENT_INITIATED] UserId: {}, TxnCode: {}, CourseIds: {}, Voucher: {}, BasePrice: {}, Discount: {}, FinalPrice: {}, IP: {}",
+                currentUser.getId(), newTransaction.getTransactionCode(), courseIds, voucherCode, totalOriginalPrice, discountAmount, finalPayablePrice, request.getRemoteAddr());
+
+        return createVnpayPaymentUrl(newTransaction, request);
+    }
+
+    // =========================================================================================
+    // 🛠️ PRIVATE HELPER METHODS (Đọc code như đọc truyện)
+    // =========================================================================================
+
+    private User getCurrentUserSecurely() {
+        return userRepository.findById(SecurityUtils.getCurrentUserId())
                 .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+    }
 
+    private List<Course> validateAndFetchCourses(List<Long> courseIds) {
         List<Course> courses = courseRepository.findAllActiveByIds(courseIds);
         if (courses.size() != courseIds.size()) {
-            List<Long> foundIds = courses.stream().map(Course::getId).toList();
-            List<Long> missingIds = courseIds.stream().filter(id -> !foundIds.contains(id)).toList();
-
-            String missingIdsStr = missingIds.stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(", "));
-
-            String errorMessage = "Lỗi: Các khóa học có ID [" + missingIdsStr + "] không tồn tại hoặc đã bị ẩn, Vui lòng bỏ chọn.";
-
-            log.error("Khóa học không tồn tại: {}", missingIdsStr);
-            throw new AppException(TeacherErrorEnum.COURSE_NOT_FOUND, errorMessage);
+            throw new AppException(TeacherErrorEnum.COURSE_NOT_FOUND);
         }
-
-        List<Long> ownedIds = enrollmentRepository.findOwnedCourseIds(currentUser.getId(), courseIds);
-        if (!ownedIds.isEmpty()) {
-            String ownedIdsStr = ownedIds.stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(", "));
-
-            String errorMessage = "Bạn đã sở hữu các khóa học có ID [" + ownedIdsStr + "]. Vui lòng bỏ chọn các khóa này để tiếp tục thanh toán.";
-
-            log.warn("User {} mua lộ trình chứa khóa đã sở hữu: {}", currentUser.getId(), ownedIdsStr);
-            throw new AppException(StudentErrorEnum.ALREADY_OWNED_COURSE, errorMessage);
-        }
-
         for (Course course : courses) {
             if (course.getPrice() == null || course.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
                 throw new AppException(ErrorEnum.INVALID_AMOUNT);
             }
         }
+        return courses;
+    }
 
-        List<Transaction> pendingTxns = transactionRepository.findAllPendingTransactionsByUser(currentUser.getId());
-        Transaction exactMatchTxn = null;
+    private void validateOwnership(User user, List<Long> courseIds) {
+        List<Long> ownedIds = enrollmentRepository.findOwnedCourseIds(user.getId(), courseIds);
+        if (!ownedIds.isEmpty()) {
+            throw new AppException(StudentErrorEnum.ALREADY_OWNED_COURSE);
+        }
+    }
 
+    private BigDecimal calculateTotalOriginalPrice(List<Course> courses) {
+        return courses.stream()
+                .map(Course::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private Transaction resolvePendingTransactions(User user, List<Long> courseIds, Voucher requestedVoucher) {
+        List<Transaction> pendingTxns = transactionRepository.findAllPendingTransactionsByUser(user.getId());
+        Transaction exactMatch = null;
         Set<Long> requestCourseIdSet = new HashSet<>(courseIds);
 
         for (Transaction pending : pendingTxns) {
@@ -99,48 +144,44 @@ public class PaymentService {
                     .map(item -> item.getCourse().getId())
                     .collect(Collectors.toSet());
 
-            if (pendingCourseIdSet.equals(requestCourseIdSet)) {
-                if (pending.getExpiredAt() != null && pending.getExpiredAt().isAfter(Instant.now())) {
-                    exactMatchTxn = pending;
-                } else {
-                    log.info("Transaction {} khớp giỏ hàng nhưng đã HẾT HẠN -> Hủy", pending.getTransactionCode());
-                    pending.setStatus(TransactionStatus.FAILED);
-                }
+            boolean isSameCourses = pendingCourseIdSet.equals(requestCourseIdSet);
+            boolean isSameVoucher = (requestedVoucher == null && pending.getVoucher() == null) ||
+                    (requestedVoucher != null && pending.getVoucher() != null && requestedVoucher.getId().equals(pending.getVoucher().getId()));
+
+            if (isSameCourses && isSameVoucher && pending.getExpiredAt() != null && pending.getExpiredAt().isAfter(Instant.now())) {
+                exactMatch = pending;
             } else {
-                log.info("Transaction {} lệch giỏ hàng -> Hủy", pending.getTransactionCode());
-                pending.setStatus(TransactionStatus.FAILED);
+                cancelTransactionAndRollbackVoucherSlot(pending);
             }
         }
+        return exactMatch;
+    }
 
-        if (exactMatchTxn != null) {
-            log.info("♻️ [TÁI SỬ DỤNG] User {} spam click. Trả về TXN cũ: {}", currentUser.getId(), exactMatchTxn.getTransactionCode());
-            return createVnpayPaymentUrl(exactMatchTxn, request);
+    private void cancelTransactionAndRollbackVoucherSlot(Transaction pendingTxn) {
+        pendingTxn.markAsFailed();
+        if (pendingTxn.getVoucher() != null) {
+            voucherRepository.atomicReleaseVoucherSlot(pendingTxn.getVoucher().getCode());
         }
+    }
 
+    private Transaction createNewTransaction(User user, List<Course> courses, Voucher voucher,
+                                             BigDecimal discount, BigDecimal finalPrice) {
 
-        BigDecimal totalOriginalAmount = courses.stream()
-                .map(Course::getPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal discountAmount = BigDecimal.ZERO;
-
-        log.info("Tạo Transaction mới cho Combo {} của User {}", courseIds, currentUser.getId());
         String txnCode = "TXN_" + TsidCreator.getTsid();
         Instant now = Instant.now();
 
-        Transaction newTransaction = Transaction.builder()
+        Transaction txn = Transaction.builder()
                 .transactionCode(txnCode)
-                .user(currentUser)
+                .user(user)
                 .status(TransactionStatus.PENDING)
                 .type(TransactionType.VNPAY)
-                .totalAmount(totalOriginalAmount)
-                .discountAmount(discountAmount)
+                .totalAmount(finalPrice)
+                .voucher(voucher)
+                .discountAmount(discount)
                 .totalCoinsChanged(0L)
                 .createdAt(now)
                 .expiredAt(now.plus(15, ChronoUnit.MINUTES))
-                .description(courses.size() == 1
-                        ? "Thanh toan khoa hoc " + courses.getFirst().getId()
-                        : "Thanh toan combo " + courses.size() + " khoa hoc")
+                .description(courses.size() == 1 ? "Thanh toan khoa hoc" : "Thanh toan combo")
                 .build();
 
         for (Course course : courses) {
@@ -148,12 +189,10 @@ public class PaymentService {
                     .course(course)
                     .amountPrice(course.getPrice())
                     .build();
-            newTransaction.addItem(item);
+            txn.addItem(item);
         }
 
-        newTransaction = transactionRepository.saveAndFlush(newTransaction);
-
-        return createVnpayPaymentUrl(newTransaction, request);
+        return transactionRepository.saveAndFlush(txn);
     }
 
     public String createVnpayPaymentUrl(Transaction transaction, HttpServletRequest request) {
@@ -272,6 +311,11 @@ public class PaymentService {
         } else {
             transaction.markAsFailed();
             log.info("Khách hàng hủy hoặc thanh toán thất bại đơn: {}", transactionCode);
+
+            if (transaction.getVoucher() != null) {
+                voucherRepository.atomicReleaseVoucherSlot(transaction.getVoucher().getCode());
+                log.info("Đã hoàn trả 1 lượt sử dụng cho mã Voucher: {}", transaction.getVoucher().getCode());
+            }
         }
 
         transactionRepository.saveAndFlush(transaction);

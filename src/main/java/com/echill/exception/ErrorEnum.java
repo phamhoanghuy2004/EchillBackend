@@ -99,6 +99,8 @@ public enum ErrorEnum implements ErrorCode {
     VOUCHER_MAX_DISCOUNT_REQUIRED(1072, "Voucher max discount is required", HttpStatus.BAD_REQUEST),
     VOUCHER_NOT_FOUND(1073, "Voucher not found", HttpStatus.BAD_REQUEST),
     VOUCHER_ALREADY_USED(1074, "Voucher already used", HttpStatus.BAD_REQUEST),
+    VOUCHER_CONDITION_NOT_MET(1075, "Not eligible to apply voucher", HttpStatus.BAD_REQUEST),
+    VOUCHER_USAGE_LIMIT_EXCEEDED(1076, "Voucher usage limit exceeded", HttpStatus.BAD_REQUEST),
     ;
 
 
