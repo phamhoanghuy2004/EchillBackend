@@ -6,7 +6,9 @@ import jakarta.persistence.MappedSuperclass;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
+import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -29,4 +31,12 @@ public abstract class BaseEntity {
     @LastModifiedDate
     @Column(name = "updated_at")
     Instant updatedAt;
+
+    @CreatedBy
+    @Column(name = "created_by", updatable = false)
+    Long createdBy;
+
+    @LastModifiedBy
+    @Column(name = "updated_by")
+    Long updatedBy;
 }
