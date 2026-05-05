@@ -13,11 +13,15 @@ import java.util.Optional;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT t FROM Transaction t WHERE t.transactionCode = :code")
-    Optional<Transaction> findByTransactionCodeForUpdate(@Param("code") String code);
-
+    @EntityGraph(attributePaths = {"user", "items", "items.coinPackage", "items.course", "voucher"})
+    @Query("SELECT t FROM Transaction t WHERE t.transactionCode = :txnCode")
+    Optional<Transaction> findByTransactionCodeForUpdate(@Param("txnCode") String txnCode);
 
     @EntityGraph(attributePaths = {"items", "items.course", "voucher"})
     @Query("SELECT t FROM Transaction t WHERE t.user.id = :userId AND t.status = 'PENDING'")
     List<Transaction> findAllPendingTransactionsByUser(@Param("userId") Long userId);
+
+    @EntityGraph(attributePaths = {"items", "items.coinPackage"})
+    @Query("SELECT t FROM Transaction t WHERE t.user.id = :userId AND t.status = 'PENDING'")
+    List<Transaction> findAllCoinPackagePendingTransactionsByUser(@Param("userId") Long userId);
 }

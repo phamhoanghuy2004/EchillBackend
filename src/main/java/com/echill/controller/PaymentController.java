@@ -2,6 +2,7 @@ package com.echill.controller;
 
 import com.echill.constant.VnpayConstant;
 import com.echill.dto.request.CheckoutRequest;
+import com.echill.dto.request.CoinPackageCheckoutRequest;
 import com.echill.dto.response.ApiResponse;
 import com.echill.dto.response.VnpayIpnResponse;
 import com.echill.service.PaymentService;
@@ -32,6 +33,19 @@ public class PaymentController {
             HttpServletRequest request) {
 
         String paymentUrl = paymentService.initiatePayment(requestBody.getCourseIds(), requestBody.getVoucherCode(), request);
+
+        return ApiResponse.<String>builder()
+                .message("Tạo URL thanh toán VNPAY thành công")
+                .data(paymentUrl)
+                .build();
+    }
+
+    @PostMapping("/checkout/coinPackage")
+    public ApiResponse<String> initiateCoinPayment(
+            @Valid @RequestBody CoinPackageCheckoutRequest requestBody,
+            HttpServletRequest request) {
+
+        String paymentUrl = paymentService.initiateCoinPayment(requestBody.getCoinPackageId(), request);
 
         return ApiResponse.<String>builder()
                 .message("Tạo URL thanh toán VNPAY thành công")

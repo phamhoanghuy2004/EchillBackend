@@ -43,6 +43,7 @@ public class PaymentService {
     EnrollmentRepository enrollmentRepository;
     UserRepository userRepository;
     VoucherRepository voucherRepository;
+    CoinPackageRepository coinPackageRepository;
 
     private static final String VNPAY_ORDER_TYPE = "other";
     private static final String CURRENCY_VND = "VND";
@@ -99,13 +100,116 @@ public class PaymentService {
         return createVnpayPaymentUrl(newTransaction, request);
     }
 
+
+    @Transactional
+    public String initiateCoinPayment(Long packageId, HttpServletRequest request) {
+        // 1. Authenticate & Fetch Data
+        User currentUser = getCurrentUserSecurely();
+        CoinPackage coinPackage = validateAndFetchCoinPackage(packageId);
+
+        // 2. Handle Idempotency & Clean up Pending Transactions
+        Transaction pendingTxn = resolvePendingCoinTransaction(currentUser, coinPackage);
+        if (pendingTxn != null) {
+            log.info("[COIN_PAYMENT_REUSED] UserId: {}, TxnCode: {}, PackageId: {}",
+                    currentUser.getId(), pendingTxn.getTransactionCode(), packageId);
+            return createVnpayPaymentUrl(pendingTxn, request);
+        }
+
+        // 3. Create New Transaction with SNAPSHOT
+        Transaction newTransaction = createNewCoinTransaction(currentUser, coinPackage);
+
+        // 4. Audit Log Cấp Production
+        log.info("[COIN_PAYMENT_INITIATED] UserId: {}, TxnCode: {}, PackageId: {}, Price: {}, Coins: {}, IP: {}",
+                currentUser.getId(), newTransaction.getTransactionCode(), coinPackage.getId(),
+                coinPackage.getPrice(), coinPackage.getCoinAmount(), request.getRemoteAddr());
+
+        // 5. Call 3rd Party (VNPay)
+        return createVnpayPaymentUrl(newTransaction, request);
+    }
+
     // =========================================================================================
     // 🛠️ PRIVATE HELPER METHODS (Đọc code như đọc truyện)
     // =========================================================================================
 
     private User getCurrentUserSecurely() {
-        return userRepository.findById(SecurityUtils.getCurrentUserId())
+        return userRepository.findByIdForPaymentLock(SecurityUtils.getCurrentUserId())
                 .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+    }
+
+    private CoinPackage validateAndFetchCoinPackage(Long packageId) {
+        CoinPackage coinPackage = coinPackageRepository.findByIdAndIsActiveTrue(packageId)
+                .orElseThrow(() -> new AppException(ErrorEnum.COIN_PACKAGE_NOT_FOUND));
+
+        if (coinPackage.getPrice() == null || coinPackage.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppException(ErrorEnum.INVALID_AMOUNT);
+        }
+
+        if (coinPackage.getCoinAmount() == null || coinPackage.getCoinAmount() <= 0) {
+            throw new AppException(ErrorEnum.INVALID_COIN_AMOUNT);
+        }
+
+        if (coinPackage.getBonusCoin() != null && coinPackage.getBonusCoin() < 0) {
+            throw new AppException(ErrorEnum.INVALID_COIN_AMOUNT);
+        }
+
+        return coinPackage;
+    }
+
+    private Transaction resolvePendingCoinTransaction(User user, CoinPackage targetPackage) {
+        List<Transaction> pendingTxns = transactionRepository.findAllCoinPackagePendingTransactionsByUser(user.getId());
+
+        Transaction exactMatch = null;
+        Instant now = Instant.now();
+
+        for (Transaction pending : pendingTxns) {
+            boolean isSamePackage = false;
+
+            if (!pending.getItems().isEmpty()) {
+                TransactionItem firstItem = pending.getItems().getFirst();
+                isSamePackage = firstItem.getCoinPackage() != null
+                        && firstItem.getCoinPackage().getId().equals(targetPackage.getId());
+            }
+
+            boolean isNotExpired = pending.getExpiredAt() != null && pending.getExpiredAt().isAfter(now);
+
+            if (isSamePackage && isNotExpired && exactMatch == null) {
+                exactMatch = pending;
+            } else {
+                pending.markAsFailed();
+            }
+        }
+
+        return exactMatch;
+    }
+
+    private Transaction createNewCoinTransaction(User user, CoinPackage coinPackage) {
+        String txnCode = "VNP_" + TsidCreator.getTsid();
+        Instant now = Instant.now();
+
+        Long bonus = coinPackage.getBonusCoin() != null ? coinPackage.getBonusCoin() : 0L;
+        Long totalCoinsReceived = coinPackage.getCoinAmount() + bonus;
+
+        Transaction txn = Transaction.builder()
+                .transactionCode(txnCode)
+                .user(user)
+                .status(TransactionStatus.PENDING)
+                .type(TransactionType.VNPAY)
+                .totalAmount(coinPackage.getPrice())
+                .totalCoinsChanged(totalCoinsReceived)
+                .discountAmount(BigDecimal.ZERO)
+                .createdAt(now)
+                .expiredAt(now.plus(15, ChronoUnit.MINUTES))
+                .description("Thanh toan goi xu: " + coinPackage.getName())
+                .build();
+
+        TransactionItem item = TransactionItem.builder()
+                .coinPackage(coinPackage)
+                .amountPrice(coinPackage.getPrice())
+                .build();
+
+        txn.addItem(item);
+
+        return transactionRepository.saveAndFlush(txn);
     }
 
     private List<Course> validateAndFetchCourses(List<Long> courseIds) {
@@ -305,9 +409,24 @@ public class PaymentService {
         transaction.setVnpTransactionNo(vnp_TransactionNo);
 
         if ("00".equals(responseCode)) {
-            Long currentBalance = transaction.getUser().getCurrentCoin();
-            transaction.markAsSuccess(currentBalance);
-            grantCoursesToUser(transaction);
+            User user = userRepository.findByIdForPaymentLock(transaction.getUser().getId())
+                    .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+
+            boolean isCoinDeposit = transaction.getItems().stream()
+                    .anyMatch(item -> item.getCoinPackage() != null);
+
+            if (isCoinDeposit) {
+                Long coinsToAdd = transaction.getTotalCoinsChanged();
+                user.addCoin(coinsToAdd);
+                log.info("💰 [VNPAY IPN] Nạp xu thành công! Txn: {}, UserId: {}, Đã cộng: {} xu",
+                        transactionCode, user.getId(), coinsToAdd);
+            } else {
+                grantCoursesToUser(transaction);
+                log.info("🎓 [VNPAY IPN] Mua khóa học thành công! Txn: {}, UserId: {}",
+                        transactionCode, user.getId());
+            }
+
+            transaction.markAsSuccess(user.getCurrentCoin());
         } else {
             transaction.markAsFailed();
             log.info("Khách hàng hủy hoặc thanh toán thất bại đơn: {}", transactionCode);
