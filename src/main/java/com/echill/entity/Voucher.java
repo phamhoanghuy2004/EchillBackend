@@ -1,6 +1,8 @@
 package com.echill.entity;
 
 import com.echill.entity.enums.DiscountType;
+import com.echill.exception.AppException;
+import com.echill.exception.ErrorEnum;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -8,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 
 @Entity
@@ -65,11 +68,41 @@ public class Voucher extends BaseEntity {
     @Builder.Default
     Boolean isActive = true;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "creator_id", nullable = false)
+    User creator;
+
     public boolean isValid() {
         Instant now = Instant.now();
         return isActive
-                && now.isAfter(startDate)
-                && now.isBefore(endDate)
+                && (now.compareTo(startDate) >= 0)
+                && (now.compareTo(endDate) <= 0)
                 && (usageLimit == null || usedCount < usageLimit);
+    }
+
+    public void validateApplicability(BigDecimal totalOrderValue, int courseCount) {
+        if (!isValid()) {
+            throw new AppException(ErrorEnum.VOUCHER_CONDITION_NOT_MET);
+        }
+        if (minOrderValue != null && totalOrderValue.compareTo(minOrderValue) < 0) {
+            throw new AppException(ErrorEnum.VOUCHER_CONDITION_NOT_MET);
+        }
+        if (minCourseCount != null && courseCount < minCourseCount) {
+            throw new AppException(ErrorEnum.VOUCHER_CONDITION_NOT_MET);
+        }
+    }
+
+    public BigDecimal calculateDiscount(BigDecimal totalOrderValue) {
+        if (discountType == DiscountType.VALUE) {
+            return discountValue;
+        }
+
+        BigDecimal discount = totalOrderValue.multiply(discountValue)
+                .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+
+        if (maxDiscountAmount != null && discount.compareTo(maxDiscountAmount) > 0) {
+            return maxDiscountAmount;
+        }
+        return discount;
     }
 }

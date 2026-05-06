@@ -3,22 +3,16 @@ package com.echill.service;
 import com.echill.config.VnpayConfig;
 import com.echill.constant.VnpayConstant;
 import com.echill.dto.response.VnpayIpnResponse;
-import com.echill.entity.Course;
-import com.echill.entity.Transaction;
-import com.echill.entity.TransactionItem;
-import com.echill.entity.User;
-import com.echill.entity.enums.Status;
+import com.echill.entity.*;
+import com.echill.entity.enums.DiscountType;
+import com.echill.entity.enums.EnrollmentStatus;
 import com.echill.entity.enums.TransactionStatus;
 import com.echill.entity.enums.TransactionType;
-import com.echill.event.TransactionSuccessEvent;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.StudentErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
-import com.echill.repository.CourseRepository;
-import com.echill.repository.EnrollmentRepository;
-import com.echill.repository.TransactionRepository;
-import com.echill.repository.UserRepository;
+import com.echill.repository.*;
 import com.echill.util.SecurityUtils;
 import com.echill.util.VnpayUtil;
 import com.github.f4b6a3.tsid.TsidCreator;
@@ -27,7 +21,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
@@ -36,9 +29,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,10 +39,11 @@ import java.util.Optional;
 public class PaymentService {
     TransactionRepository transactionRepository;
     VnpayConfig vnpayConfig;
-    ApplicationEventPublisher eventPublisher;
     CourseRepository courseRepository;
     EnrollmentRepository enrollmentRepository;
     UserRepository userRepository;
+    VoucherRepository voucherRepository;
+    CoinPackageRepository coinPackageRepository;
 
     private static final String VNPAY_ORDER_TYPE = "other";
     private static final String CURRENCY_VND = "VND";
@@ -58,59 +51,252 @@ public class PaymentService {
     private static final DateTimeFormatter VNPAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     @Transactional
-    public String initiateCoursePayment(Long courseId, HttpServletRequest request) {
+    public String initiatePayment(List<Long> courseIds, String voucherCode, HttpServletRequest request) {
+        // 1. Authenticate & Fetch Data
+        User currentUser = getCurrentUserSecurely();
+        List<Course> courses = validateAndFetchCourses(courseIds);
+        validateOwnership(currentUser, courseIds);
 
-        User currentUser = userRepository.findById(SecurityUtils.getCurrentUserId())
-                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+        // 2. Calculate Base Money
+        BigDecimal totalOriginalPrice = calculateTotalOriginalPrice(courses);
 
-        Course course = courseRepository.findByIdAndStatus(courseId, Status.ACTIVE)
-                .orElseThrow(() -> new AppException(TeacherErrorEnum.COURSE_NOT_FOUND));
+        // 3. Handle Voucher Policy (Atomic Lock)
+        Voucher voucher = null;
+        BigDecimal discountAmount = BigDecimal.ZERO;
 
-        if (course.getPrice() == null || course.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            log.error("CRITICAL: Khóa học {} có giá trị không hợp lệ (Null hoặc <= 0)!", courseId);
-            throw new AppException(ErrorEnum.INVALID_AMOUNT);
+        if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+            voucher = voucherRepository.findVoucherByCode(voucherCode.trim().toUpperCase())
+                    .orElseThrow(() -> new AppException(ErrorEnum.VOUCHER_NOT_FOUND));
+
+            voucher.validateApplicability(totalOriginalPrice, courses.size());
+
+            discountAmount = voucher.calculateDiscount(totalOriginalPrice);
         }
 
-        if (enrollmentRepository.existsByStudentAndCourse(currentUser, course)) {
-            log.warn("User {} cố tình mua lại khóa học {} đã sở hữu!", currentUser.getId(), courseId);
-            throw new AppException(StudentErrorEnum.ALREADY_OWNED_COURSE);
+        // 4. Final Money
+        BigDecimal finalPayablePrice = totalOriginalPrice.subtract(discountAmount).max(BigDecimal.ZERO);
+
+        // 5. Handle Pending Transactions (Clean up & Release side effects)
+        Transaction matchingPendingTxn = resolvePendingTransactions(currentUser, courseIds, voucher);
+        if (matchingPendingTxn != null) {
+            log.info("[PAYMENT_REUSED] UserId: {}, TxnCode: {}", currentUser.getId(), matchingPendingTxn.getTransactionCode());
+            return createVnpayPaymentUrl(matchingPendingTxn, request);
         }
 
-        Optional<Transaction> existingPendingTxn = transactionRepository
-                .findPendingTransactionByUserAndCourseForUpdate(currentUser.getId(), courseId);
+        if (voucher != null) {
+            int updatedRows = voucherRepository.atomicReserveVoucherSlot(voucher.getCode());
+            if (updatedRows == 0) {
+                throw new AppException(ErrorEnum.VOUCHER_USAGE_LIMIT_EXCEEDED);
+            }
+        }
 
-        if (existingPendingTxn.isPresent()) {
-            Transaction pendingTxn = existingPendingTxn.get();
-            log.info("♻️ [TÁI SỬ DỤNG] User {} bấm thanh toán nhiều lần. Dùng lại Transaction PENDING: {}",
-                    currentUser.getId(), pendingTxn.getTransactionCode());
+        // 6. Create New Transaction
+        Transaction newTransaction = createNewTransaction(currentUser, courses, voucher, discountAmount, finalPayablePrice);
+
+        // 7. Audit Log Cấp Production
+        log.info("[PAYMENT_INITIATED] UserId: {}, TxnCode: {}, CourseIds: {}, Voucher: {}, BasePrice: {}, Discount: {}, FinalPrice: {}, IP: {}",
+                currentUser.getId(), newTransaction.getTransactionCode(), courseIds, voucherCode, totalOriginalPrice, discountAmount, finalPayablePrice, request.getRemoteAddr());
+
+        return createVnpayPaymentUrl(newTransaction, request);
+    }
+
+
+    @Transactional
+    public String initiateCoinPayment(Long packageId, HttpServletRequest request) {
+        // 1. Authenticate & Fetch Data
+        User currentUser = getCurrentUserSecurely();
+        CoinPackage coinPackage = validateAndFetchCoinPackage(packageId);
+
+        // 2. Handle Idempotency & Clean up Pending Transactions
+        Transaction pendingTxn = resolvePendingCoinTransaction(currentUser, coinPackage);
+        if (pendingTxn != null) {
+            log.info("[COIN_PAYMENT_REUSED] UserId: {}, TxnCode: {}, PackageId: {}",
+                    currentUser.getId(), pendingTxn.getTransactionCode(), packageId);
             return createVnpayPaymentUrl(pendingTxn, request);
         }
 
-        log.info("Tạo Transaction mới cho User {} mua Course {}", currentUser.getId(), courseId);
+        // 3. Create New Transaction with SNAPSHOT
+        Transaction newTransaction = createNewCoinTransaction(currentUser, coinPackage);
 
+        // 4. Audit Log Cấp Production
+        log.info("[COIN_PAYMENT_INITIATED] UserId: {}, TxnCode: {}, PackageId: {}, Price: {}, Coins: {}, IP: {}",
+                currentUser.getId(), newTransaction.getTransactionCode(), coinPackage.getId(),
+                coinPackage.getPrice(), coinPackage.getCoinAmount(), request.getRemoteAddr());
 
-        String txnCode = "TXN_" + TsidCreator.getTsid();
+        // 5. Call 3rd Party (VNPay)
+        return createVnpayPaymentUrl(newTransaction, request);
+    }
 
-        Transaction newTransaction = Transaction.builder()
+    // =========================================================================================
+    // 🛠️ PRIVATE HELPER METHODS (Đọc code như đọc truyện)
+    // =========================================================================================
+
+    private User getCurrentUserSecurely() {
+        return userRepository.findByIdForPaymentLock(SecurityUtils.getCurrentUserId())
+                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+    }
+
+    private CoinPackage validateAndFetchCoinPackage(Long packageId) {
+        CoinPackage coinPackage = coinPackageRepository.findByIdAndIsActiveTrue(packageId)
+                .orElseThrow(() -> new AppException(ErrorEnum.COIN_PACKAGE_NOT_FOUND));
+
+        if (coinPackage.getPrice() == null || coinPackage.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppException(ErrorEnum.INVALID_AMOUNT);
+        }
+
+        if (coinPackage.getCoinAmount() == null || coinPackage.getCoinAmount() <= 0) {
+            throw new AppException(ErrorEnum.INVALID_COIN_AMOUNT);
+        }
+
+        if (coinPackage.getBonusCoin() != null && coinPackage.getBonusCoin() < 0) {
+            throw new AppException(ErrorEnum.INVALID_COIN_AMOUNT);
+        }
+
+        return coinPackage;
+    }
+
+    private Transaction resolvePendingCoinTransaction(User user, CoinPackage targetPackage) {
+        List<Transaction> pendingTxns = transactionRepository.findAllCoinPackagePendingTransactionsByUser(user.getId());
+
+        Transaction exactMatch = null;
+        Instant now = Instant.now();
+
+        for (Transaction pending : pendingTxns) {
+            boolean isSamePackage = false;
+
+            if (!pending.getItems().isEmpty()) {
+                TransactionItem firstItem = pending.getItems().getFirst();
+                isSamePackage = firstItem.getCoinPackage() != null
+                        && firstItem.getCoinPackage().getId().equals(targetPackage.getId());
+            }
+
+            boolean isNotExpired = pending.getExpiredAt() != null && pending.getExpiredAt().isAfter(now);
+
+            if (isSamePackage && isNotExpired && exactMatch == null) {
+                exactMatch = pending;
+            } else {
+                pending.markAsFailed();
+            }
+        }
+
+        return exactMatch;
+    }
+
+    private Transaction createNewCoinTransaction(User user, CoinPackage coinPackage) {
+        String txnCode = "VNP_" + TsidCreator.getTsid();
+        Instant now = Instant.now();
+
+        Long bonus = coinPackage.getBonusCoin() != null ? coinPackage.getBonusCoin() : 0L;
+        Long totalCoinsReceived = coinPackage.getCoinAmount() + bonus;
+
+        Transaction txn = Transaction.builder()
                 .transactionCode(txnCode)
-                .user(currentUser)
+                .user(user)
                 .status(TransactionStatus.PENDING)
                 .type(TransactionType.VNPAY)
-                .totalAmount(course.getPrice())
-                .totalCoinsChanged(0L)
-                .expiredAt(Instant.now().plus(15, ChronoUnit.MINUTES))
+                .totalAmount(coinPackage.getPrice())
+                .totalCoinsChanged(totalCoinsReceived)
+                .discountAmount(BigDecimal.ZERO)
+                .createdAt(now)
+                .expiredAt(now.plus(15, ChronoUnit.MINUTES))
+                .description("Thanh toan goi xu: " + coinPackage.getName())
                 .build();
 
         TransactionItem item = TransactionItem.builder()
-                .course(course)
-                .amountPrice(course.getPrice())
+                .coinPackage(coinPackage)
+                .amountPrice(coinPackage.getPrice())
                 .build();
 
-        newTransaction.addItem(item);
+        txn.addItem(item);
 
-        transactionRepository.save(newTransaction);
+        return transactionRepository.saveAndFlush(txn);
+    }
 
-        return createVnpayPaymentUrl(newTransaction, request);
+    private List<Course> validateAndFetchCourses(List<Long> courseIds) {
+        List<Course> courses = courseRepository.findAllActiveByIds(courseIds);
+        if (courses.size() != courseIds.size()) {
+            throw new AppException(TeacherErrorEnum.COURSE_NOT_FOUND);
+        }
+        for (Course course : courses) {
+            if (course.getPrice() == null || course.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new AppException(ErrorEnum.INVALID_AMOUNT);
+            }
+        }
+        return courses;
+    }
+
+    private void validateOwnership(User user, List<Long> courseIds) {
+        List<Long> ownedIds = enrollmentRepository.findOwnedCourseIds(user.getId(), courseIds);
+        if (!ownedIds.isEmpty()) {
+            throw new AppException(StudentErrorEnum.ALREADY_OWNED_COURSE);
+        }
+    }
+
+    private BigDecimal calculateTotalOriginalPrice(List<Course> courses) {
+        return courses.stream()
+                .map(Course::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private Transaction resolvePendingTransactions(User user, List<Long> courseIds, Voucher requestedVoucher) {
+        List<Transaction> pendingTxns = transactionRepository.findAllPendingTransactionsByUser(user.getId());
+        Transaction exactMatch = null;
+        Set<Long> requestCourseIdSet = new HashSet<>(courseIds);
+
+        for (Transaction pending : pendingTxns) {
+            Set<Long> pendingCourseIdSet = pending.getItems().stream()
+                    .map(item -> item.getCourse().getId())
+                    .collect(Collectors.toSet());
+
+            boolean isSameCourses = pendingCourseIdSet.equals(requestCourseIdSet);
+            boolean isSameVoucher = (requestedVoucher == null && pending.getVoucher() == null) ||
+                    (requestedVoucher != null && pending.getVoucher() != null && requestedVoucher.getId().equals(pending.getVoucher().getId()));
+
+            if (isSameCourses && isSameVoucher && pending.getExpiredAt() != null && pending.getExpiredAt().isAfter(Instant.now())) {
+                exactMatch = pending;
+            } else {
+                cancelTransactionAndRollbackVoucherSlot(pending);
+            }
+        }
+        return exactMatch;
+    }
+
+    private void cancelTransactionAndRollbackVoucherSlot(Transaction pendingTxn) {
+        pendingTxn.markAsFailed();
+        if (pendingTxn.getVoucher() != null) {
+            voucherRepository.atomicReleaseVoucherSlot(pendingTxn.getVoucher().getCode());
+        }
+    }
+
+    private Transaction createNewTransaction(User user, List<Course> courses, Voucher voucher,
+                                             BigDecimal discount, BigDecimal finalPrice) {
+
+        String txnCode = "TXN_" + TsidCreator.getTsid();
+        Instant now = Instant.now();
+
+        Transaction txn = Transaction.builder()
+                .transactionCode(txnCode)
+                .user(user)
+                .status(TransactionStatus.PENDING)
+                .type(TransactionType.VNPAY)
+                .totalAmount(finalPrice)
+                .voucher(voucher)
+                .discountAmount(discount)
+                .totalCoinsChanged(0L)
+                .createdAt(now)
+                .expiredAt(now.plus(15, ChronoUnit.MINUTES))
+                .description(courses.size() == 1 ? "Thanh toan khoa hoc" : "Thanh toan combo")
+                .build();
+
+        for (Course course : courses) {
+            TransactionItem item = TransactionItem.builder()
+                    .course(course)
+                    .amountPrice(course.getPrice())
+                    .build();
+            txn.addItem(item);
+        }
+
+        return transactionRepository.saveAndFlush(txn);
     }
 
     public String createVnpayPaymentUrl(Transaction transaction, HttpServletRequest request) {
@@ -151,9 +337,11 @@ public class PaymentService {
         vnp_Params.put("vnp_ReturnUrl", vnpayConfig.getReturnUrl());
         vnp_Params.put("vnp_IpAddr", VnpayUtil.getIpAddress(request));
 
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of(TIME_ZONE));
-        vnp_Params.put("vnp_CreateDate", now.format(VNPAY_DATE_FORMATTER));
-        vnp_Params.put("vnp_ExpireDate", now.plusMinutes(15).format(VNPAY_DATE_FORMATTER));
+        ZonedDateTime createDate = ZonedDateTime.ofInstant(transaction.getCreatedAt(), ZoneId.of(TIME_ZONE));
+        ZonedDateTime expireDate = ZonedDateTime.ofInstant(transaction.getExpiredAt(), ZoneId.of(TIME_ZONE));
+
+        vnp_Params.put("vnp_CreateDate", createDate.format(VNPAY_DATE_FORMATTER));
+        vnp_Params.put("vnp_ExpireDate", expireDate.format(VNPAY_DATE_FORMATTER));
 
         if (log.isDebugEnabled()) {
             log.debug("VNPAY Params gửi đi: {}", vnp_Params);
@@ -169,7 +357,7 @@ public class PaymentService {
         return paymentUrl;
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public VnpayIpnResponse processIpnWebhook(Map<String, String> fields) {
         String vnp_SecureHash = fields.get("vnp_SecureHash");
         String transactionCode = fields.get("vnp_TxnRef");
@@ -218,16 +406,73 @@ public class PaymentService {
             return new VnpayIpnResponse(VnpayConstant.RSP_ALREADY_CONFIRMED, VnpayConstant.MSG_ALREADY_CONFIRMED);
         }
 
+        transaction.setVnpTransactionNo(vnp_TransactionNo);
+
         if ("00".equals(responseCode)) {
-            Long currentBalance = transaction.getUser().getCurrentCoin();
-            transaction.setVnpTransactionNo(vnp_TransactionNo);
-            transaction.markAsSuccess(currentBalance);
-            eventPublisher.publishEvent(new TransactionSuccessEvent(transaction.getId()));
+            User user = userRepository.findByIdForPaymentLock(transaction.getUser().getId())
+                    .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+
+            boolean isCoinDeposit = transaction.getItems().stream()
+                    .anyMatch(item -> item.getCoinPackage() != null);
+
+            if (isCoinDeposit) {
+                Long coinsToAdd = transaction.getTotalCoinsChanged();
+                user.addCoin(coinsToAdd);
+                log.info("💰 [VNPAY IPN] Nạp xu thành công! Txn: {}, UserId: {}, Đã cộng: {} xu",
+                        transactionCode, user.getId(), coinsToAdd);
+            } else {
+                grantCoursesToUser(transaction);
+                log.info("🎓 [VNPAY IPN] Mua khóa học thành công! Txn: {}, UserId: {}",
+                        transactionCode, user.getId());
+            }
+
+            transaction.markAsSuccess(user.getCurrentCoin());
         } else {
             transaction.markAsFailed();
             log.info("Khách hàng hủy hoặc thanh toán thất bại đơn: {}", transactionCode);
+
+            if (transaction.getVoucher() != null) {
+                voucherRepository.atomicReleaseVoucherSlot(transaction.getVoucher().getCode());
+                log.info("Đã hoàn trả 1 lượt sử dụng cho mã Voucher: {}", transaction.getVoucher().getCode());
+            }
         }
 
+        transactionRepository.saveAndFlush(transaction);
+
         return new VnpayIpnResponse(VnpayConstant.RSP_SUCCESS, VnpayConstant.MSG_SUCCESS);
+    }
+
+    private void grantCoursesToUser(Transaction transaction) {
+        User student = transaction.getUser();
+        List<TransactionItem> items = transaction.getItems();
+
+        if (items == null || items.isEmpty()) {
+            log.warn("⚠️ BỎ QUA [Txn: {}] - Hóa đơn không có TransactionItem.", transaction.getId());
+            return;
+        }
+
+        Set<Long> existingCourseIds = enrollmentRepository.findCourseIdsByStudentId(student.getId());
+        List<Enrollment> newEnrollments = new ArrayList<>();
+
+        for (TransactionItem item : items) {
+            Course course = item.getCourse();
+            if (course == null) continue;
+
+            if (existingCourseIds.contains(course.getId())) {
+                continue;
+            }
+
+            Enrollment enrollment = Enrollment.builder()
+                    .student(student)
+                    .course(course)
+                    .enrollmentStatus(EnrollmentStatus.ACTIVE)
+                    .build();
+            newEnrollments.add(enrollment);
+        }
+
+        if (!newEnrollments.isEmpty()) {
+            enrollmentRepository.saveAll(newEnrollments);
+            log.info("🎉 Đã cấp thành công {} khóa học cho User {}", newEnrollments.size(), student.getId());
+        }
     }
 }

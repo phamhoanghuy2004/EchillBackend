@@ -1,10 +1,13 @@
 package com.echill.controller;
 
 import com.echill.constant.VnpayConstant;
+import com.echill.dto.request.CheckoutRequest;
+import com.echill.dto.request.CoinPackageCheckoutRequest;
 import com.echill.dto.response.ApiResponse;
 import com.echill.dto.response.VnpayIpnResponse;
 import com.echill.service.PaymentService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -24,19 +27,30 @@ import java.util.Map;
 public class PaymentController {
     PaymentService paymentService;
 
-    @PostMapping("/checkout/course/{courseId}")
-    public ApiResponse<String> checkoutCourse(
-            @PathVariable("courseId") Long courseId,
+    @PostMapping("/checkout/courses")
+    public ApiResponse<String> initiatePayment(
+            @Valid @RequestBody CheckoutRequest requestBody,
             HttpServletRequest request) {
 
-        log.info("🛒 Nhận request tạo URL thanh toán cho khóa học: {}", courseId);
-
-        String paymentUrl = paymentService.initiateCoursePayment(courseId, request);
+        String paymentUrl = paymentService.initiatePayment(requestBody.getCourseIds(), requestBody.getVoucherCode(), request);
 
         return ApiResponse.<String>builder()
-                        .message("Tạo URL thanh toán VNPAY thành công")
-                        .data(paymentUrl)
-                        .build();
+                .message("Tạo URL thanh toán VNPAY thành công")
+                .data(paymentUrl)
+                .build();
+    }
+
+    @PostMapping("/checkout/coinPackage")
+    public ApiResponse<String> initiateCoinPayment(
+            @Valid @RequestBody CoinPackageCheckoutRequest requestBody,
+            HttpServletRequest request) {
+
+        String paymentUrl = paymentService.initiateCoinPayment(requestBody.getCoinPackageId(), request);
+
+        return ApiResponse.<String>builder()
+                .message("Tạo URL thanh toán VNPAY thành công")
+                .data(paymentUrl)
+                .build();
     }
 
     @GetMapping("/vnpay-ipn")

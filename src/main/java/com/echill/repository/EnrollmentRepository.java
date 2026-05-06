@@ -15,8 +15,6 @@ import java.util.List;
 import java.util.Set;
 
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
-    boolean existsByStudentAndCourse(User student, Course course);
-
     @Query("SELECT e.course.id FROM Enrollment e WHERE e.student.id = :studentId")
     Set<Long> findCourseIdsByStudentId(@Param("studentId") Long studentId);
 
@@ -76,5 +74,8 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
             @Param("studentId") Long studentId,
             @Param("courseId") Long courseId
     );
+
+    @Query("SELECT e.course.id FROM Enrollment e WHERE e.student.id = :userId AND e.course.id IN :courseIds")
+    List<Long> findOwnedCourseIds(@Param("userId") Long userId, @Param("courseIds") List<Long> courseIds);
 
 }
