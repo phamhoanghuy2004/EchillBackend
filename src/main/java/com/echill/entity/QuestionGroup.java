@@ -24,14 +24,23 @@ public class QuestionGroup extends BaseEntity {
     @Tsid
     Long id;
 
+    @Column(name = "import_code", length = 100)
+    String importCode;
+
     @Column(name = "shared_content", columnDefinition = "TEXT")
     String sharedContent;
 
     @Column(name = "shared_audio_url", length = 1000)
     String sharedAudioUrl;
 
+    @Column(name = "shared_audio_public_id")
+    String sharedAudioPublicId;
+
     @Column(name = "shared_image_url", length = 1000)
     String sharedImageUrl;
+
+    @Column(name = "shared_image_public_id")
+    String sharedImagePublicId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id", nullable = false)

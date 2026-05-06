@@ -17,4 +17,5 @@ public class TestSectionResponse {
     Integer orderIndex;
     String instructions;
     List<QuestionResponse> questions;
+    List<QuestionGroupResponse> questionGroups;
 }
