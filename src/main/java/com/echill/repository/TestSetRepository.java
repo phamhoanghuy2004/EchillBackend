@@ -14,4 +14,6 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long> {
 
     @Query("SELECT t.lesson.id FROM TestSet t WHERE t.id = :testSetId")
     Optional<Long> findLessonIdByTestSetId(@Param("testSetId") Long testSetId);
+
+    java.util.List<TestSet> findAllByUserId(Long userId);
 }

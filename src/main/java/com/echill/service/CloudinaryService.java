@@ -22,8 +22,9 @@ import java.util.Map;
 public class CloudinaryService {
     Cloudinary cloudinary;
 
-    private static final long MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
-    private static final long MAX_DOC_SIZE = 10 * 1024 * 1024;  // 10MB
+    private static final long MAX_IMAGE_SIZE = 2 * 1024 * 1024;   // 2MB
+    private static final long MAX_DOC_SIZE   = 10 * 1024 * 1024;  // 10MB
+    private static final long MAX_AUDIO_SIZE = 20 * 1024 * 1024;  // 20MB
 
     public Map<String, String> uploadImage(MultipartFile file, String folderName) {
         try {
@@ -100,6 +101,52 @@ public class CloudinaryService {
 
         } catch (IOException e) {
             log.error("Lỗi khi upload tài liệu vào thư mục {} lên Cloudinary: ", folderName, e);
+            throw new AppException(ErrorEnum.CANNOT_UPLOAD_FILE);
+        }
+    }
+
+    /**
+     * Upload audio file (MP3, WAV, OGG) to Cloudinary.
+     * Cloudinary requires resource_type="video" for audio files.
+     * Folder structure: toeic/audio/questions/{id} or toeic/audio/groups/{id}
+     */
+    public Map<String, String> uploadAudio(MultipartFile file, String folderName) {
+        try {
+            String contentType = file.getContentType();
+            boolean isAudio = contentType != null && (
+                    contentType.startsWith("audio/") ||
+                    contentType.equals("video/mpeg")
+            );
+            if (!isAudio) {
+                log.warn("Invalid audio file type: {}", contentType);
+                throw new AppException(ErrorEnum.INVALID_FILE_FORMAT);
+            }
+
+            if (file.getSize() > MAX_AUDIO_SIZE) {
+                log.warn("Audio file too large: {} bytes", file.getSize());
+                throw new AppException(ErrorEnum.FILE_SIZE_TOO_LARGE);
+            }
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String publicId = "audio_" + System.currentTimeMillis() + extension;
+
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                    "folder", folderName,
+                    "resource_type", "video",  // Cloudinary uses "video" for audio
+                    "public_id", publicId
+            ));
+
+            return Map.of(
+                    "url", uploadResult.get("secure_url").toString(),
+                    "publicId", uploadResult.get("public_id").toString()
+            );
+
+        } catch (IOException e) {
+            log.error("Lỗi khi upload audio vào thư mục {} lên Cloudinary: ", folderName, e);
             throw new AppException(ErrorEnum.CANNOT_UPLOAD_FILE);
         }
     }

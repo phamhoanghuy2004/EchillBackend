@@ -31,8 +31,14 @@ public class Question extends BaseEntity {
     @Column(name = "audio_url", length = 1000)
     String audioUrl;
 
+    @Column(name = "audio_public_id")
+    String audioPublicId;
+
     @Column(name = "image_url", length = 1000)
     String imageUrl;
+
+    @Column(name = "image_public_id")
+    String imagePublicId;
 
     @Column(columnDefinition = "TEXT")
     String explanation;

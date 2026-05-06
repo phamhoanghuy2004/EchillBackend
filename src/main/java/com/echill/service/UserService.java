@@ -3,6 +3,7 @@ package com.echill.service;
 import com.echill.constant.CloudinaryFolder;
 import com.echill.dto.request.CompleteProfileRequest;
 import com.echill.dto.request.UserUpdateRequest;
+import com.echill.dto.response.UserResponse;
 import com.echill.entity.User;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
@@ -28,6 +29,14 @@ public class UserService {
     UserPersistenceService userPersistenceService;
     CloudinaryService cloudinaryService;
     UserRepository userRepository;
+    com.echill.mapper.UserMapper userMapper;
+
+    public UserResponse getMyProfile() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        User user = userRepository.findByIdWithRolesAndPermissions(userId)
+                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+        return userMapper.toUserResponse(user);
+    }
 
     @Transactional
     public void completeProfile(CompleteProfileRequest request) {
