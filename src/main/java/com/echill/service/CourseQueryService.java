@@ -1,6 +1,7 @@
 package com.echill.service;
 
 import com.echill.constant.CacheNames;
+import com.echill.dto.request.elasticsearch.response.CourseCardResponse;
 import com.echill.dto.response.guest.CourseDetailResponse;
 import com.echill.entity.Course;
 import com.echill.exception.AppException;
@@ -36,6 +37,13 @@ public class CourseQueryService {
         hideSensitiveData(courseDetailResponse);
 
         return courseDetailResponse;
+    }
+
+    @Cacheable(cacheNames = CacheNames.ALL_COURSES, key = "'all'", sync = true)
+    @Transactional(readOnly = true)
+    public java.util.List<CourseCardResponse> getAllCourses() {
+        log.info("⚡ CHẠY VÀO DB ĐỂ LẤY TẤT CẢ KHÓA HỌC (CACHE MISS)");
+        return courseMapper.toCardResponseList(courseRepository.findAllActiveCoursesSortedByNewest());
     }
 
     private void hideSensitiveData(CourseDetailResponse response) {

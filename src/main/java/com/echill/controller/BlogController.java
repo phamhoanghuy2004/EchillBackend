@@ -3,6 +3,7 @@ package com.echill.controller;
 import com.echill.dto.request.BlogRequest;
 import com.echill.dto.response.ApiResponse;
 import com.echill.dto.response.BlogResponse;
+import com.echill.dto.response.PageResponse;
 import com.echill.service.BlogService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,9 +57,11 @@ public class BlogController {
     }
 
     @GetMapping
-    public ApiResponse<List<BlogResponse>> getAllBlogs() {
-        return ApiResponse.<List<BlogResponse>>builder()
-                .data(blogService.getAllBlogs())
+    public ApiResponse<PageResponse<BlogResponse>> getAllBlogs(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        return ApiResponse.<PageResponse<BlogResponse>>builder()
+                .data(blogService.getAllBlogs(page, size))
                 .build();
     }
 
@@ -66,6 +69,13 @@ public class BlogController {
     public ApiResponse<List<BlogResponse>> getMyBlogs() {
         return ApiResponse.<List<BlogResponse>>builder()
                 .data(blogService.getMyBlogs())
+                .build();
+    }
+
+    @GetMapping("/latest")
+    public ApiResponse<List<BlogResponse>> getLatestBlogs() {
+        return ApiResponse.<List<BlogResponse>>builder()
+                .data(blogService.getLatestBlogs())
                 .build();
     }
 }

@@ -11,6 +11,8 @@ import java.util.List;
 public interface CertificateRepository extends JpaRepository<Certificate,Long> {
     List<Certificate> findByTeacherProfileId(Long teacherProfileId);
 
+    List<Certificate> findAllByTeacherProfileIdIn(List<Long> teacherProfileIds);
+
 
     @Query("SELECT c.imagePublicId FROM Certificate c WHERE c.imagePublicId IS NOT NULL")
     List<String> findAllImagePublicIds();
