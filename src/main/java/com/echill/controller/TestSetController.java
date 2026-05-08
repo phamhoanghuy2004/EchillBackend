@@ -5,6 +5,7 @@ import com.echill.dto.request.TestSetUpdateRequest;
 import com.echill.dto.response.ApiResponse;
 import com.echill.dto.response.TestSetDetailWithHistoryResponse;
 import com.echill.dto.response.TestSetResponse;
+import com.echill.dto.response.learner.TestSetRecommendationResponse;
 import com.echill.service.TestSetService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -12,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/test-sets")
@@ -49,6 +52,14 @@ public class TestSetController {
             @RequestBody @Valid TestSetUpdateRequest request) {
         return ApiResponse.<TestSetResponse>builder()
                 .data(testSetService.updateTestSet(id, request))
+                .build();
+    }
+
+    @GetMapping("/recommendations")
+    public ApiResponse<List<TestSetRecommendationResponse>> getRecommendations() {
+        return ApiResponse.<List<TestSetRecommendationResponse>>builder()
+                .message("Lấy danh sách đề xuất thành công")
+                .data(testSetService.getNewestTestSetsForCurrentYear())
                 .build();
     }
 }

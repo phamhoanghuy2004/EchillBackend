@@ -97,9 +97,9 @@ google:
 # CLOUDINARY CONFIGURATION
 # ===============================
 cloudinary:
-  cloud-name: dgmlgi7p4
-  api-key: 628256499685731
-  api-secret: uWiZf7yK-HjxcHpghszH8tzI2P0
+  cloud-name: dxqk6g7se
+  api-key: 858981758875523
+  api-secret: nFbzQGQ1BhAIrHixSu4VecJx69Q
   video:
     eager-profile: sp_full_hd/m3u8
   webhook-url: https://cleistocarpous-britany-unscabrous.ngrok-free.dev/webhook/cloudinary

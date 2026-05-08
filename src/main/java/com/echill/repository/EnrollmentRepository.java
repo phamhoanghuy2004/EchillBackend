@@ -4,9 +4,11 @@ import com.echill.dto.response.TeacherStudentResponse;
 import com.echill.entity.Course;
 import com.echill.entity.Enrollment;
 import com.echill.entity.User;
+import com.echill.entity.enums.EnrollmentStatus;
 import com.echill.repository.projection.MyCourseProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -77,5 +79,11 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     @Query("SELECT e.course.id FROM Enrollment e WHERE e.student.id = :userId AND e.course.id IN :courseIds")
     List<Long> findOwnedCourseIds(@Param("userId") Long userId, @Param("courseIds") List<Long> courseIds);
+
+    @EntityGraph(attributePaths = {"course"})
+    Optional<Enrollment> findFirstByStudentIdAndEnrollmentStatusOrderByLastAccessedAtDesc(
+            Long studentId,
+            EnrollmentStatus status
+    );
 
 }

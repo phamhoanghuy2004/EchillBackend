@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.Optional;
 
 @Repository
@@ -34,4 +35,13 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
 
     @EntityGraph(attributePaths = {"lesson"})
     Optional<LessonProgress> findWithLessonByLessonIdAndEnrollmentStudentId(Long lessonId, Long studentId);
+
+    @Query("SELECT COUNT(lp) FROM LessonProgress lp " +
+            "JOIN lp.enrollment e " +
+            "WHERE e.student.id = :userId " +
+            "AND lp.isCompleted = true " +
+            "AND lp.completedAt BETWEEN :startDate AND :endDate")
+    Long countCompletedLessonsInDateRange(@Param("userId") Long userId,
+                                          @Param("startDate") Instant startDate,
+                                          @Param("endDate") Instant endDate);
 }

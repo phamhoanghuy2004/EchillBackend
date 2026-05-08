@@ -4,6 +4,7 @@ import com.echill.dto.request.TestSetRequest;
 import com.echill.dto.response.TestSetDetailWithHistoryResponse;
 import com.echill.dto.request.TestSetUpdateRequest;
 import com.echill.dto.response.TestSetResponse;
+import com.echill.dto.response.learner.TestSetRecommendationResponse;
 import com.echill.entity.Lesson;
 import com.echill.entity.TestResult;
 import com.echill.entity.TestSet;
@@ -20,9 +21,12 @@ import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Service
@@ -91,5 +95,17 @@ public class TestSetService {
         testSetMapper.updateTestSet(testSet, request);
 
         return testSetMapper.toResponse(testSetRepository.save(testSet));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TestSetRecommendationResponse> getNewestTestSetsForCurrentYear() {
+        // 1. Lấy năm hiện tại theo múi giờ Việt Nam (Tránh lỗi lệch giờ ở máy chủ)
+        ZoneId zoneId = ZoneId.of("Asia/Ho_Chi_Minh");
+        int currentYear = ZonedDateTime.now(zoneId).getYear();
+
+        // 2. Giới hạn chỉ lấy 5 bộ đề mới nhất (Tối ưu Payload)
+        int limit = 5;
+
+        return testSetRepository.findRecommendedTestSets(currentYear, PageRequest.of(0, limit));
     }
 }

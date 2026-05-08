@@ -9,6 +9,8 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.time.Instant;
+
 
 @Entity
 // BẢO VỆ DATABASE: Đảm bảo 1 lần ghi danh chỉ có 1 tiến độ cho 1 bài học
@@ -58,6 +60,9 @@ public class LessonProgress extends BaseEntity {
     @Column(name = "version_completed")
     private Integer versionCompleted;
 
+    @Column(name = "completed_at")
+    Instant completedAt;
+
     // ==========================================
     // HELPER METHODS (Đóng gói nghiệp vụ Tiến độ)
     // ==========================================
@@ -80,6 +85,10 @@ public class LessonProgress extends BaseEntity {
         this.isQuizPassed = true;
         this.isCompleted = true;
         this.versionCompleted = currentLessonVersion; // CHỐT SỔ VERSION LÚC HOÀN THÀNH
+
+        if (this.completedAt == null) {
+            this.completedAt = Instant.now();
+        }
     }
 
     /**

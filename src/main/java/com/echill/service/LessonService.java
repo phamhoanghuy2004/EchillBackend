@@ -49,6 +49,9 @@ public class LessonService {
         lessonRepository.save(lesson);
         log.info("Đã tạo mới khung bài học (Text) thành công, Lesson ID: {}", lesson.getId());
 
+        // 🔴 ATOMIC UPDATE: Tăng biến đếm an toàn tuyệt đối
+        courseRepository.incrementLessonCount(course.getId());
+
         eventPublisher.publishEvent(new CourseUpdatedEvent(course.getId()));
 
         return lessonMapper.toLessonResponse(lesson);
@@ -91,6 +94,9 @@ public class LessonService {
 
         lessonRepository.delete(lesson);
         log.info("Đã xóa bài học ID: {} thành công", lessonId);
+
+        // 🔴 ATOMIC UPDATE: Giảm biến đếm an toàn tuyệt đối
+        courseRepository.decrementLessonCount(courseId);
 
         eventPublisher.publishEvent(new CourseUpdatedEvent(courseId));
     }

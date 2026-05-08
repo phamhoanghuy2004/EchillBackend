@@ -5,6 +5,7 @@ import com.echill.entity.LessonProgress;
 import com.echill.exception.AppException;
 import com.echill.exception.StudentErrorEnum;
 import com.echill.repository.LessonProgressRepository;
+import com.echill.repository.TestResultRepository;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,11 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -21,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class LessonProgressService {
     LessonProgressRepository progressRepository;
     StringRedisTemplate redisTemplate;
+    TestResultRepository testResultRepository;
 
     static String PROGRESS_KEY_PREFIX = "progress:data:v2:";
 
@@ -85,5 +92,47 @@ public class LessonProgressService {
                 .videoWatched(true)
                 .lessonCompleted(Boolean.TRUE.equals(progress.getIsCompleted()))
                 .build();
+    }
+
+    public Long getCompletedLessonsCountThisWeek() {
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        // 1. Lấy múi giờ chuẩn VN
+        ZoneId zoneId = ZoneId.of("Asia/Ho_Chi_Minh");
+        ZonedDateTime now = ZonedDateTime.now(zoneId);
+
+        // 2. Lấy CHÍNH XÁC 00:00:00 của ngày Thứ 2 tuần này
+        ZonedDateTime startOfWeek = now.with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS);
+
+        // 3. Lấy CHÍNH XÁC 23:59:59.999 của ngày Chủ Nhật tuần này
+        ZonedDateTime endOfWeek = startOfWeek.plusDays(7).minusNanos(1);
+
+        // 4. Convert ZonedDateTime sang Instant để query vào DB (DB lưu chuẩn UTC)
+        return progressRepository.countCompletedLessonsInDateRange(
+                userId,
+                startOfWeek.toInstant(),
+                endOfWeek.toInstant()
+        );
+    }
+
+    public Long getCompletedTestsCountThisWeek() {
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        // 1. Chốt múi giờ Việt Nam
+        ZoneId zoneId = ZoneId.of("Asia/Ho_Chi_Minh");
+        ZonedDateTime now = ZonedDateTime.now(zoneId);
+
+        // 2. Chặt cụt thời gian về 00:00:00 của Thứ 2
+        ZonedDateTime startOfWeek = now.with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS);
+
+        // 3. Đẩy lên 23:59:59.999 của Chủ Nhật
+        ZonedDateTime endOfWeek = startOfWeek.plusDays(7).minusNanos(1);
+
+        // 4. Query Database (Sử dụng createdAt)
+        return testResultRepository.countTestsTakenInDateRange(
+                userId,
+                startOfWeek.toInstant(),
+                endOfWeek.toInstant()
+        );
     }
 }
