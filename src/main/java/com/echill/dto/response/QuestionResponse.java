@@ -16,6 +16,8 @@ public class QuestionResponse {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
     String content;
+    String audioUrl;
+    String imageUrl;
     String explanation;
     SkillType skillType;
     @JsonFormat(shape = JsonFormat.Shape.STRING)
@@ -23,7 +25,8 @@ public class QuestionResponse {
     String tagName;
     Integer orderIndex;
 
-    QuestionGroupResponse group;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    Long groupId;
 
     List<AnswerResponse> answers;
 }

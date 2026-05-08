@@ -27,7 +27,7 @@ public class TestController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('TEACHER','STUDENT')")
+    @PreAuthorize("hasAnyRole('TEACHER','STUDENT', 'ADMIN')")
     public ApiResponse<TestResponse> createTest(
             @RequestPart("data") @Valid TestRequest request,
             @RequestPart("file") MultipartFile file) {
@@ -37,7 +37,7 @@ public class TestController {
     }
 
     @GetMapping("/test-set/{testSetId}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ApiResponse<List<TestResponse>> getTestsByTestSetId(@PathVariable Long testSetId) {
         return ApiResponse.<List<TestResponse>>builder()
                 .data(testService.getTestsByTestSetId(testSetId))
@@ -45,7 +45,7 @@ public class TestController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ApiResponse<Void> deleteTest(@PathVariable Long id) {
         testService.deleteTest(id);
         return ApiResponse.<Void>builder()
@@ -54,7 +54,7 @@ public class TestController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ApiResponse<TestResponse> getTestById(@PathVariable Long id) {
         return ApiResponse.<TestResponse>builder()
                 .data(testService.getTestById(id))
@@ -62,7 +62,7 @@ public class TestController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ApiResponse<TestResponse> updateTestInfo(
             @PathVariable Long id,
             @RequestBody @Valid TestUpdateRequest request) {
@@ -72,7 +72,7 @@ public class TestController {
     }
 
     @PutMapping("/questions/{questionId}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ApiResponse<QuestionResponse> updateQuestion(
             @PathVariable Long questionId,
             @RequestBody @Valid QuestionUpdateRequest request) {

@@ -43,6 +43,15 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             "WHERE c.id = :id AND c.status = 'ACTIVE'")
     Optional<Course> findActiveCourseWithFullDetails(@Param("id") Long id);
 
+    @Query("SELECT DISTINCT c FROM Course c " +
+            "JOIN FETCH c.category " +
+            "JOIN FETCH c.teacher " +
+            "WHERE c.status = 'ACTIVE' " +
+            "ORDER BY c.createdAt DESC")
+    List<Course> findAllActiveCoursesSortedByNewest();
+
+    Optional<Course> findByIdAndStatus(Long id, Status status);
+
     @Query("SELECT t.id FROM Course c JOIN c.tags t WHERE c.id = :courseId")
     List<Long> findTagIdsByCourseId(@Param("courseId") Long courseId);
 

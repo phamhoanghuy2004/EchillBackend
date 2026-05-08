@@ -11,7 +11,9 @@ import org.mapstruct.MappingTarget;
 public interface QuestionMapper {
     @Mapping(source = "tag.name", target = "tagName")
     @Mapping(source = "tag.id", target = "tagId")
-    @Mapping(source = "questionGroup", target = "group")
+    @Mapping(source = "questionGroup.id", target = "groupId")
+    @Mapping(source = "audioUrl", target = "audioUrl")
+    @Mapping(source = "imageUrl", target = "imageUrl")
     QuestionResponse toResponse(Question question);
 
     @Mapping(target = "id", ignore = true)

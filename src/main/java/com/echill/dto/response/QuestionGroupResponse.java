@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,7 +14,9 @@ import lombok.experimental.FieldDefaults;
 public class QuestionGroupResponse {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
+    String importCode;
     String sharedContent;
     String sharedAudioUrl;
     String sharedImageUrl;
+    List<QuestionResponse> questions;
 }

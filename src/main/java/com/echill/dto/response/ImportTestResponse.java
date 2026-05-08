@@ -4,28 +4,18 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDateTime;
-
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class BlogResponse {
-
+public class ImportTestResponse {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    Long id;
-
-    String title;
-
-    String content;
-
-    String imageUrl;
-
-    String excerpt;
-
-    String authorName;
-
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    LocalDateTime createdAt;
+    Long testId;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    Long testSetId;
+    String testTitle;
+    int totalQuestions;
+    int totalGroups;
+    String status; // "SUCCESS"
 }

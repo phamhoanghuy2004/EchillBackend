@@ -85,10 +85,16 @@ public class TestSetService {
         return testSetMapper.toDetailWithHistory(testSet, userHistory);
     }
 
+    public List<TestSetResponse> getAllTestSets() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        return testSetMapper.toResponseList(testSetRepository.findAllByUserId(userId));
+    }
+
     @Transactional
     public TestSetResponse updateTestSet(Long id, TestSetUpdateRequest request) {
         TestSet testSet = testSetRepository.findById(id)
                 .orElseThrow(() -> new AppException(TeacherErrorEnum.TEST_SET_NOT_FOUND));
+
 
         SecurityUtils.validateOwnership(testSet.getUser().getId());
 

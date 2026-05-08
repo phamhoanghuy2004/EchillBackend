@@ -24,4 +24,6 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long> {
             "WHERE t.year = :year " +
             "ORDER BY t.createdAt DESC")
     List<TestSetRecommendationResponse> findRecommendedTestSets(@Param("year") Integer year, Pageable pageable);
+
+    java.util.List<TestSet> findAllByUserId(Long userId);
 }

@@ -4,7 +4,7 @@ import com.echill.dto.response.TestSectionResponse;
 import com.echill.entity.TestSection;
 import org.mapstruct.Mapper;
 
-@Mapper(componentModel = "spring", uses = {QuestionMapper.class})
+@Mapper(componentModel = "spring", uses = {QuestionMapper.class, QuestionGroupMapper.class})
 public interface TestSectionMapper {
     TestSectionResponse toResponse(TestSection section);
 }

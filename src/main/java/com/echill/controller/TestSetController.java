@@ -20,11 +20,11 @@ import java.util.List;
 @RequestMapping("/test-sets")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class TestSetController {
+public class    TestSetController {
     TestSetService testSetService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT', 'ADMIN')")
     public ApiResponse<TestSetResponse> createTestSet(@RequestBody @Valid TestSetRequest request) {
         return ApiResponse.<TestSetResponse>builder()
                 .data(testSetService.createTestSet(request))
@@ -45,8 +45,16 @@ public class TestSetController {
                 .build();
     }
 
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<java.util.List<TestSetResponse>> getAllTestSets() {
+        return ApiResponse.<java.util.List<TestSetResponse>>builder()
+                .data(testSetService.getAllTestSets())
+                .build();
+    }
+
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     public ApiResponse<TestSetResponse> updateTestSet(
             @PathVariable Long id,
             @RequestBody @Valid TestSetUpdateRequest request) {

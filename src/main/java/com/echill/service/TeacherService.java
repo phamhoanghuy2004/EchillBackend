@@ -1,5 +1,6 @@
 package com.echill.service;
 
+import com.echill.constant.CacheNames;
 import com.echill.dto.request.TeacherProfileUpdateRequest;
 import com.echill.dto.response.CertificateResponse;
 import com.echill.dto.response.PageResponse;
@@ -19,16 +20,21 @@ import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class TeacherService {
 
@@ -77,6 +83,33 @@ public class TeacherService {
     public List<TeacherStudentResponse> getStudentStatistics() {
         Long teacherId = SecurityUtils.getCurrentUserId();
         return enrollmentRepository.findStudentStatistics(teacherId);
+    }
+
+    @Cacheable(cacheNames = CacheNames.ALL_TEACHERS, key = "'all_v1'")
+    @Transactional(readOnly = true)
+    public List<TeacherResponse> getAllTeachers() {
+        log.info("⚡ CHẠY VÀO DB ĐỂ LẤY TẤT CẢ GIÁO VIÊN (CACHE MISS)");
+
+        List<TeacherProfile> profiles = teacherProfileRepository.findAllWithUser();
+
+        // Lấy tất cả certificates cho các profile này trong 1 query để tránh N+1
+        List<Long> profileIds = profiles.stream().map(TeacherProfile::getId).toList();
+        List<Certificate> allCertificates = certificateRepository.findAllByTeacherProfileIdIn(profileIds);
+
+        Map<Long, List<Certificate>> certMap = allCertificates.stream()
+                .collect(Collectors.groupingBy(c -> c.getTeacherProfile().getId()));
+
+        return profiles.stream()
+                .map(profile -> {
+                    User user = profile.getUser();
+                    List<Certificate> certificates = certMap.getOrDefault(profile.getId(), Collections.emptyList());
+                    Set<String> roles = user.getUserRoles().stream()
+                            .map(ur -> ur.getRole().getName())
+                            .collect(Collectors.toSet());
+
+                    return buildTeacherResponse(user, profile, certificates, roles);
+                })
+                .collect(Collectors.toList());
     }
 
     private TeacherResponse buildTeacherResponse(User user, TeacherProfile profile, List<Certificate> certificates, Set<String> roles) {
