@@ -105,6 +105,9 @@ public enum ErrorEnum implements ErrorCode {
     ORIGINAL_PRICE_LESS_THAN_SALE_PRICE(1078, "Original price cannot be less than sale price", HttpStatus.BAD_REQUEST),
     COIN_PACKAGE_NOT_FOUND(1079, "Coin package not found", HttpStatus.NOT_FOUND),
     INVALID_COIN_AMOUNT(1080, "Invalid coin amount", HttpStatus.BAD_REQUEST),
+    COURSE_NOT_FOUND(1081, "Course not found", HttpStatus.NOT_FOUND),
+    NOT_ENROLLED(1082, "You are not enrolled in this course", HttpStatus.BAD_REQUEST),
+    REVIEW_NOT_FOUND(1083, "Review not found", HttpStatus.NOT_FOUND),
     ;
 
 
