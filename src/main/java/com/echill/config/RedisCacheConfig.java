@@ -51,6 +51,7 @@ public class RedisCacheConfig {
         cacheConfigurations.put("latestBlogs", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache blog mới nhất 24h
         cacheConfigurations.put("testSetDetails", defaultCacheConfiguration().entryTtl(Duration.ofDays(7)));
         cacheConfigurations.put("testQuestionCounts", defaultCacheConfiguration().entryTtl(Duration.ofDays(30)));
+        cacheConfigurations.put("testSectionSummaries", defaultCacheConfiguration().entryTtl(Duration.ofDays(7)));
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultCacheConfiguration())

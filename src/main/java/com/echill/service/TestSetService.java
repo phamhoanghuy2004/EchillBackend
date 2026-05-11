@@ -11,7 +11,6 @@ import com.echill.entity.TestSet;
 import com.echill.entity.User;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
-import com.echill.exception.StudentErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
 import com.echill.repository.*;
 import com.echill.mapper.TestSetMapper;

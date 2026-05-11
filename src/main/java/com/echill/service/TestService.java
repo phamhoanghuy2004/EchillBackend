@@ -9,6 +9,7 @@ import com.echill.dto.response.TestResponse;
 import com.echill.dto.response.TestResultHistoryResponse;
 import com.echill.dto.response.guest.TestPracticeResponse;
 import com.echill.dto.response.guest.TestReviewDetailResponse;
+import com.echill.dto.response.guest.TestSectionPracticeResponse;
 import com.echill.entity.*;
 import com.echill.entity.enums.AnswerOption;
 import com.echill.entity.enums.TestSessionStatus;
@@ -286,24 +287,24 @@ public class TestService {
     }
 
     public TestPracticeResponse getRandomTestForPractice(Long testSetId) {
-        return processTestPractice(testSetId, null);
+        return processTestPractice(testSetId, null, null);
     }
 
-    public TestPracticeResponse getSpecificTestForPractice(Long testSetId, Long testId) {
-        return processTestPractice(testSetId, testId);
+    public TestPracticeResponse getSpecificTestForPractice(Long testSetId, Long testId, List<Long> selectedPartIds) {
+        return processTestPractice(testSetId, testId, selectedPartIds);
     }
 
     // =======================================================================
     // 🛠️ CÁC HÀM PRIVATE DÙNG CHUNG CHO GET TEST PRACTICE (HELPER METHODS)
     // =======================================================================
 
-    private TestPracticeResponse processTestPractice(Long testSetId, Long requestedTestId) {
+    private TestPracticeResponse processTestPractice(Long testSetId, Long requestedTestId, List<Long> selectedPartIds) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
 
         Optional<TestSession> activeSessionOpt = getActiveSession(currentUserId, testSetId);
 
         TestSession activeSession;
-        TestPracticeResponse fullResponse;
+        TestPracticeResponse clientResponse;
 
         if (activeSessionOpt.isPresent()) {
             activeSession = activeSessionOpt.get();
@@ -320,7 +321,7 @@ public class TestService {
                 throw new AppException(StudentErrorEnum.HAS_ACTIVE_SESSION_OTHER_TEST, customMessage);
             }
 
-            fullResponse = parseSnapshotSafe(activeSession);
+            clientResponse = parseSnapshotSafe(activeSession);
         } else {
             if (requestedTestId == null) {
                 validateMaxAttempts(currentUserId, testSetId);
@@ -330,21 +331,23 @@ public class TestService {
                     ? validateAndGetSpecificTestId(requestedTestId, testSetId)
                     : getRandomAvailableTestId(currentUserId, testSetId);
 
-            fullResponse = self.getCachedTestPractice(selectedTestId);
+            TestPracticeResponse fullResponse = self.getCachedTestPractice(selectedTestId);
+
+            clientResponse = prepareSafeResponse(fullResponse, selectedPartIds);
 
             try {
-                activeSession = attemptCreateNewSession(currentUserId, testSetId, selectedTestId, fullResponse);
+                activeSession = attemptCreateNewSession(currentUserId, testSetId, selectedTestId, clientResponse);
             } catch (DataIntegrityViolationException e) {
                 log.warn("Race condition detected for user {}. Fetching existing session.", currentUserId);
 
                 activeSession = getActiveSession(currentUserId, testSetId)
                         .orElseThrow(() -> new AppException(ErrorEnum.UNCATEGORIZED));
 
-                fullResponse = parseSnapshotSafe(activeSession);
+                clientResponse = parseSnapshotSafe(activeSession);
             }
         }
 
-        return finalizeClientResponse(activeSession, fullResponse);
+        return finalizeClientResponse(activeSession, clientResponse);
     }
 
     private Optional<TestSession> getActiveSession(Long userId, Long testSetId) {
@@ -388,11 +391,11 @@ public class TestService {
         return testId;
     }
 
-    private TestSession attemptCreateNewSession(Long userId, Long testSetId, Long selectedTestId, TestPracticeResponse fullResponse) {
+    private TestSession attemptCreateNewSession(Long userId, Long testSetId, Long selectedTestId, TestPracticeResponse preparedResponse) {
         Test testProxy = testRepository.getReferenceById(selectedTestId);
         String snapshotJson;
         try {
-            snapshotJson = objectMapper.writeValueAsString(fullResponse);
+            snapshotJson = objectMapper.writeValueAsString(preparedResponse);
         } catch (Exception e) {
             throw new AppException(ErrorEnum.UNCATEGORIZED);
         }
@@ -404,7 +407,7 @@ public class TestService {
                 .test(testProxy)
                 .testSetId(testSetId)
                 .startTime(LocalDateTime.now())
-                .endTime(LocalDateTime.now().plusMinutes(fullResponse.getDurationMinutes()))
+                .endTime(LocalDateTime.now().plusMinutes(preparedResponse.getDurationMinutes()))
                 .status(TestSessionStatus.IN_PROGRESS)
                 .activeLock(lockKey)
                 .testSnapshot(snapshotJson)
@@ -413,15 +416,27 @@ public class TestService {
         return self.saveNewSessionSafe(newSession);
     }
 
-    private TestPracticeResponse finalizeClientResponse(TestSession activeSession, TestPracticeResponse fullResponse) {
+    private TestPracticeResponse prepareSafeResponse(TestPracticeResponse fullResponse, List<Long> selectedPartIds) {
+        TestPracticeResponse safeResponse = testPracticeMapper.clonePracticeResponse(fullResponse);
+
+        if (selectedPartIds != null && !selectedPartIds.isEmpty()) {
+            List<TestSectionPracticeResponse> filteredSections = safeResponse.getSections().stream()
+                    .filter(section -> selectedPartIds.contains(section.getId()))
+                    .toList();
+            safeResponse.setSections(filteredSections);
+        }
+
+        return safeResponse;
+    }
+
+    private TestPracticeResponse finalizeClientResponse(TestSession activeSession, TestPracticeResponse clientResponse) {
         if (activeSession.getEndTime().isBefore(LocalDateTime.now())) {
             throw new AppException(StudentErrorEnum.SESSION_EXPIRED_MUST_SUBMIT);
         }
 
-        TestPracticeResponse safeResponse = testPracticeMapper.clonePracticeResponse(fullResponse);
-        cleanUpAnswersForClient(safeResponse);
-        safeResponse.setSessionId(activeSession.getId());
-        return safeResponse;
+        cleanUpAnswersForClient(clientResponse);
+        clientResponse.setSessionId(activeSession.getId());
+        return clientResponse;
     }
 
 
