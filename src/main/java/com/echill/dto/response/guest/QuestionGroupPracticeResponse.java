@@ -13,7 +13,7 @@ public class QuestionGroupPracticeResponse {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
     String title;
-    String content;
-    String audioUrl;
-    String imageUrl;
+    String sharedContent;
+    String sharedAudioUrl;
+    String sharedImageUrl;
 }

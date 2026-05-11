@@ -286,78 +286,134 @@ public class TestService {
     }
 
     public TestPracticeResponse getRandomTestForPractice(Long testSetId) {
+        return processTestPractice(testSetId, null);
+    }
+
+    public TestPracticeResponse getSpecificTestForPractice(Long testSetId, Long testId) {
+        return processTestPractice(testSetId, testId);
+    }
+
+    // =======================================================================
+    // 🛠️ CÁC HÀM PRIVATE DÙNG CHUNG CHO GET TEST PRACTICE (HELPER METHODS)
+    // =======================================================================
+
+    private TestPracticeResponse processTestPractice(Long testSetId, Long requestedTestId) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
 
-        Optional<TestSession> activeSessionOpt = testSessionRepository
-                .findFirstByStudentIdAndTestSetIdAndStatusOrderByCreatedAtDesc(
-                        currentUserId, testSetId, TestSessionStatus.IN_PROGRESS
-                );
+        Optional<TestSession> activeSessionOpt = getActiveSession(currentUserId, testSetId);
 
         TestSession activeSession;
         TestPracticeResponse fullResponse;
 
         if (activeSessionOpt.isPresent()) {
             activeSession = activeSessionOpt.get();
+
+            if (requestedTestId != null && !activeSession.getTest().getId().equals(requestedTestId)) {
+                String testTitle = activeSession.getTest().getTitle();
+                String testSetTitle = activeSession.getTest().getTestSet().getTitle();
+
+                String customMessage = String.format(
+                        "Bạn đang có bài làm dở: [%s] thuộc bộ [%s]. Vui lòng nộp bài trước khi sang bài mới!",
+                        testTitle, testSetTitle
+                );
+
+                throw new AppException(StudentErrorEnum.HAS_ACTIVE_SESSION_OTHER_TEST, customMessage);
+            }
+
             fullResponse = parseSnapshotSafe(activeSession);
         } else {
-            long attempts = testResultRepository.countByStudentAndTestSet(currentUserId, testSetId);
-            if (attempts >= AppConstants.MAX_TEST_ATTEMPTS) {
-                throw new AppException(StudentErrorEnum.MAX_ATTEMPT_REACHED);
+            if (requestedTestId == null) {
+                validateMaxAttempts(currentUserId, testSetId);
             }
 
-            List<Long> allTestIds = testRepository.findTestIdsByTestSetId(testSetId);
-            if (allTestIds.isEmpty()) {
-                throw new AppException(StudentErrorEnum.TEST_NOT_FOUND);
-            }
-
-            List<Long> takenTestIds = testResultRepository.findTakenTestIds(currentUserId, testSetId);
-            Set<Long> takenSet = new java.util.HashSet<>(takenTestIds);
-            List<Long> availableTestIds = allTestIds.stream()
-                    .filter(id -> !takenSet.contains(id))
-                    .toList();
-
-            if (availableTestIds.isEmpty()) {
-                availableTestIds = allTestIds;
-            }
-
-            Long selectedTestId = availableTestIds.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(availableTestIds.size()));
+            Long selectedTestId = (requestedTestId != null)
+                    ? validateAndGetSpecificTestId(requestedTestId, testSetId)
+                    : getRandomAvailableTestId(currentUserId, testSetId);
 
             fullResponse = self.getCachedTestPractice(selectedTestId);
-            Test testProxy = testRepository.getReferenceById(selectedTestId);
-
-            String snapshotJson;
-            try {
-                snapshotJson = objectMapper.writeValueAsString(fullResponse);
-            } catch (Exception e) {
-                throw new AppException(ErrorEnum.UNCATEGORIZED);
-            }
-
-            String lockKey = "USER_" + currentUserId + "_TESTSET_" + testSetId;
-
-            TestSession newSession = TestSession.builder()
-                    .studentId(currentUserId)
-                    .test(testProxy)
-                    .testSetId(testSetId)
-                    .startTime(LocalDateTime.now())
-                    .endTime(LocalDateTime.now().plusMinutes(fullResponse.getDurationMinutes()))
-                    .status(TestSessionStatus.IN_PROGRESS)
-                    .activeLock(lockKey)
-                    .testSnapshot(snapshotJson)
-                    .build();
 
             try {
-                activeSession = self.saveNewSessionSafe(newSession);
+                activeSession = attemptCreateNewSession(currentUserId, testSetId, selectedTestId, fullResponse);
             } catch (DataIntegrityViolationException e) {
                 log.warn("Race condition detected for user {}. Fetching existing session.", currentUserId);
-                activeSession = testSessionRepository
-                        .findFirstByStudentIdAndTestSetIdAndStatusOrderByCreatedAtDesc(
-                                currentUserId, testSetId, TestSessionStatus.IN_PROGRESS
-                        ).orElseThrow(() -> new AppException(ErrorEnum.UNCATEGORIZED));
+
+                activeSession = getActiveSession(currentUserId, testSetId)
+                        .orElseThrow(() -> new AppException(ErrorEnum.UNCATEGORIZED));
 
                 fullResponse = parseSnapshotSafe(activeSession);
             }
         }
 
+        return finalizeClientResponse(activeSession, fullResponse);
+    }
+
+    private Optional<TestSession> getActiveSession(Long userId, Long testSetId) {
+        return testSessionRepository.findFirstByStudentIdAndTestSetIdAndStatusOrderByCreatedAtDesc(
+                userId, testSetId, TestSessionStatus.IN_PROGRESS
+        );
+    }
+
+    private void validateMaxAttempts(Long userId, Long testSetId) {
+        long attempts = testResultRepository.countByStudentAndTestSet(userId, testSetId);
+        if (attempts >= AppConstants.MAX_TEST_ATTEMPTS) {
+            throw new AppException(StudentErrorEnum.MAX_ATTEMPT_REACHED);
+        }
+    }
+
+    private Long getRandomAvailableTestId(Long userId, Long testSetId) {
+        List<Long> allTestIds = testRepository.findTestIdsByTestSetId(testSetId);
+        if (allTestIds.isEmpty()) {
+            throw new AppException(StudentErrorEnum.TEST_NOT_FOUND);
+        }
+
+        List<Long> takenTestIds = testResultRepository.findTakenTestIds(userId, testSetId);
+        Set<Long> takenSet = new java.util.HashSet<>(takenTestIds);
+
+        List<Long> availableTestIds = allTestIds.stream()
+                .filter(id -> !takenSet.contains(id))
+                .toList();
+
+        if (availableTestIds.isEmpty()) {
+            availableTestIds = allTestIds;
+        }
+
+        return availableTestIds.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(availableTestIds.size()));
+    }
+
+    private Long validateAndGetSpecificTestId(Long testId, Long testSetId) {
+        boolean belongsToSet = testRepository.existsByIdAndTestSetId(testId, testSetId);
+        if (!belongsToSet) {
+            throw new AppException(StudentErrorEnum.TEST_NOT_FOUND);
+        }
+        return testId;
+    }
+
+    private TestSession attemptCreateNewSession(Long userId, Long testSetId, Long selectedTestId, TestPracticeResponse fullResponse) {
+        Test testProxy = testRepository.getReferenceById(selectedTestId);
+        String snapshotJson;
+        try {
+            snapshotJson = objectMapper.writeValueAsString(fullResponse);
+        } catch (Exception e) {
+            throw new AppException(ErrorEnum.UNCATEGORIZED);
+        }
+
+        String lockKey = "USER_" + userId + "_TESTSET_" + testSetId;
+
+        TestSession newSession = TestSession.builder()
+                .studentId(userId)
+                .test(testProxy)
+                .testSetId(testSetId)
+                .startTime(LocalDateTime.now())
+                .endTime(LocalDateTime.now().plusMinutes(fullResponse.getDurationMinutes()))
+                .status(TestSessionStatus.IN_PROGRESS)
+                .activeLock(lockKey)
+                .testSnapshot(snapshotJson)
+                .build();
+
+        return self.saveNewSessionSafe(newSession);
+    }
+
+    private TestPracticeResponse finalizeClientResponse(TestSession activeSession, TestPracticeResponse fullResponse) {
         if (activeSession.getEndTime().isBefore(LocalDateTime.now())) {
             throw new AppException(StudentErrorEnum.SESSION_EXPIRED_MUST_SUBMIT);
         }
@@ -365,9 +421,9 @@ public class TestService {
         TestPracticeResponse safeResponse = testPracticeMapper.clonePracticeResponse(fullResponse);
         cleanUpAnswersForClient(safeResponse);
         safeResponse.setSessionId(activeSession.getId());
-
         return safeResponse;
     }
+
 
     @Transactional
     public TestSession saveNewSessionSafe(TestSession session) {

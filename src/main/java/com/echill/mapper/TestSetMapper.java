@@ -38,7 +38,5 @@ public interface TestSetMapper {
     @Mapping(target = "tests", ignore = true)
     void updateTestSet(@MappingTarget TestSet testSet, TestSetUpdateRequest request);
 
-    TestSetShortcutDto toShortcutDto(TestSet testSet);
-
     List<TestSetResponse> toResponseList(List<TestSet> testSets);
 }

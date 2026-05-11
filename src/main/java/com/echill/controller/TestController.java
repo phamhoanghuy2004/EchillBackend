@@ -83,9 +83,21 @@ public class TestController {
 
     @GetMapping("/test-set/practice/{testSetId}")
     @PreAuthorize("hasRole('STUDENT')")
-    public ApiResponse<TestPracticeResponse> getTestPracticeByTestSetId(@PathVariable Long testSetId) {
+    public ApiResponse<TestPracticeResponse> getTestPractice(
+            @PathVariable Long testSetId,
+            @RequestParam(required = false) Long testId) {
+
+        TestPracticeResponse responseData;
+
+        if (testId == null) {
+            responseData = testService.getRandomTestForPractice(testSetId);
+        } else {
+            responseData = testService.getSpecificTestForPractice(testSetId, testId);
+        }
+
         return ApiResponse.<TestPracticeResponse>builder()
-                .data(testService.getRandomTestForPractice(testSetId))
+                .data(responseData)
+                .message("Lấy đề thi thành công")
                 .build();
     }
 

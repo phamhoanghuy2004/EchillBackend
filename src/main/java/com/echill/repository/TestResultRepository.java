@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface TestResultRepository extends JpaRepository<TestResult, Long> {
 
@@ -40,4 +41,10 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
     Long countTestsTakenInDateRange(@Param("userId") Long userId,
                                     @Param("startDate") Instant startDate,
                                     @Param("endDate") Instant endDate);
+
+    @Query("SELECT DISTINCT t.id " +
+            "FROM TestResult tr " +
+            "JOIN tr.test t " +
+            "WHERE tr.student.id = :userId AND t.testSet.id = :testSetId")
+    Set<Long> findTakenTestIdsByStudentAndTestSet(@Param("userId") Long userId, @Param("testSetId") Long testSetId);
 }

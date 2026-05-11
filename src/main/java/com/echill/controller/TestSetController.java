@@ -1,11 +1,11 @@
 package com.echill.controller;
 
 import com.echill.dto.request.TestSetRequest;
+import com.echill.dto.request.TestSetSearchRequest;
 import com.echill.dto.request.TestSetUpdateRequest;
-import com.echill.dto.response.ApiResponse;
-import com.echill.dto.response.TestSetDetailWithHistoryResponse;
-import com.echill.dto.response.TestSetResponse;
+import com.echill.dto.response.*;
 import com.echill.dto.response.learner.TestSetRecommendationResponse;
+import com.echill.entity.enums.TestType;
 import com.echill.service.TestSetService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -68,6 +68,38 @@ public class    TestSetController {
         return ApiResponse.<List<TestSetRecommendationResponse>>builder()
                 .message("Lấy danh sách đề xuất thành công")
                 .data(testSetService.getNewestTestSetsForCurrentYear())
+                .build();
+    }
+
+    @GetMapping
+    public ApiResponse<PageResponse<TestSetResponse>> getAllTestSets(
+            @Valid @ModelAttribute TestSetSearchRequest request) {
+
+        return ApiResponse.<PageResponse<TestSetResponse>>builder()
+                .message("Lấy danh sách bộ đề thành công")
+                .data(testSetService.searchTestSets(request))
+                .build();
+    }
+
+    @GetMapping("/types")
+    public ApiResponse<List<String>> getAllowedTestTypes() {
+
+        // 🔴 Chỉ cần gọi hàm từ Enum, Controller không cần biết bên trong loại bỏ cái gì
+        return ApiResponse.<List<String>>builder()
+                .message("Lấy danh sách phân loại bộ đề thành công")
+                .data(TestType.getPracticePageTypes())
+                .build();
+    }
+
+    @GetMapping("/{testSetId}")
+    public ApiResponse<TestSetDetailResponse> getTestSetDetail(
+            @PathVariable Long testSetId) {
+
+        TestSetDetailResponse responseData = testSetService.getTestSetDetail(testSetId);
+
+        return ApiResponse.<TestSetDetailResponse>builder()
+                .data(responseData)
+                .message("Lấy chi tiết bộ đề thành công!")
                 .build();
     }
 }

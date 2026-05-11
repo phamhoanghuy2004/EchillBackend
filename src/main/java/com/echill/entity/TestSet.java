@@ -1,5 +1,6 @@
 package com.echill.entity;
 
+import com.echill.entity.enums.TestType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
@@ -13,11 +14,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "test_sets", uniqueConstraints = {
-        @UniqueConstraint(
-                columnNames = {"lesson_id"}
-        )
-})
+@Table(
+        name = "test_sets",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"lesson_id"})
+        },
+        indexes = {
+                @Index(name = "idx_testset_search", columnList = "test_type, year, created_at")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -54,6 +59,11 @@ public class TestSet extends BaseEntity {
     @JoinColumn(name = "user_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     User user;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "test_type", length = 20, nullable = false)
+    @Builder.Default
+    TestType type = TestType.TOEIC;
 
     public void addTest(Test test) {
         tests.add(test);
