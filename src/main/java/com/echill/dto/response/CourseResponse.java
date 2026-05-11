@@ -31,4 +31,7 @@ public class CourseResponse {
     LocalDateTime createdAt;
     List<TagResponse> tags;
     java.util.List<LessonResponse> lessons;
+    Double averageRating;
+    Long studentCount;
+    Long reviewCount;
 }

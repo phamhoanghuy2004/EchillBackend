@@ -13,6 +13,8 @@ import com.echill.entity.enums.Level;
 import com.echill.entity.enums.Status;
 import com.echill.entity.enums.TagGroup;
 import com.echill.mapper.document.CourseDocumentMapper;
+import com.echill.repository.EnrollmentRepository;
+import com.echill.repository.ReviewRepository;
 import com.echill.repository.StudentProfileRepository;
 import com.echill.repository.UserSkillProfileRepository;
 import com.echill.util.SecurityUtils;
@@ -46,6 +48,8 @@ public class CourseSearchService {
     CourseDocumentMapper courseDocumentMapper;
     StudentProfileRepository studentProfileRepository;
     UserSkillProfileRepository userSkillProfileRepository;
+    EnrollmentRepository enrollmentRepository;
+    ReviewRepository reviewRepository;
 
     private static final List<Level> BEGINNER_PATH =
             List.of(Level.BEGINNER, Level.INTERMEDIATE, Level.ADVANCED);
@@ -144,9 +148,32 @@ public class CourseSearchService {
                 .map(courseDocumentMapper::toResponse)
                 .toList();
 
+        enrichWithStats(responses);
+
         log.info(responses.toString());
 
         return new PageImpl<>(responses, pageable, searchHits.getTotalHits());
+    }
+
+    private void enrichWithStats(List<CourseCardResponse> responses) {
+        if (responses == null || responses.isEmpty()) return;
+        List<Long> courseIds = responses.stream().map(CourseCardResponse::getId).toList();
+
+        Map<Long, Long> studentCounts = enrollmentRepository.countEnrollmentsByCourseIds(courseIds).stream()
+                .collect(Collectors.toMap(arr -> (Long) arr[0], arr -> (Long) arr[1]));
+
+        Map<Long, Long> reviewCounts = reviewRepository.countReviewsByCourseIds(courseIds).stream()
+                .collect(Collectors.toMap(arr -> (Long) arr[0], arr -> (Long) arr[1]));
+
+        Map<Long, Double> averageRatings = reviewRepository.getAverageRatingsByCourseIds(courseIds).stream()
+                .collect(Collectors.toMap(arr -> (Long) arr[0], arr -> (Double) arr[1]));
+
+        responses.forEach(card -> {
+            card.setStudentCount(studentCounts.getOrDefault(card.getId(), 0L));
+            card.setReviewCount(reviewCounts.getOrDefault(card.getId(), 0L));
+            Double avg = averageRatings.get(card.getId());
+            card.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0);
+        });
     }
 
     public List<CourseCardResponse> getRecommendedComboForCurrentUser() {
@@ -228,6 +255,8 @@ public class CourseSearchService {
                 log.warn("⚠️ Không tìm thấy khóa học ACTIVE nào phù hợp cho Level: {}", lvl);
             }
         }
+
+        enrichWithStats(recommendedPath);
 
         return recommendedPath;
     }

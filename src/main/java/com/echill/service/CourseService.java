@@ -12,10 +12,7 @@ import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
 import com.echill.mapper.TagMapper;
-import com.echill.repository.CategoryRepository;
-import com.echill.repository.CourseRepository;
-import com.echill.repository.TagRepository;
-import com.echill.repository.UserRepository;
+import com.echill.repository.*;
 import com.echill.service.persistence.CoursePersistenceService;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
@@ -42,6 +39,8 @@ public class CourseService {
     CategoryRepository categoryRepository;
     CourseRepository courseRepository;
     TagRepository tagRepository;
+    EnrollmentRepository enrollmentRepository;
+    ReviewRepository reviewRepository;
     TagMapper tagMapper;
 
     public CourseResponse createCourse(CourseRequest request, MultipartFile file) {
@@ -108,15 +107,50 @@ public class CourseService {
 
     public List<CourseResponse> getAllCoursesByTeacher() {
         Long teacherId = SecurityUtils.getCurrentUserId();
-        return courseRepository.findAllByTeacherIdWithDetails(teacherId).stream()
-                .map(this::mapToResponse)
+        List<Course> courses = courseRepository.findAllByTeacherIdWithDetails(teacherId);
+        List<Long> courseIds = courses.stream().map(Course::getId).toList();
+
+        Map<Long, Long> studentCounts = enrollmentRepository.countEnrollmentsByCourseIds(courseIds).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        arr -> (Long) arr[0],
+                        arr -> (Long) arr[1]
+                ));
+
+        Map<Long, Long> reviewCounts = reviewRepository.countReviewsByCourseIds(courseIds).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        arr -> (Long) arr[0],
+                        arr -> (Long) arr[1]
+                ));
+
+        Map<Long, Double> averageRatings = reviewRepository.getAverageRatingsByCourseIds(courseIds).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        arr -> (Long) arr[0],
+                        arr -> (Double) arr[1]
+                ));
+
+        return courses.stream()
+                .map(course -> {
+                    CourseResponse response = mapToResponse(course);
+                    response.setStudentCount(studentCounts.getOrDefault(course.getId(), 0L));
+                    response.setReviewCount(reviewCounts.getOrDefault(course.getId(), 0L));
+                    Double avg = averageRatings.get(course.getId());
+                    response.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0);
+                    return response;
+                })
                 .toList();
     }
 
     public CourseResponse getCourseById(Long id) {
-        Course course= courseRepository.findByIdWithDetails(id)
+        Course course = courseRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new AppException(TeacherErrorEnum.COURSE_NOT_FOUND));
-        return mapToResponse(course);
+        
+        CourseResponse response = mapToResponse(course);
+        response.setStudentCount(enrollmentRepository.countByCourseId(id));
+        response.setReviewCount(reviewRepository.countByCourseId(id));
+        Double avg = reviewRepository.getAverageRatingByCourseId(id);
+        response.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0);
+        
+        return response;
     }
 
     private CourseResponse mapToResponse(Course course) {

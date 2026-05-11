@@ -8,7 +8,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
-@Builder
+@Setter
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -33,5 +34,7 @@ public class CourseDetailResponse {
     String teacherAvatarUrl;
 
     List<LessonPublicResponse> lessons;
-
+    Double averageRating;
+    Long studentCount;
+    Long reviewCount;
 }
