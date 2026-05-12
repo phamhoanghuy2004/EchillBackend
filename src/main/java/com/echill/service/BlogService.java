@@ -102,7 +102,7 @@ public class BlogService {
         return PageResponse.of(blogPage.map(blogMapper::toResponse));
     }
 
-    @Cacheable(cacheNames = CacheNames.LATEST_BLOGS, key = "'top3_blog_v3'")
+    //@Cacheable(cacheNames = CacheNames.LATEST_BLOGS, key = "'top3_blog_v3'")
     public List<BlogResponse> getLatestBlogs() {
         log.info("⚡ CHẠY VÀO DB ĐỂ LẤY 3 BLOG MỚI NHẤT (CACHE MISS)");
         List<Blog> blogs = blogRepository.findLatestBlogs(PageRequest.of(0, 3));

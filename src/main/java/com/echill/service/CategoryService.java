@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
 
-    @Cacheable(cacheNames = CacheNames.CATEGORIES, key = "'all_active'", sync = true)
+    //@Cacheable(cacheNames = CacheNames.CATEGORIES, key = "'all_active'", sync = true)
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findByStatus(Status.ACTIVE).stream()
                 .map(category -> CategoryResponse.builder()

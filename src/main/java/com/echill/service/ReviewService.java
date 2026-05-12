@@ -5,6 +5,9 @@ import com.echill.dto.response.ReviewResponse;
 import com.echill.entity.Course;
 import com.echill.entity.Review;
 import com.echill.entity.User;
+import com.echill.constant.CacheNames;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.repository.CourseRepository;
@@ -35,6 +38,7 @@ public class ReviewService {
     EnrollmentRepository enrollmentRepository;
 
     @Transactional
+    @CacheEvict(cacheNames = "featuredReviews", allEntries = true)
     public ReviewResponse createOrUpdateReview(ReviewRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         
@@ -90,6 +94,14 @@ public class ReviewService {
         return reviewRepository.findByCourseIdOrderByCreatedAtDesc(courseId, pageable)
                 .map(this::mapToResponse);
     }
+    // Tạm thời bỏ cache để debug dữ liệu thực
+    public List<ReviewResponse> getFeaturedReviews() {
+        List<Review> reviews = reviewRepository.findFeaturedReviews(PageRequest.of(0, 10));
+        return reviews.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
 
     private ReviewResponse mapToResponse(Review review) {
         return ReviewResponse.builder()

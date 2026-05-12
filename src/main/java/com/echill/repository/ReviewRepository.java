@@ -37,4 +37,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.course.teacher.id = :teacherId AND r.course.id = :courseId")
     Double getAverageRatingByTeacherIdAndCourseId(@Param("teacherId") Long teacherId, @Param("courseId") Long courseId);
+    @Query("SELECT r FROM Review r LEFT JOIN FETCH r.user LEFT JOIN FETCH r.course ORDER BY r.createdAt DESC")
+    List<Review> findFeaturedReviews(org.springframework.data.domain.Pageable pageable);
 }
