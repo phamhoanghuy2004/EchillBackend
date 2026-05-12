@@ -53,4 +53,10 @@ public class ReviewController {
                 .data(PageResponse.of(reviewPage))
                 .build();
     }
+    @GetMapping("/featured")
+    public ApiResponse<List<ReviewResponse>> getFeaturedReviews() {
+        return ApiResponse.<List<ReviewResponse>>builder()
+                .data(reviewService.getFeaturedReviews())
+                .build();
+    }
 }

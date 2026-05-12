@@ -85,7 +85,7 @@ public class TeacherService {
         return enrollmentRepository.findStudentStatistics(teacherId);
     }
 
-    @Cacheable(cacheNames = CacheNames.ALL_TEACHERS, key = "'all_v1'")
+    //@Cacheable(cacheNames = CacheNames.ALL_TEACHERS, key = "'all_v1'")
     @Transactional(readOnly = true)
     public List<TeacherResponse> getAllTeachers() {
         log.info("⚡ CHẠY VÀO DB ĐỂ LẤY TẤT CẢ GIÁO VIÊN (CACHE MISS)");
