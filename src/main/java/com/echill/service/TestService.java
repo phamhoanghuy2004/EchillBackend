@@ -11,9 +11,7 @@ import com.echill.dto.response.guest.TestPracticeResponse;
 import com.echill.dto.response.guest.TestReviewDetailResponse;
 import com.echill.dto.response.guest.TestSectionPracticeResponse;
 import com.echill.entity.*;
-import com.echill.entity.enums.AnswerOption;
-import com.echill.entity.enums.TestSessionStatus;
-import com.echill.entity.enums.TestType;
+import com.echill.entity.enums.*;
 import com.echill.event.QuizPassedEvent;
 import com.echill.event.TestEvaluatedEvent;
 import com.echill.event.TestUpdatedEvent;
@@ -30,6 +28,7 @@ import com.echill.service.persistence.TestPersistService;
 import com.echill.util.SecurityUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.f4b6a3.tsid.TsidCreator;
 import org.springframework.cache.annotation.Cacheable;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -74,6 +73,7 @@ public class TestService {
     TestResultMapper testResultMapper;
     ObjectMapper objectMapper;
     ScoreCalculator scoreCalculator;
+    TransactionRepository transactionRepository;
 
     @Lazy
     @Autowired
@@ -336,7 +336,7 @@ public class TestService {
             clientResponse = prepareSafeResponse(fullResponse, selectedPartIds);
 
             try {
-                activeSession = attemptCreateNewSession(currentUserId, testSetId, selectedTestId, clientResponse);
+                activeSession = self.createSessionWithPaymentSafe(currentUserId, testSetId, selectedTestId, clientResponse);
             } catch (DataIntegrityViolationException e) {
                 log.warn("Race condition detected for user {}. Fetching existing session.", currentUserId);
 
@@ -391,29 +391,66 @@ public class TestService {
         return testId;
     }
 
-    private TestSession attemptCreateNewSession(Long userId, Long testSetId, Long selectedTestId, TestPracticeResponse preparedResponse) {
+    // =======================================================================
+    // 💳 PAYMENT & SESSION CREATION (NẰM TRONG TestPracticeService)
+    // =======================================================================
+
+    @Transactional(rollbackFor = Exception.class)
+    public TestSession createSessionWithPaymentSafe(Long userId, Long testSetId, Long selectedTestId, TestPracticeResponse preparedResponse) {
+
+        boolean isPublic = preparedResponse.getIsPublic();
+
+        if (!isPublic) {
+            User user = userRepository.findByIdForPaymentLock(userId)
+                    .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+
+            if (user.getCurrentCoin() < AppConstants.PRIVATE_TEST_FEE) {
+                throw new AppException(StudentErrorEnum.NOT_ENOUGH_COIN);
+            }
+
+            Long newBalance = user.getCurrentCoin() - AppConstants.PRIVATE_TEST_FEE;
+            user.setCurrentCoin(newBalance);
+
+            Transaction transaction = Transaction.builder()
+                    .transactionCode("PAY-" + TsidCreator.getTsid().toString())
+                    .totalCoinsChanged(-AppConstants.PRIVATE_TEST_FEE)
+                    .totalAmount(null)
+                    .description("Thanh toán phí mở khóa đề thi: " + preparedResponse.getTitle())
+                    .status(TransactionStatus.SUCCESS)
+                    .type(TransactionType.TEST_PAYMENT)
+                    .user(user)
+                    .balanceAfter(newBalance)
+                    .build();
+            transactionRepository.save(transaction);
+        }
+
         Test testProxy = testRepository.getReferenceById(selectedTestId);
         String snapshotJson;
         try {
             snapshotJson = objectMapper.writeValueAsString(preparedResponse);
         } catch (Exception e) {
+            log.error("Lỗi Serialize JSON khi tạo Session cho User: {}", userId, e);
             throw new AppException(ErrorEnum.UNCATEGORIZED);
         }
 
         String lockKey = "USER_" + userId + "_TESTSET_" + testSetId;
+
+        long duration = preparedResponse.getDurationMinutes() != null
+                ? preparedResponse.getDurationMinutes()
+                : 120L;
 
         TestSession newSession = TestSession.builder()
                 .studentId(userId)
                 .test(testProxy)
                 .testSetId(testSetId)
                 .startTime(LocalDateTime.now())
-                .endTime(LocalDateTime.now().plusMinutes(preparedResponse.getDurationMinutes()))
+                .endTime(LocalDateTime.now().plusMinutes(duration))
                 .status(TestSessionStatus.IN_PROGRESS)
                 .activeLock(lockKey)
                 .testSnapshot(snapshotJson)
                 .build();
 
-        return self.saveNewSessionSafe(newSession);
+        return testSessionRepository.saveAndFlush(newSession);
     }
 
     private TestPracticeResponse prepareSafeResponse(TestPracticeResponse fullResponse, List<Long> selectedPartIds) {
@@ -437,12 +474,6 @@ public class TestService {
         cleanUpAnswersForClient(clientResponse);
         clientResponse.setSessionId(activeSession.getId());
         return clientResponse;
-    }
-
-
-    @Transactional
-    public TestSession saveNewSessionSafe(TestSession session) {
-        return testSessionRepository.saveAndFlush(session);
     }
 
     private TestPracticeResponse parseSnapshotSafe(TestSession session) {
@@ -473,7 +504,7 @@ public class TestService {
     @Cacheable(cacheNames = "testPractice", key = "#testId", sync = true)
     @Transactional(readOnly = true)
     public TestPracticeResponse getCachedTestPractice(Long testId) {
-        Test test = testRepository.findById(testId)
+        Test test = testRepository.findByIdWithTestSet(testId)
                 .orElseThrow(() -> new AppException(StudentErrorEnum.TEST_NOT_FOUND));
 
         return testPracticeMapper.toPracticeResponse(test);

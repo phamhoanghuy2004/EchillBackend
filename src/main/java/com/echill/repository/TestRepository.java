@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TestRepository extends JpaRepository<Test, Long> {
@@ -25,4 +26,7 @@ public interface TestRepository extends JpaRepository<Test, Long> {
             "WHERE t.testSet.id = :testSetId " +
             "GROUP BY t.id")
     List<TestQuestionCountProjection> countQuestionsByTestSetId(@Param("testSetId") Long testSetId);
+
+    @Query("SELECT t FROM Test t JOIN FETCH t.testSet WHERE t.id = :testId")
+    Optional<Test> findByIdWithTestSet(@Param("testId") Long testId);
 }

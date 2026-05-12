@@ -39,6 +39,7 @@ public enum StudentErrorEnum implements ErrorCode {
     NOT_ENOUGH_PROGRESS(1066, "Not enough progress to complete this course", HttpStatus.BAD_REQUEST),
     SKILL_PROFILE_NOT_FOUND(1067, "Skill profile not found", HttpStatus.NOT_FOUND),
     HAS_ACTIVE_SESSION_OTHER_TEST(1068, "Has active session other test", HttpStatus.BAD_REQUEST),
+    NOT_ENOUGH_COIN(1069, "Not enough coin", HttpStatus.BAD_REQUEST),
     ;
 
     Integer code;

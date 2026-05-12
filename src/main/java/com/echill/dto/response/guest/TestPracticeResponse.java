@@ -32,5 +32,7 @@ public class TestPracticeResponse {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long testSetId;
 
+    Boolean isPublic;
+
     List<TestSectionPracticeResponse> sections;
 }
