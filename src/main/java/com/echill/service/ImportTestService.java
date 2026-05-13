@@ -3,9 +3,11 @@ package com.echill.service;
 import com.echill.dto.response.ImportTestResponse;
 import com.echill.dto.toeic.ToeicExcelRowDto;
 import com.echill.entity.*;
+import com.echill.entity.enums.TagGroup;
 import com.echill.exception.AppException;
 import com.echill.exception.TeacherErrorEnum;
 import com.echill.repository.QuestionRepository;
+import com.echill.repository.TagRepository;
 import com.echill.repository.TestRepository;
 import com.echill.repository.TestSetRepository;
 import com.echill.util.SecurityUtils;
@@ -41,6 +43,7 @@ public class ImportTestService {
     TestRepository testRepository;
     TestSetRepository testSetRepository;
     QuestionRepository questionRepository;
+    TagRepository tagRepository;
 
     /** Cloudinary folder structure */
     private static final String FOLDER_QUESTION_AUDIO = "toeic/audio/questions";
@@ -94,6 +97,9 @@ public class ImportTestService {
 
         // Map<groupCode, QuestionGroup> – one group per unique groupCode per part
         Map<String, QuestionGroup> groupMap = new LinkedHashMap<>();
+        
+        // Map<tagName, Tag> – Cache for tags during this import session
+        Map<String, Tag> tagCache = new HashMap<>();
 
         int totalQuestions = 0;
         int totalGroups    = 0;
@@ -111,6 +117,24 @@ public class ImportTestService {
 
             TestSection section = sectionByPart.get(row.getPart());
             Question question = buildQuestion(row);
+
+            // Handle Tags
+            if (row.getTag() != null && !row.getTag().isEmpty()) {
+                String tagName = row.getTag();
+                Tag tag = tagCache.get(tagName);
+                if (tag == null) {
+                    tag = tagRepository.findByName(tagName)
+                            .orElseGet(() -> {
+                                Tag newTag = Tag.builder()
+                                        .name(tagName)
+                                        .tagGroup(TagGroup.ENGLISH_TOEIC)
+                                        .build();
+                                return tagRepository.save(newTag);
+                            });
+                    tagCache.put(tagName, tag);
+                }
+                question.setTag(tag);
+            }
 
             if (row.getGroupCode() == null) {
                 // Standalone question (Part 1, 2, 5)
