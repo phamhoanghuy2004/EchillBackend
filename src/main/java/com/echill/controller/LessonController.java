@@ -142,4 +142,24 @@ public class LessonController {
                 .data(lessonProgressService.markVideoAsWatched(lessonId))
                 .build();
     }
+
+    @GetMapping("/weekly-completed-lessons")
+    public ApiResponse<Long> getWeeklyCompletedLessons() {
+        Long completedCount = lessonProgressService.getCompletedLessonsCountThisWeek();
+
+        return ApiResponse.<Long>builder()
+                .message("Lấy số lượng bài học hoàn thành trong tuần thành công")
+                .data(completedCount)
+                .build();
+    }
+
+    @GetMapping("/weekly-completed-tests")
+    public ApiResponse<Long> getWeeklyCompletedTests() {
+        Long completedCount = lessonProgressService.getCompletedTestsCountThisWeek();
+
+        return ApiResponse.<Long>builder()
+                .message("Lấy số lượng bài test đã hoàn thành trong tuần thành công")
+                .data(completedCount)
+                .build();
+    }
 }

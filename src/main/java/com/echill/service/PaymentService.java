@@ -4,7 +4,6 @@ import com.echill.config.VnpayConfig;
 import com.echill.constant.VnpayConstant;
 import com.echill.dto.response.VnpayIpnResponse;
 import com.echill.entity.*;
-import com.echill.entity.enums.DiscountType;
 import com.echill.entity.enums.EnrollmentStatus;
 import com.echill.entity.enums.TransactionStatus;
 import com.echill.entity.enums.TransactionType;
@@ -24,9 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -44,11 +41,65 @@ public class PaymentService {
     UserRepository userRepository;
     VoucherRepository voucherRepository;
     CoinPackageRepository coinPackageRepository;
+    DailyStudyTimeRepository dailyStudyTimeRepository;
 
     private static final String VNPAY_ORDER_TYPE = "other";
     private static final String CURRENCY_VND = "VND";
     private static final String TIME_ZONE = "Asia/Ho_Chi_Minh";
     private static final DateTimeFormatter VNPAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
+    @Transactional
+    public void claimWeeklyReward() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        Long rewardCoins = 10L;
+        Long targetSeconds = 36000L;
+
+        ZoneId zoneId = ZoneId.of("Asia/Ho_Chi_Minh");
+        ZonedDateTime now = ZonedDateTime.now(zoneId);
+
+        ZonedDateTime startOfWeekZDT = now.with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS);
+        ZonedDateTime endOfWeekZDT = startOfWeekZDT.plusDays(7).minusNanos(1);
+
+        Instant startOfWeekInstant = startOfWeekZDT.toInstant();
+        Instant endOfWeekInstant = endOfWeekZDT.toInstant();
+
+        LocalDate startOfWeekDate = startOfWeekZDT.toLocalDate();
+        LocalDate endOfWeekDate = endOfWeekZDT.toLocalDate();
+
+        User user = userRepository.findByIdForPaymentLock(userId)
+                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+
+        boolean isAlreadyClaimed = transactionRepository.existsBonusTransactionInWeek(
+                userId, startOfWeekInstant, endOfWeekInstant
+        );
+        if (isAlreadyClaimed) {
+            throw new AppException(ErrorEnum.REWARD_ALREADY_CLAIMED);
+        }
+
+        Long currentSeconds = dailyStudyTimeRepository.sumUserStudySecondsInDateRange(
+                userId, startOfWeekDate, endOfWeekDate
+        );
+        if (currentSeconds == null || currentSeconds < targetSeconds) {
+            throw new AppException(ErrorEnum.NOT_ELIGIBLE_FOR_REWARD);
+        }
+
+        Long newBalance = user.getCurrentCoin() + rewardCoins;
+        user.setCurrentCoin(newBalance);
+
+        Transaction transaction = Transaction.builder()
+                .transactionCode("BONUS-" + TsidCreator.getTsid().toString())
+                .totalCoinsChanged(rewardCoins)
+                .totalAmount(null)
+                .description("Nhận thưởng mục tiêu học tập tuần")
+                .status(TransactionStatus.SUCCESS)
+                .type(TransactionType.SYSTEM_BONUS)
+                .user(user)
+                .balanceAfter(newBalance)
+                .build();
+
+        transactionRepository.save(transaction);
+
+    }
 
     @Transactional
     public String initiatePayment(List<Long> courseIds, String voucherCode, HttpServletRequest request) {

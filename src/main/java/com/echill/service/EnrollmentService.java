@@ -35,6 +35,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -89,6 +90,26 @@ public class EnrollmentService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public CurriculumResponse getRecentCourseCurriculum() {
+        Long currentUserId = SecurityUtils.getCurrentUserId();
+
+        Optional<Enrollment> recentEnrollmentOpt = enrollmentRepository
+                .findFirstByStudentIdAndEnrollmentStatusOrderByLastAccessedAtDesc(
+                        currentUserId,
+                        EnrollmentStatus.ACTIVE
+                );
+
+        if (recentEnrollmentOpt.isEmpty()) {
+            return null;
+        }
+
+        Enrollment enrollment = recentEnrollmentOpt.get();
+        Course course = enrollment.getCourse();
+
+        return buildCurriculumResponse(course, enrollment);
+    }
+
     @Transactional
     public CurriculumResponse getCourseCurriculum(Long courseId) {
         Long currentUserId = SecurityUtils.getCurrentUserId();
@@ -104,8 +125,12 @@ public class EnrollmentService {
 
         Course course = enrollment.getCourse();
 
+        return buildCurriculumResponse(course, enrollment);
+    }
+
+    private CurriculumResponse buildCurriculumResponse(Course course, Enrollment enrollment) {
         List<LessonWithProgressProjection> projections = lessonRepository
-                .findLessonsWithProgress(courseId, enrollment.getId());
+                .findLessonsWithProgress(course.getId(), enrollment.getId());
 
         List<LessonItemResponse> lessonItems = projections.stream().map(proj ->
                 LessonItemResponse.builder()
@@ -136,6 +161,7 @@ public class EnrollmentService {
         return CurriculumResponse.builder()
                 .courseId(course.getId())
                 .courseName(course.getName())
+                .courseImageUrl(course.getImageUrl())
                 .totalLessons(totalRealLessons)
                 .completedLessons(completedCount)
                 .progressPercent(progressPercent)

@@ -15,6 +15,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -48,6 +49,9 @@ public class RedisCacheConfig {
         cacheConfigurations.put("allCourses", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache danh sách khóa học 24h
         cacheConfigurations.put("allTeachers", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache danh sách giáo viên 24h
         cacheConfigurations.put("latestBlogs", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache blog mới nhất 24h
+        cacheConfigurations.put("testSetDetails", defaultCacheConfiguration().entryTtl(Duration.ofDays(7)));
+        cacheConfigurations.put("testQuestionCounts", defaultCacheConfiguration().entryTtl(Duration.ofDays(30)));
+        cacheConfigurations.put("testSectionSummaries", defaultCacheConfiguration().entryTtl(Duration.ofDays(7)));
         cacheConfigurations.put("allReviews", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache blog mới nhất 24h
         cacheConfigurations.put("getMyReviewByCourse", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache blog mới nhất 24h
         cacheConfigurations.put("allReviewsByCourse", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache blog mới nhất 24h
@@ -64,10 +68,13 @@ public class RedisCacheConfig {
 
         objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
 
-        objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
+        objectMapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.EVERYTHING,
+                JsonTypeInfo.As.PROPERTY
+        );
 
         objectMapper.registerModule(new JavaTimeModule());
-
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         return new GenericJackson2JsonRedisSerializer(objectMapper);

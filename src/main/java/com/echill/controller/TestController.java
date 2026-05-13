@@ -4,6 +4,8 @@ import com.echill.dto.request.*;
 import com.echill.dto.response.*;
 import com.echill.dto.response.guest.TestPracticeResponse;
 import com.echill.dto.response.guest.TestReviewDetailResponse;
+import com.echill.repository.TestRepository;
+import com.echill.service.TestSectionService;
 import com.echill.service.TestService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -24,6 +26,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class TestController {
     TestService testService;
+    TestSectionService testSectionService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -83,9 +86,22 @@ public class TestController {
 
     @GetMapping("/test-set/practice/{testSetId}")
     @PreAuthorize("hasRole('STUDENT')")
-    public ApiResponse<TestPracticeResponse> getTestPracticeByTestSetId(@PathVariable Long testSetId) {
+    public ApiResponse<TestPracticeResponse> getTestPractice(
+            @PathVariable Long testSetId,
+            @RequestParam(required = false) Long testId,
+            @RequestParam(required = false) List<Long> selectedParts) {
+
+        TestPracticeResponse responseData;
+
+        if (testId == null) {
+            responseData = testService.getRandomTestForPractice(testSetId);
+        } else {
+            responseData = testService.getSpecificTestForPractice(testSetId, testId, selectedParts);
+        }
+
         return ApiResponse.<TestPracticeResponse>builder()
-                .data(testService.getRandomTestForPractice(testSetId))
+                .data(responseData)
+                .message("Lấy đề thi thành công")
                 .build();
     }
 
@@ -103,6 +119,17 @@ public class TestController {
     public ApiResponse<TestReviewDetailResponse> getTestReviewDetails(@PathVariable Long resultId) {
         return ApiResponse.<TestReviewDetailResponse>builder()
                 .data(testService.getTestReviewDetails(resultId))
+                .build();
+    }
+
+    @GetMapping("/{testId}/sections")
+    public ApiResponse<List<TestSectionSummaryDto>> getTestSections(@PathVariable Long testId) {
+
+        List<TestSectionSummaryDto> data = testSectionService.getTestSectionSummaries(testId);
+
+        return ApiResponse.<List<TestSectionSummaryDto>>builder()
+                .data(data)
+                .message("Lấy cấu trúc bài thi thành công!")
                 .build();
     }
 }

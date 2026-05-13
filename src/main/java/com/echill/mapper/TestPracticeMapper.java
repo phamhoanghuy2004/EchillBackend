@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 public interface TestPracticeMapper {
 
     @Mapping(source = "testSet.id", target = "testSetId")
+    @Mapping(source = "testSet.isPublic", target = "isPublic")
     TestPracticeResponse toPracticeResponse(Test test);
 
     TestSectionPracticeResponse toSectionPracticeResponse(TestSection section);

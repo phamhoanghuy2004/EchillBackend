@@ -15,6 +15,7 @@ public class CurriculumResponse {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long courseId;
     String courseName;
+    String courseImageUrl;
     Integer totalLessons;
     Long completedLessons;
     Integer progressPercent;

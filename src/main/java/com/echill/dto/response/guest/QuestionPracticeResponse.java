@@ -20,6 +20,8 @@ public class QuestionPracticeResponse {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long id;
     String content;
+    String audioUrl;
+    String imageUrl;
     SkillType skillType;
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long tagId;

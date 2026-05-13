@@ -44,4 +44,14 @@ public class EnrollmentController {
                 .data(enrollmentService.getCourseCurriculum(courseId))
                 .build();
     }
+
+    @GetMapping("/recent-course")
+    public ApiResponse<CurriculumResponse> getRecentCourse() {
+        CurriculumResponse response = enrollmentService.getRecentCourseCurriculum();
+
+        return ApiResponse.<CurriculumResponse>builder()
+                .message("Lấy khóa học gần nhất thành công")
+                .data(response)
+                .build();
+    }
 }

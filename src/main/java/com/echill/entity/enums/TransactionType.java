@@ -1,5 +1,5 @@
 package com.echill.entity.enums;
 
 public enum TransactionType {
-    MOMO, VNPAY, SYSTEM
+    MOMO, VNPAY, SYSTEM_BONUS, TEST_PAYMENT
 }

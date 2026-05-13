@@ -3,6 +3,7 @@ package com.echill.repository;
 import com.echill.entity.Course;
 import com.echill.entity.enums.Status;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -60,6 +61,13 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("SELECT c FROM Course c WHERE c.id IN :ids AND c.status = 'ACTIVE'")
     List<Course> findAllActiveByIds(@Param("ids") Collection<Long> ids);
 
+    @Modifying
+    @Query("UPDATE Course c SET c.totalLessonsCount = c.totalLessonsCount + 1 WHERE c.id = :courseId")
+    void incrementLessonCount(@Param("courseId") Long courseId);
+
+    @Modifying
+    @Query("UPDATE Course c SET c.totalLessonsCount = c.totalLessonsCount - 1 WHERE c.id = :courseId AND c.totalLessonsCount > 0")
+    void decrementLessonCount(@Param("courseId") Long courseId);
     long countByTeacherId(Long teacherId);
 
     @Query("SELECT c.id, c.name FROM Course c WHERE c.teacher.id = :teacherId")

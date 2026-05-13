@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Enumeration;
@@ -26,6 +27,17 @@ import java.util.Map;
 @Slf4j
 public class PaymentController {
     PaymentService paymentService;
+
+    @PostMapping("/weekly/claim")
+    @PreAuthorize("hasRole('STUDENT')") // Nhớ bảo vệ route này
+    public ApiResponse<Void> claimWeeklyReward() {
+
+        paymentService.claimWeeklyReward();
+
+        return ApiResponse.<Void>builder()
+                .message("Chúc mừng! Bạn đã nhận thưởng tuần thành công.")
+                .build();
+    }
 
     @PostMapping("/checkout/courses")
     public ApiResponse<String> initiatePayment(

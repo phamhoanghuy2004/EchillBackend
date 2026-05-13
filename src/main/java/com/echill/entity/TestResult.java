@@ -8,12 +8,10 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
 @Table(name = "test_results", indexes = {
-        @Index(name = "idx_test_result_student", columnList = "student_id")
+        @Index(name = "idx_test_result_student", columnList = "student_id"),
+        @Index(name = "idx_student_created", columnList = "student_id, created_at DESC")
 })
 @Getter
 @Setter

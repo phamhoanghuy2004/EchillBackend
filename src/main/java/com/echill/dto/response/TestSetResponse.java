@@ -1,5 +1,6 @@
 package com.echill.dto.response;
 
+import com.echill.entity.enums.TestType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -19,4 +20,7 @@ public class TestSetResponse {
     Boolean isPublic;
     Integer year;
     Long lessonId;
+
+    TestType type;
+    Integer price;
 }
