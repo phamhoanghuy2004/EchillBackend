@@ -69,6 +69,7 @@ public class ReviewService {
         return mapToResponse(savedReview);
     }
 
+    @Cacheable(cacheNames = "getMyReviewByCourse", key = "#courseId")
     public ReviewResponse getMyReviewByCourse(Long courseId) {
         Long userId = SecurityUtils.getCurrentUserId();
         User user = userRepository.findById(userId)
@@ -83,6 +84,7 @@ public class ReviewService {
         return mapToResponse(review);
     }
 
+    @Cacheable(cacheNames = "allReviewsByCourse")
     public List<ReviewResponse> getReviewsByCourse(Long courseId) {
         return reviewRepository.findByCourseIdOrderByCreatedAtDesc(courseId).stream()
                 .map(this::mapToResponse)
@@ -94,7 +96,7 @@ public class ReviewService {
         return reviewRepository.findByCourseIdOrderByCreatedAtDesc(courseId, pageable)
                 .map(this::mapToResponse);
     }
-    // Tạm thời bỏ cache để debug dữ liệu thực
+    @Cacheable(cacheNames = "allReviews")
     public List<ReviewResponse> getFeaturedReviews() {
         List<Review> reviews = reviewRepository.findFeaturedReviews(PageRequest.of(0, 10));
         return reviews.stream()

@@ -29,6 +29,7 @@ import java.util.List;
  *  8 – correct_answer   (A/B/C/D)
  *  9 – explanation      (optional)
  * 10 – passage_content  (optional, shared for group)
+ * 11 – tag              (optional)
  */
 @Component
 @Slf4j
@@ -48,6 +49,7 @@ public class ToeicExcelParser {
     private static final int COL_CORRECT_ANSWER  = 8;
     private static final int COL_EXPLANATION     = 9;
     private static final int COL_PASSAGE_CONTENT = 10;
+    private static final int COL_TAG             = 11;
 
     public List<ToeicExcelRowDto> parse(MultipartFile file) {
         List<ToeicExcelRowDto> rows = new ArrayList<>();
@@ -101,6 +103,7 @@ public class ToeicExcelParser {
         String correctAnswer    = getCellValue(row, COL_CORRECT_ANSWER);
         String explanation      = getCellValue(row, COL_EXPLANATION);
         String passageContent   = getCellValue(row, COL_PASSAGE_CONTENT);
+        String tag              = getCellValue(row, COL_TAG);
 
         // Validate required fields
         if (isEmpty(partStr) || isEmpty(questionNoStr) || isEmpty(questionContent)
@@ -150,6 +153,7 @@ public class ToeicExcelParser {
                 .correctAnswer(normalizedCorrect)
                 .explanation(isEmpty(explanation) ? "" : explanation.trim())
                 .passageContent(isEmpty(passageContent) ? null : passageContent.trim())
+                .tag(isEmpty(tag) ? null : tag.trim())
                 .build();
     }
 

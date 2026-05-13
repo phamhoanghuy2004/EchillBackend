@@ -24,4 +24,5 @@ public class ToeicExcelRowDto {
     private String correctAnswer;  // A / B / C / D
     private String explanation;
     private String passageContent; // shared content for grouped questions
+    private String tag;            // optional tag for the question
 }
