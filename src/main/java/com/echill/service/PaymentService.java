@@ -4,7 +4,6 @@ import com.echill.config.VnpayConfig;
 import com.echill.constant.VnpayConstant;
 import com.echill.dto.response.VnpayIpnResponse;
 import com.echill.entity.*;
-import com.echill.entity.enums.DiscountType;
 import com.echill.entity.enums.EnrollmentStatus;
 import com.echill.entity.enums.TransactionStatus;
 import com.echill.entity.enums.TransactionType;

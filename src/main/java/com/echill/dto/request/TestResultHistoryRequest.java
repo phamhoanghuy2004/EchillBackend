@@ -5,7 +5,10 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Data
@@ -31,4 +34,5 @@ public class TestResultHistoryRequest extends BasePageRequest {
     protected List<String> getAllowedSortColumns() {
         return List.of("createdAt", "totalScore", "timeTakenSeconds", "isPassed");
     }
+
 }

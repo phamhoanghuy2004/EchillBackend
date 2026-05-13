@@ -2,7 +2,6 @@ package com.echill.entity;
 
 import com.echill.entity.enums.TransactionStatus;
 import com.echill.entity.enums.TransactionType;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,7 +14,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "transactions")
+@Table(name = "transactions", indexes = {
+        @Index(name = "idx_transaction_user_created", columnList = "user_id, created_at DESC"),
+        @Index(name = "idx_transaction_user_type_created", columnList = "user_id, type, created_at DESC")
+})
 @Getter
 @Setter
 @NoArgsConstructor
