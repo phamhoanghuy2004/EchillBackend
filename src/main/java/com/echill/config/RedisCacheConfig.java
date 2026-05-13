@@ -52,6 +52,10 @@ public class RedisCacheConfig {
         cacheConfigurations.put("testSetDetails", defaultCacheConfiguration().entryTtl(Duration.ofDays(7)));
         cacheConfigurations.put("testQuestionCounts", defaultCacheConfiguration().entryTtl(Duration.ofDays(30)));
         cacheConfigurations.put("testSectionSummaries", defaultCacheConfiguration().entryTtl(Duration.ofDays(7)));
+        cacheConfigurations.put("allReviews", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache blog mới nhất 24h
+        cacheConfigurations.put("getMyReviewByCourse", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache blog mới nhất 24h
+        cacheConfigurations.put("allReviewsByCourse", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache blog mới nhất 24h
+        cacheConfigurations.put("featuredReviews", defaultCacheConfiguration().entryTtl(Duration.ofHours(24))); // Cache blog mới nhất 24h
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultCacheConfiguration())

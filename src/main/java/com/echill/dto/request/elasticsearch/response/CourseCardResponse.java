@@ -50,4 +50,7 @@ public class CourseCardResponse {
     Instant createdAt;
 
     Status status;
+    Double averageRating;
+    Long studentCount;
+    Long reviewCount;
 }

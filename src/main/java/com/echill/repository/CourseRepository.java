@@ -68,4 +68,8 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Modifying
     @Query("UPDATE Course c SET c.totalLessonsCount = c.totalLessonsCount - 1 WHERE c.id = :courseId AND c.totalLessonsCount > 0")
     void decrementLessonCount(@Param("courseId") Long courseId);
+    long countByTeacherId(Long teacherId);
+
+    @Query("SELECT c.id, c.name FROM Course c WHERE c.teacher.id = :teacherId")
+    List<Object[]> findBasicInfoByTeacherId(@Param("teacherId") Long teacherId);
 }

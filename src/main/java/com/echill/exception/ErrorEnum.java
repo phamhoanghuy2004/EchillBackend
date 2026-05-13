@@ -107,6 +107,9 @@ public enum ErrorEnum implements ErrorCode {
     INVALID_COIN_AMOUNT(1080, "Invalid coin amount", HttpStatus.BAD_REQUEST),
     REWARD_ALREADY_CLAIMED(1081, "Reward already claimed", HttpStatus.BAD_REQUEST),
     NOT_ELIGIBLE_FOR_REWARD(1082, "Not eligible for reward", HttpStatus.BAD_REQUEST),
+    COURSE_NOT_FOUND(1083, "Course not found", HttpStatus.NOT_FOUND),
+    NOT_ENROLLED(1084, "You are not enrolled in this course", HttpStatus.BAD_REQUEST),
+    REVIEW_NOT_FOUND(1085, "Review not found", HttpStatus.NOT_FOUND),
     ;
 
 

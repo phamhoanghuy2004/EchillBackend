@@ -86,4 +86,24 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
             EnrollmentStatus status
     );
 
+    boolean existsByStudentIdAndCourseId(Long studentId, Long courseId);
+
+    @Query("SELECT COUNT(e) FROM Enrollment e WHERE e.course.id = :courseId")
+    Long countByCourseId(@Param("courseId") Long courseId);
+
+    @Query("SELECT e.course.id, COUNT(e) FROM Enrollment e WHERE e.course.id IN :courseIds GROUP BY e.course.id")
+    List<Object[]> countEnrollmentsByCourseIds(@Param("courseIds") List<Long> courseIds);
+
+    @Query("SELECT COUNT(DISTINCT e.student.id) FROM Enrollment e WHERE e.course.teacher.id = :teacherId")
+    long countStudentsByTeacherId(@Param("teacherId") Long teacherId);
+
+    @Query("SELECT COUNT(DISTINCT e.student.id) FROM Enrollment e WHERE e.course.teacher.id = :teacherId AND e.course.id = :courseId")
+    long countStudentsByTeacherIdAndCourseId(@Param("teacherId") Long teacherId, @Param("courseId") Long courseId);
+
+    @Query("SELECT e.course.id, e.course.name, COUNT(e) as enrollmentCount " +
+           "FROM Enrollment e " +
+           "WHERE e.course.teacher.id = :teacherId " +
+           "GROUP BY e.course.id, e.course.name " +
+           "ORDER BY enrollmentCount DESC")
+    List<Object[]> findTopSellingCoursesByTeacherId(@Param("teacherId") Long teacherId);
 }
