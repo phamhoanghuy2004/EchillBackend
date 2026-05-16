@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.List;
@@ -135,38 +136,47 @@ public class ProgressRedisService {
     /**
      * Lấy tiến độ hiện tại (Dùng khi F5 hoặc mở bài học)
      */
+    @Transactional
     public ProgressStatusResponse getCurrentProgress(Long lessonId) {
         Long userId = SecurityUtils.getCurrentUserId();
         String dataKey = PROGRESS_KEY_PREFIX + lessonId + "_" + userId;
 
-        LessonProgress progress = progressRepository.findByLessonIdAndEnrollmentStudentId(lessonId, userId)
+        LessonProgress progress = progressRepository.findProgressWithLesson(lessonId, userId)
                 .orElseThrow(() -> new AppException(StudentErrorEnum.LESSON_NOT_STARTED));
 
-        boolean isWatched = Boolean.TRUE.equals(progress.getIsVideoWatched());
-        boolean isQuizPassed = Boolean.TRUE.equals(progress.getIsQuizPassed());
+        Integer currentVersion = progress.getLesson().getVersion();
+
+        boolean isNewVersion = currentVersion > progress.getLastSeenVersion();
+
+        boolean isOutdated = Boolean.TRUE.equals(progress.getIsCompleted())
+                && !currentVersion.equals(progress.getVersionCompleted());
+
+        if (isNewVersion) {
+            progress.setLastSeenVersion(currentVersion);
+            progress.setLastWatchedSecond(0);
+            log.info("🔄 Lazy Update: Đã đồng bộ Version {} cho User {} tại Bài {}", currentVersion, userId, lessonId);
+        }
+
         int currentSecond = progress.getLastWatchedSecond();
 
-        Object secObj = redisTemplate.opsForHash().get(dataKey, "sec");
+        Object secObj = !isNewVersion ? redisTemplate.opsForHash().get(dataKey, "sec") : null;
 
         if (secObj != null) {
-            log.debug("⚡ Cache Hit: Tiến độ {}s (User: {}, Lesson: {})", secObj, userId, lessonId);
             currentSecond = Integer.parseInt(secObj.toString());
         } else {
-            log.debug("🐌 Cache Miss: Query DB tiến độ (User: {}, Lesson: {})", userId, lessonId);
             try {
-                long currentTimestampSec = getCurrentRedisTimeSeconds();
-                redisTemplate.opsForHash().putIfAbsent(dataKey, "sec", String.valueOf(currentSecond));
-                redisTemplate.opsForHash().putIfAbsent(dataKey, "ts", String.valueOf(currentTimestampSec));
+                redisTemplate.opsForHash().put(dataKey, "sec", String.valueOf(currentSecond));
+                redisTemplate.opsForHash().put(dataKey, "ts", String.valueOf(getCurrentRedisTimeSeconds()));
                 redisTemplate.expire(dataKey, Duration.ofSeconds(CACHE_TTL_SECONDS));
             } catch (Exception e) {
-                log.warn("⚠️ Rehydrate Cache thất bại, bỏ qua...", e);
+                log.warn("⚠️ Sync Cache thất bại: {}", e.getMessage());
             }
         }
 
         return ProgressStatusResponse.builder()
                 .currentSecond(currentSecond)
-                .isVideoWatched(isWatched)
-                .isQuizPassed(isQuizPassed)
+                .isVideoWatched(Boolean.TRUE.equals(progress.getIsVideoWatched()) && !isOutdated)
+                .isQuizPassed(Boolean.TRUE.equals(progress.getIsQuizPassed()) && !isOutdated)
                 .build();
     }
 

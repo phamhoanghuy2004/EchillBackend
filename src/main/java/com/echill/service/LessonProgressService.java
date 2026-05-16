@@ -38,11 +38,14 @@ public class LessonProgressService {
         LessonProgress progress = progressRepository.findProgressWithLessonAndTestSet(lessonId, userId)
                 .orElseThrow(() -> new AppException(StudentErrorEnum.LESSON_NOT_STARTED));
 
-        if (Boolean.TRUE.equals(progress.getIsVideoWatched())) {
-            log.debug("♻️ Video bài {} của User {} đã được đánh dấu xem xong từ trước.", lessonId, userId);
+        Integer currentVersion = progress.getLesson().getVersion();
+
+        if (progress.isValidVideoWatched(currentVersion)) {
+            log.debug("♻️ Video bài {} của User {} đã được đánh dấu xem xong từ trước (Version {}).",
+                    lessonId, userId, currentVersion);
             return VideoCompleteResponse.builder()
                     .videoWatched(true)
-                    .lessonCompleted(Boolean.TRUE.equals(progress.getIsCompleted()))
+                    .lessonCompleted(progress.isValidCompleted(currentVersion))
                     .build();
         }
 
@@ -74,13 +77,12 @@ public class LessonProgressService {
                 userId, lessonId, String.format("%.2f", percentage));
 
         boolean hasTest = progress.getLesson().getTestSet() != null;
-        boolean quizAlreadyPassed = Boolean.TRUE.equals(progress.getIsQuizPassed());
+        boolean quizAlreadyPassed = progress.isValidQuizPassed(currentVersion);
 
         if (!hasTest || quizAlreadyPassed) {
-            Integer currentVersion = progress.getLesson().getVersion();
             progress.markAsCompleted(currentVersion);
-            log.info("🏆 [LESSON COMPLETED] User {} đã hoàn thành trọn vẹn bài học {} (Không có bài tập hoặc đã Pass).",
-                    userId, lessonId);
+            log.info("🏆 [LESSON COMPLETED] User {} đã hoàn thành trọn vẹn bài học {} (Version: {}).",
+                    userId, lessonId, currentVersion);
         } else {
             log.info("⏳ [WAITING QUIZ] User {} đã xong video nhưng cần làm bài tập để hoàn thành bài học {}.",
                     userId, lessonId);
@@ -90,7 +92,7 @@ public class LessonProgressService {
 
         return VideoCompleteResponse.builder()
                 .videoWatched(true)
-                .lessonCompleted(Boolean.TRUE.equals(progress.getIsCompleted()))
+                .lessonCompleted(progress.isValidCompleted(currentVersion))
                 .build();
     }
 

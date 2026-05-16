@@ -9,6 +9,8 @@ import com.echill.entity.Lesson;
 import com.echill.entity.TestResult;
 import com.echill.entity.TestSet;
 import com.echill.entity.User;
+import com.echill.entity.enums.TestType;
+import com.echill.event.TestSetUpdatedEvent;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
@@ -22,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -46,6 +49,8 @@ public class TestSetService {
     TestSetMapper testSetMapper;
     TestResultRepository testResultRepository;
     TestRepository testRepository;
+    ApplicationEventPublisher eventPublisher;
+
 
     @Lazy
     @Autowired
@@ -113,19 +118,26 @@ public class TestSetService {
 
         testSetMapper.updateTestSet(testSet, request);
 
-        return testSetMapper.toResponse(testSetRepository.save(testSet));
+        TestSet savedTestSet = testSetRepository.save(testSet);
+
+        eventPublisher.publishEvent(new TestSetUpdatedEvent(savedTestSet.getId()));
+
+        return testSetMapper.toResponse(savedTestSet);
     }
 
     @Transactional(readOnly = true)
     public List<TestSetRecommendationResponse> getNewestTestSetsForCurrentYear() {
-        // 1. Lấy năm hiện tại theo múi giờ Việt Nam (Tránh lỗi lệch giờ ở máy chủ)
         ZoneId zoneId = ZoneId.of("Asia/Ho_Chi_Minh");
         int currentYear = ZonedDateTime.now(zoneId).getYear();
 
-        // 2. Giới hạn chỉ lấy 5 bộ đề mới nhất (Tối ưu Payload)
+        List<TestType> allowedTypes = TestType.getPracticePageTypes()
+                .stream()
+                .map(TestType::valueOf)
+                .toList();
+
         int limit = 5;
 
-        return testSetRepository.findRecommendedTestSets(currentYear, PageRequest.of(0, limit));
+        return testSetRepository.findRecommendedTestSets(currentYear, allowedTypes, PageRequest.of(0, limit));
     }
 
     @Transactional(readOnly = true)

@@ -5,6 +5,7 @@ import com.echill.dto.request.SaveVideoDraftRequest;
 import com.echill.dto.response.LessonResponse;
 import com.echill.entity.Lesson;
 import com.echill.event.CourseUpdatedEvent;
+import com.echill.event.LessonUpdatedEvent;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.WebhookRetryException;
@@ -97,6 +98,7 @@ public class LessonPersistenceService {
 
             log.info("🚀 Hoàn tất Webhook, chuyển sang READY thành công!");
             eventPublisher.publishEvent(new CourseUpdatedEvent(savedLesson.getCourse().getId()));
+            eventPublisher.publishEvent(new LessonUpdatedEvent(savedLesson.getId()));
 
             return savedLesson;
 

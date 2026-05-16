@@ -110,6 +110,8 @@ public enum ErrorEnum implements ErrorCode {
     COURSE_NOT_FOUND(1083, "Course not found", HttpStatus.NOT_FOUND),
     NOT_ENROLLED(1084, "You are not enrolled in this course", HttpStatus.BAD_REQUEST),
     REVIEW_NOT_FOUND(1085, "Review not found", HttpStatus.NOT_FOUND),
+    CONSULTATION_ALREADY_CLAIMED (1086, "Consultation already claimed", HttpStatus.BAD_REQUEST),
+    CONSULTATION_NOT_FOUND(1087, "Consultation not found", HttpStatus.NOT_FOUND),
     ;
 
 

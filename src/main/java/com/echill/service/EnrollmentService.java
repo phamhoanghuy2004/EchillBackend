@@ -213,6 +213,7 @@ public class EnrollmentService {
             LessonProgress newProgress = LessonProgress.builder()
                     .enrollment(enrollment)
                     .lesson(lesson)
+                    .lastSeenVersion(lesson.getVersion())
                     .build();
 
             lessonProgressRepository.saveAndFlush(newProgress);

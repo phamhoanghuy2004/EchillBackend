@@ -60,6 +60,9 @@ public class LessonProgress extends BaseEntity {
     @Column(name = "version_completed")
     private Integer versionCompleted;
 
+    @Column(name = "last_seen_version")
+    private Integer lastSeenVersion = 0;
+
     @Column(name = "completed_at")
     Instant completedAt;
 
@@ -106,10 +109,24 @@ public class LessonProgress extends BaseEntity {
     }
 
     /**
-     * Helper kiểm tra xem tiến độ này đã bị Outdated (Lỗi thời) do Teacher update bài chưa?
-     * True = Hợp lệ (Tính vào %). False = Bắt học lại (Không tính %).
+     * 🟢 2. Check riêng Video đã xem xong ở đúng Version chưa
      */
-    public boolean isValidCompletion(Integer currentLessonVersion) {
+    public boolean isValidVideoWatched(Integer currentLessonVersion) {
+        return Boolean.TRUE.equals(this.isVideoWatched)
+                && this.versionCompleted != null
+                && this.versionCompleted.equals(currentLessonVersion);
+    }
+
+    /**
+     * 🟢 3. Check riêng Quiz đã pass ở đúng Version chưa
+     */
+    public boolean isValidQuizPassed(Integer currentLessonVersion) {
+        return Boolean.TRUE.equals(this.isQuizPassed)
+                && this.versionCompleted != null
+                && this.versionCompleted.equals(currentLessonVersion);
+    }
+
+    public boolean isValidCompleted(Integer currentLessonVersion) {
         return Boolean.TRUE.equals(this.isCompleted)
                 && this.versionCompleted != null
                 && this.versionCompleted.equals(currentLessonVersion);

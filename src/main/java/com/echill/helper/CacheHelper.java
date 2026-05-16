@@ -7,6 +7,8 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -32,6 +34,27 @@ public class CacheHelper {
         if (cache != null) {
             cache.evict(testId);
             log.info("🔥 Đã dọn dẹp Cache bài kiểm tra ID: {}", testId);
+        }
+    }
+
+    public void evictLessonDetail(Long lessonId) {
+        if (lessonId == null) return;
+
+        Cache cache = cacheManager.getCache("lessonDetails");
+        if (cache != null) {
+            cache.evict(lessonId);
+            log.info("🧹 [CACHE CLEARED] Đã xóa cache chi tiết cho Lesson ID: {} do có cập nhật mới.", lessonId);
+        }
+    }
+
+    public void evictTestPractices(List<Long> testIds) {
+        Cache cache = cacheManager.getCache("testPractice");
+        if (cache != null && testIds != null && !testIds.isEmpty()) {
+            testIds.forEach(id -> {
+                cache.evict(id);
+                log.debug("🧹 Đã xóa cache testPractice cho Test ID: {}", id);
+            });
+            log.info("🧹 Đã xóa tổng cộng {} cache đề thi con.", testIds.size());
         }
     }
 }

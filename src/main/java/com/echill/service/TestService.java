@@ -74,6 +74,7 @@ public class TestService {
     ObjectMapper objectMapper;
     ScoreCalculator scoreCalculator;
     TransactionRepository transactionRepository;
+    EnrollmentRepository enrollmentRepository;
 
     @Lazy
     @Autowired
@@ -323,10 +324,6 @@ public class TestService {
 
             clientResponse = parseSnapshotSafe(activeSession);
         } else {
-            if (requestedTestId == null) {
-                validateMaxAttempts(currentUserId, testSetId);
-            }
-
             Long selectedTestId = (requestedTestId != null)
                     ? validateAndGetSpecificTestId(requestedTestId, testSetId)
                     : getRandomAvailableTestId(currentUserId, testSetId);
@@ -336,7 +333,7 @@ public class TestService {
             clientResponse = prepareSafeResponse(fullResponse, selectedPartIds);
 
             try {
-                activeSession = self.createSessionWithPaymentSafe(currentUserId, testSetId, selectedTestId, clientResponse);
+                activeSession = self.createSessionAndProcessAccess(currentUserId, testSetId, selectedTestId, clientResponse);
             } catch (DataIntegrityViolationException e) {
                 log.warn("Race condition detected for user {}. Fetching existing session.", currentUserId);
 
@@ -354,13 +351,6 @@ public class TestService {
         return testSessionRepository.findFirstByStudentIdAndTestSetIdAndStatusOrderByCreatedAtDesc(
                 userId, testSetId, TestSessionStatus.IN_PROGRESS
         );
-    }
-
-    private void validateMaxAttempts(Long userId, Long testSetId) {
-        long attempts = testResultRepository.countByStudentAndTestSet(userId, testSetId);
-        if (attempts >= AppConstants.MAX_TEST_ATTEMPTS) {
-            throw new AppException(StudentErrorEnum.MAX_ATTEMPT_REACHED);
-        }
     }
 
     private Long getRandomAvailableTestId(Long userId, Long testSetId) {
@@ -396,33 +386,9 @@ public class TestService {
     // =======================================================================
 
     @Transactional(rollbackFor = Exception.class)
-    public TestSession createSessionWithPaymentSafe(Long userId, Long testSetId, Long selectedTestId, TestPracticeResponse preparedResponse) {
+    public TestSession createSessionAndProcessAccess(Long userId, Long testSetId, Long selectedTestId, TestPracticeResponse preparedResponse) {
 
-        boolean isPublic = preparedResponse.getIsPublic();
-
-        if (!isPublic) {
-            User user = userRepository.findByIdForPaymentLock(userId)
-                    .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
-
-            if (user.getCurrentCoin() < AppConstants.PRIVATE_TEST_FEE) {
-                throw new AppException(StudentErrorEnum.NOT_ENOUGH_COIN);
-            }
-
-            Long newBalance = user.getCurrentCoin() - AppConstants.PRIVATE_TEST_FEE;
-            user.setCurrentCoin(newBalance);
-
-            Transaction transaction = Transaction.builder()
-                    .transactionCode("PAY-" + TsidCreator.getTsid().toString())
-                    .totalCoinsChanged(-AppConstants.PRIVATE_TEST_FEE)
-                    .totalAmount(null)
-                    .description("Thanh toán phí mở khóa đề thi: " + preparedResponse.getTitle())
-                    .status(TransactionStatus.SUCCESS)
-                    .type(TransactionType.TEST_PAYMENT)
-                    .user(user)
-                    .balanceAfter(newBalance)
-                    .build();
-            transactionRepository.save(transaction);
-        }
+        authorizeAndProcessPayment(userId, testSetId, preparedResponse);
 
         Test testProxy = testRepository.getReferenceById(selectedTestId);
         String snapshotJson;
@@ -434,10 +400,7 @@ public class TestService {
         }
 
         String lockKey = "USER_" + userId + "_TESTSET_" + testSetId;
-
-        long duration = preparedResponse.getDurationMinutes() != null
-                ? preparedResponse.getDurationMinutes()
-                : 120L;
+        long duration = preparedResponse.getDurationMinutes() != null ? preparedResponse.getDurationMinutes() : 120L;
 
         TestSession newSession = TestSession.builder()
                 .studentId(userId)
@@ -451,6 +414,51 @@ public class TestService {
                 .build();
 
         return testSessionRepository.saveAndFlush(newSession);
+    }
+    private void authorizeAndProcessPayment(Long userId, Long testSetId, TestPracticeResponse testInfo) {
+        if (Boolean.TRUE.equals(testInfo.getIsPublic())) {
+            return;
+        }
+
+        if (TestType.PRACTICE.equals(testInfo.getType())) {
+            Long courseId = testSetRepository.findCourseIdByTestSetId(testSetId)
+                    .orElseThrow(() -> new AppException(ErrorEnum.UNCATEGORIZED, "Đề Practice không được liên kết với Khóa học nào!"));
+
+            boolean isEnrolled = enrollmentRepository.existsByStudentIdAndCourseId(userId, courseId);
+
+            if (!isEnrolled) {
+                throw new AppException(StudentErrorEnum.COURSE_LOCKED, "Bạn phải sở hữu khóa học để làm đề thi này!");
+            }
+
+            return;
+        }
+
+        processCoinDeduction(userId, testInfo.getTitle());
+    }
+
+    private void processCoinDeduction(Long userId, String testTitle) {
+        User user = userRepository.findByIdForPaymentLock(userId)
+                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
+
+        if (user.getCurrentCoin() < AppConstants.PRIVATE_TEST_FEE) {
+            throw new AppException(StudentErrorEnum.NOT_ENOUGH_COIN);
+        }
+
+        Long newBalance = user.getCurrentCoin() - AppConstants.PRIVATE_TEST_FEE;
+        user.setCurrentCoin(newBalance);
+
+        Transaction transaction = Transaction.builder()
+                .transactionCode("PAY-" + TsidCreator.getTsid().toString())
+                .totalCoinsChanged(-AppConstants.PRIVATE_TEST_FEE)
+                .totalAmount(null)
+                .description("Thanh toán phí mở khóa đề thi: " + testTitle)
+                .status(TransactionStatus.SUCCESS)
+                .type(TransactionType.TEST_PAYMENT)
+                .user(user)
+                .balanceAfter(newBalance)
+                .build();
+
+        transactionRepository.save(transaction);
     }
 
     private TestPracticeResponse prepareSafeResponse(TestPracticeResponse fullResponse, List<Long> selectedPartIds) {

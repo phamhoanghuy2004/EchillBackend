@@ -4,6 +4,9 @@ import com.echill.entity.Document;
 import com.echill.entity.Lesson;
 import com.echill.entity.enums.FileType;
 import com.echill.event.CourseUpdatedEvent;
+import com.echill.event.LessonUpdatedEvent;
+import com.echill.exception.AppException;
+import com.echill.exception.ErrorEnum;
 import com.echill.repository.DocumentRepository;
 import com.echill.repository.LessonRepository;
 import lombok.AccessLevel;
@@ -35,8 +38,9 @@ public class DocumentPersistenceService {
             fileType = FileType.WORD;
         }
 
-        // 2. 💥 TUYỆT CHIÊU PROXY: Lấy cái vỏ của Lesson mà không cần query
-        Lesson lessonRef = lessonRepository.getReferenceById(lessonId);
+        // 2. 🟢 Lấy trực tiếp Lesson thực sự từ DB (Bỏ Proxy đi)
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new AppException(ErrorEnum.LESSON_NOT_FOUND));
 
         // 3. Tạo mới Document
         Document document = Document.builder()
@@ -44,14 +48,18 @@ public class DocumentPersistenceService {
                 .fileUrl(fileUrl)
                 .documentPublicId(publicId)
                 .fileType(fileType)
-                .lesson(lessonRef) // Móc khóa ngoại vào Bài học bằng Proxy
+                .lesson(lesson) // Móc khóa ngoại vào Bài học bằng Proxy
                 .build();
 
         // 4. Lưu trực tiếp vào bảng Document (Thay vì lưu gián tiếp qua Lesson.save như cũ)
         document = documentRepository.save(document);
+
+        lesson.incrementVersion();
+
         log.info("Đã lưu tài liệu ID {} cho Bài học ID {}", document.getId(), lessonId);
 
         eventPublisher.publishEvent(new CourseUpdatedEvent(courseId));
+        eventPublisher.publishEvent(new LessonUpdatedEvent(lessonId));
 
         return document;
     }
