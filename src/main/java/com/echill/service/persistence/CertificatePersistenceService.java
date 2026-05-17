@@ -3,6 +3,7 @@ package com.echill.service.persistence;
 import com.echill.dto.request.CertificateRequest;
 import com.echill.entity.Certificate;
 import com.echill.entity.TeacherProfile;
+import com.echill.entity.User;
 import com.echill.exception.AppException;
 import com.echill.exception.TeacherErrorEnum;
 import com.echill.repository.CertificateRepository;
@@ -19,7 +20,7 @@ public class CertificatePersistenceService {
     CertificateRepository certificateRepository;
 
     @Transactional
-    public Certificate saveCertificate(CertificateRequest request, TeacherProfile profile, String evidenceUrl, String imagePublicId) {
+    public Certificate saveCertificate(CertificateRequest request, User user, String evidenceUrl, String imagePublicId) {
         if(imagePublicId == null && evidenceUrl == null) {
             throw new AppException(TeacherErrorEnum.CERTIFICATE_REQUIRED);
         }
@@ -27,7 +28,7 @@ public class CertificatePersistenceService {
                 .certType(request.getCertType())
                 .issuedDate(request.getIssuedDate())
                 .evidenceUrl(evidenceUrl)
-                .teacherProfile(profile)
+                .user(user)
                 .imagePublicId(imagePublicId)
                 .build();
 
@@ -43,9 +44,6 @@ public class CertificatePersistenceService {
 
     @Transactional
     public Certificate updateCertificate(Certificate certificate, CertificateRequest request, String evidenceUrl, String imagePublicId) {
-        if(imagePublicId == null && evidenceUrl == null) {
-            throw new AppException(TeacherErrorEnum.CERTIFICATE_REQUIRED);
-        }
         certificate.setCertType(request.getCertType());
         certificate.setIssuedDate(request.getIssuedDate());
         if (evidenceUrl != null) {

@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public enum TestType {
-    TOEIC,
     PRACTICE,
     PLACEMENT_TEST,
     TOEIC;

@@ -36,7 +36,7 @@ public class SecurityConfig {
 
     static String[] PUBLIC_GET_ENDPOINTS = {
             "/courses", "/courses/**", "/exams", "/exams/**", "/ws/**", "/categories", "/categories/**", "/payments/vnpay-ipn",
-            "/teachers/all", "/blogs", "/blogs/**", "/reviews/featured"
+            "/teachers/all", "/teachers/random", "/blogs", "/blogs/**", "/reviews/featured", "/certificates/top-toeic"
     };
 
     CustomJwtDecoder customJwtDecoder;

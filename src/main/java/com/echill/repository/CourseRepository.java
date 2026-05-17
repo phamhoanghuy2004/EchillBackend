@@ -72,4 +72,11 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
     @Query("SELECT c.id, c.name FROM Course c WHERE c.teacher.id = :teacherId")
     List<Object[]> findBasicInfoByTeacherId(@Param("teacherId") Long teacherId);
+
+    @Query("SELECT c FROM Course c " +
+           "LEFT JOIN Enrollment e ON c = e.course " +
+           "WHERE c.status = 'ACTIVE' " +
+           "GROUP BY c " +
+           "ORDER BY COUNT(e) DESC")
+    List<Course> findTop6MostPurchasedCourses(org.springframework.data.domain.Pageable pageable);
 }

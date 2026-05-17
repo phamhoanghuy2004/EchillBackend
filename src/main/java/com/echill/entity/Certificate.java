@@ -26,9 +26,9 @@ public class Certificate extends BaseEntity {
     Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_profile_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    TeacherProfile teacherProfile;
+    User user;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "cert_type", nullable = false, length = 20)

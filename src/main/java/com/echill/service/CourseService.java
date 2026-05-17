@@ -1,6 +1,9 @@
 package com.echill.service;
 
+import com.echill.constant.CacheNames;
 import com.echill.constant.CloudinaryFolder;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
 import com.echill.dto.request.CourseRequest;
 import com.echill.dto.response.CourseResponse;
 import com.echill.dto.response.LessonResponse;
@@ -153,6 +156,36 @@ public class CourseService {
         return response;
     }
 
+    @Cacheable(cacheNames = "topCourses_v2", key = "'top_6_purchased'")
+    public List<CourseResponse> getTop6PurchasedCourses() {
+        log.info("⚡ FETCHING TOP 6 PURCHASED COURSES FROM DB (REFRESHED)");
+        List<Course> courses = courseRepository.findTop6MostPurchasedCourses(org.springframework.data.domain.PageRequest.of(0, 6));
+        List<Long> courseIds = courses.stream().map(Course::getId).toList();
+
+        if (courseIds.isEmpty()) return List.of();
+
+        // Lấy các chỉ số thống kê
+        Map<Long, Long> studentCounts = enrollmentRepository.countEnrollmentsByCourseIds(courseIds).stream()
+                .collect(java.util.stream.Collectors.toMap(arr -> (Long) arr[0], arr -> (Long) arr[1]));
+
+        Map<Long, Long> reviewCounts = reviewRepository.countReviewsByCourseIds(courseIds).stream()
+                .collect(java.util.stream.Collectors.toMap(arr -> (Long) arr[0], arr -> (Long) arr[1]));
+
+        Map<Long, Double> averageRatings = reviewRepository.getAverageRatingsByCourseIds(courseIds).stream()
+                .collect(java.util.stream.Collectors.toMap(arr -> (Long) arr[0], arr -> (Double) arr[1]));
+
+        return courses.stream()
+                .map(course -> {
+                    CourseResponse response = mapToResponse(course);
+                    response.setStudentCount(studentCounts.getOrDefault(course.getId(), 0L));
+                    response.setReviewCount(reviewCounts.getOrDefault(course.getId(), 0L));
+                    Double avg = averageRatings.get(course.getId());
+                    response.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0);
+                    return response;
+                })
+                .toList();
+    }
+
     private CourseResponse mapToResponse(Course course) {
         return CourseResponse.builder()
                 .id(course.getId().toString())
@@ -166,6 +199,9 @@ public class CourseService {
                 .categoryName(course.getCategory().getName())
                 .teacherName(course.getTeacher().getFullName())
                 .teacherId(course.getTeacher().getId())
+                .teacherAvatarUrl(course.getTeacher().getAvatarUrl() != null ? 
+                        course.getTeacher().getAvatarUrl() : 
+                        "https://ui-avatars.com/api/?name=" + java.net.URLEncoder.encode(course.getTeacher().getFullName(), java.nio.charset.StandardCharsets.UTF_8) + "&background=random")
                 .createdAt(course.getCreatedAt() != null ?
                         course.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDateTime() : null)
                 .lessons(course.getLessons() == null || course.getLessons().isEmpty()

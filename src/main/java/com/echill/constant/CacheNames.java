@@ -7,4 +7,5 @@ public class CacheNames {
     public static final String ALL_COURSES = "allCourses";
     public static final String ALL_TEACHERS = "allTeachers";
     public static final String LATEST_BLOGS = "latestBlogs";
+    public static final String TOP_COURSES = "topCourses";
 }

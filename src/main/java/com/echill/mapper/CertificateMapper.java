@@ -12,12 +12,12 @@ public interface CertificateMapper {
     CertificateResponse toCertificateResponse(Certificate certificate);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "teacherProfile", ignore = true)
+    @Mapping(target = "user", ignore = true)
     @Mapping(target = "evidenceUrl", ignore = true)
     Certificate toCertificate(CertificateRequest request);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "teacherProfile", ignore = true)
+    @Mapping(target = "user", ignore = true)
     @Mapping(target = "evidenceUrl", ignore = true)
     void updateCertificate(@MappingTarget Certificate certificate, CertificateRequest request);
 }
