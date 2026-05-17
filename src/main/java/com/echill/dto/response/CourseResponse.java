@@ -28,6 +28,7 @@ public class CourseResponse {
     String teacherName;
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long teacherId;
+    String teacherAvatarUrl;
     LocalDateTime createdAt;
     List<TagResponse> tags;
     java.util.List<LessonResponse> lessons;

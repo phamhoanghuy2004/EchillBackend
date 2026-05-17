@@ -55,4 +55,11 @@ public class TeacherController {
                 .data(teacherService.getAllTeachers())
                 .build();
     }
+
+    @GetMapping("/random")
+    public ApiResponse<List<TeacherResponse>> getRandomTeachers() {
+        return ApiResponse.<List<TeacherResponse>>builder()
+                .data(teacherService.getRandomTeachers())
+                .build();
+    }
 }

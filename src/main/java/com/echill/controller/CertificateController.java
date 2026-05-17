@@ -23,7 +23,7 @@ public class CertificateController {
     CertificateService certificateService;
 
     @GetMapping("/my")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
     public ApiResponse<List<CertificateResponse>> getMyCertificates() {
         return ApiResponse.<List<CertificateResponse>>builder()
                 .data(certificateService.getMyCertificates())
@@ -31,7 +31,7 @@ public class CertificateController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
     public ApiResponse<CertificateResponse> createCertificate(
             @Valid @RequestPart("data") CertificateRequest request,
             @RequestPart("evidence") MultipartFile evidence) {
@@ -41,7 +41,7 @@ public class CertificateController {
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
     public ApiResponse<CertificateResponse> updateCertificate(
             @PathVariable Long id,
             @Valid @RequestPart("data") CertificateRequest request,
@@ -52,11 +52,18 @@ public class CertificateController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER', 'STUDENT')")
     public ApiResponse<Void> deleteCertificate(@PathVariable Long id) {
         certificateService.deleteCertificate(id);
         return ApiResponse.<Void>builder()
                 .message("Certificate deleted successfully")
+                .build();
+    }
+
+    @GetMapping("/top-toeic")
+    public ApiResponse<List<com.echill.dto.response.TopStudentResponse>> getTopToeicStudents() {
+        return ApiResponse.<List<com.echill.dto.response.TopStudentResponse>>builder()
+                .data(certificateService.getTopToeicStudents())
                 .build();
     }
 }

@@ -1,8 +1,10 @@
 package com.echill.service;
 
+import com.echill.dto.response.teacher.CourseDetailReportResponse;
 import com.echill.dto.response.teacher.RevenueChartResponse;
 import com.echill.dto.response.teacher.TeacherSummaryResponse;
 import com.echill.dto.response.teacher.TopCourseResponse;
+import com.echill.entity.Course;
 import com.echill.repository.CourseRepository;
 import com.echill.repository.EnrollmentRepository;
 import com.echill.repository.ReviewRepository;
@@ -15,8 +17,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -105,6 +110,43 @@ public class TeacherAnalyticsService {
                         "id", row[0],
                         "name", row[1]
                 ))
+                .collect(Collectors.toList());
+    }
+
+    public List<CourseDetailReportResponse> getTopCoursesDetailReport(Instant fromDate, Instant toDate) {
+        Long teacherId = SecurityUtils.getCurrentUserId();
+
+        // Lấy danh sách khóa học của giảng viên kèm thông tin giảng viên
+        List<Course> courses = courseRepository.findAllByTeacherIdWithDetails(teacherId);
+
+        // Lấy doanh thu theo từng khóa học trong khoảng thời gian
+        List<Object[]> revenueRows = transactionRepository.getRevenuePerCourseByDateRange(teacherId, fromDate, toDate);
+        Map<Long, BigDecimal> revenueMap = revenueRows.stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> row[1] != null ? (BigDecimal) row[1] : BigDecimal.ZERO
+                ));
+
+        AtomicInteger rank = new AtomicInteger(1);
+
+        return courses.stream()
+                .map(course -> {
+                    BigDecimal revenue = transactionRepository.getRevenueByCourseIdAndDateRange(course.getId(), fromDate, toDate);
+                    Long sales = transactionRepository.getSalesCountByCourseIdAndDateRange(course.getId(), fromDate, toDate);
+                    Double avgRating = reviewRepository.getAverageRatingByCourseId(course.getId());
+
+                    return CourseDetailReportResponse.builder()
+                            .courseId(course.getId())
+                            .courseName(course.getName())
+                            .teacherName(course.getTeacher().getFullName())
+                            .teacherAvatar(course.getTeacher().getAvatarUrl())
+                            .revenue(revenue != null ? revenue : BigDecimal.ZERO)
+                            .salesCount(sales != null ? sales : 0L)
+                            .averageRating(avgRating != null ? Math.round(avgRating * 10.0) / 10.0 : 0.0)
+                            .build();
+                })
+                .sorted(Comparator.comparing(CourseDetailReportResponse::getRevenue).reversed())
+                .peek(r -> r.setRank(rank.getAndIncrement()))
                 .collect(Collectors.toList());
     }
 }

@@ -107,4 +107,10 @@ public class CourseController {
                 .build();
     }
 
+    @GetMapping("/top-purchased")
+    public ApiResponse<List<CourseResponse>> getTopPurchasedCourses() {
+        return ApiResponse.<List<CourseResponse>>builder()
+                .data(courseService.getTop6PurchasedCourses())
+                .build();
+    }
 }

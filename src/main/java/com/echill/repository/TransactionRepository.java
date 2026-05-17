@@ -66,4 +66,42 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
            "GROUP BY label " +
            "ORDER BY label ASC", nativeQuery = true)
     List<Object[]> getRevenueByPeriod(@Param("teacherId") Long teacherId, @Param("courseId") Long courseId, @Param("period") String period);
+
+    @Query(value = "SELECT ti.course_id, SUM(ti.amount_price) as revenue " +
+           "FROM transaction_items ti " +
+           "JOIN transactions t ON ti.transaction_id = t.id " +
+           "JOIN courses c ON ti.course_id = c.id " +
+           "WHERE c.teacher_id = :teacherId " +
+           "AND t.status = 'SUCCESS' " +
+           "AND (:fromDate IS NULL OR t.created_at >= :fromDate) " +
+           "AND (:toDate IS NULL OR t.created_at <= :toDate) " +
+           "GROUP BY ti.course_id", nativeQuery = true)
+    List<Object[]> getRevenuePerCourseByDateRange(
+            @Param("teacherId") Long teacherId,
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate);
+
+    @Query(value = "SELECT COUNT(ti.id) " +
+           "FROM transaction_items ti " +
+           "JOIN transactions t ON ti.transaction_id = t.id " +
+           "WHERE ti.course_id = :courseId " +
+           "AND t.status = 'SUCCESS' " +
+           "AND (:fromDate IS NULL OR t.created_at >= :fromDate) " +
+           "AND (:toDate IS NULL OR t.created_at <= :toDate)", nativeQuery = true)
+    Long getSalesCountByCourseIdAndDateRange(
+            @Param("courseId") Long courseId,
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate);
+
+    @Query(value = "SELECT SUM(ti.amount_price) " +
+           "FROM transaction_items ti " +
+           "JOIN transactions t ON ti.transaction_id = t.id " +
+           "WHERE ti.course_id = :courseId " +
+           "AND t.status = 'SUCCESS' " +
+           "AND (:fromDate IS NULL OR t.created_at >= :fromDate) " +
+           "AND (:toDate IS NULL OR t.created_at <= :toDate)", nativeQuery = true)
+    BigDecimal getRevenueByCourseIdAndDateRange(
+            @Param("courseId") Long courseId,
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate);
 }

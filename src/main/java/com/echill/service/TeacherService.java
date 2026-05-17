@@ -56,7 +56,7 @@ public class TeacherService {
                 .orElseThrow(() -> new AppException(TeacherErrorEnum.PROFILE_NOT_FOUND));
 
         // Profile chắc chắn tồn tại (nếu không đã throw ở trên), lấy luôn list chứng chỉ
-        List<Certificate> certificates = certificateRepository.findByTeacherProfileId(profile.getId());
+        List<Certificate> certificates = certificateRepository.findByUserId(profile.getId());
 
         // 3. Lấy danh sách Roles
         Set<String> roles = user.getUserRoles().stream()
@@ -94,10 +94,10 @@ public class TeacherService {
 
         // Lấy tất cả certificates cho các profile này trong 1 query để tránh N+1
         List<Long> profileIds = profiles.stream().map(TeacherProfile::getId).toList();
-        List<Certificate> allCertificates = certificateRepository.findAllByTeacherProfileIdIn(profileIds);
+        List<Certificate> allCertificates = certificateRepository.findAllByUserIdIn(profileIds);
 
         Map<Long, List<Certificate>> certMap = allCertificates.stream()
-                .collect(Collectors.groupingBy(c -> c.getTeacherProfile().getId()));
+                .collect(Collectors.groupingBy(c -> c.getUser().getId()));
 
         return profiles.stream()
                 .map(profile -> {
@@ -107,6 +107,29 @@ public class TeacherService {
                             .map(ur -> ur.getRole().getName())
                             .collect(Collectors.toSet());
 
+                    return buildTeacherResponse(user, profile, certificates, roles);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Cacheable(cacheNames = "randomTeachers")
+    @Transactional(readOnly = true)
+    public List<TeacherResponse> getRandomTeachers() {
+        log.info("⚡ FETCHING 4 RANDOM TEACHERS FROM DB");
+        List<TeacherProfile> profiles = teacherProfileRepository.findRandomTeachers(org.springframework.data.domain.PageRequest.of(0, 4));
+        
+        List<Long> profileIds = profiles.stream().map(TeacherProfile::getId).toList();
+        List<Certificate> allCertificates = certificateRepository.findAllByUserIdIn(profileIds);
+        Map<Long, List<Certificate>> certMap = allCertificates.stream()
+                .collect(Collectors.groupingBy(c -> c.getUser().getId()));
+
+        return profiles.stream()
+                .map(profile -> {
+                    User user = profile.getUser();
+                    List<Certificate> certificates = certMap.getOrDefault(profile.getId(), Collections.emptyList());
+                    Set<String> roles = user.getUserRoles().stream()
+                            .map(ur -> ur.getRole().getName())
+                            .collect(Collectors.toSet());
                     return buildTeacherResponse(user, profile, certificates, roles);
                 })
                 .collect(Collectors.toList());
