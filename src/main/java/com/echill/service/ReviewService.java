@@ -96,9 +96,9 @@ public class ReviewService {
         return reviewRepository.findByCourseIdOrderByCreatedAtDesc(courseId, pageable)
                 .map(this::mapToResponse);
     }
-    @Cacheable(cacheNames = "allReviews")
+    @Cacheable(cacheNames = "featuredReviews")
     public List<ReviewResponse> getFeaturedReviews() {
-        List<Review> reviews = reviewRepository.findFeaturedReviews(PageRequest.of(0, 10));
+        List<Review> reviews = reviewRepository.findFeaturedReviews(PageRequest.of(0, 8));
         return reviews.stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());

@@ -12,4 +12,7 @@ import java.util.Optional;
 public interface TeacherProfileRepository extends JpaRepository<TeacherProfile, Long> {
     @Query("SELECT tp FROM TeacherProfile tp JOIN FETCH tp.user")
     List<TeacherProfile> findAllWithUser();
+
+    @Query(value = "SELECT * FROM teacher_profiles ORDER BY RAND()", nativeQuery = true)
+    List<TeacherProfile> findRandomTeachers(org.springframework.data.domain.Pageable pageable);
 }

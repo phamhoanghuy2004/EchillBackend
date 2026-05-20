@@ -5,12 +5,13 @@ import com.echill.dto.request.CertificateRequest;
 import com.echill.dto.response.CertificateResponse;
 import com.echill.entity.Certificate;
 import com.echill.entity.TeacherProfile;
+import com.echill.entity.User;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
 import com.echill.mapper.CertificateMapper;
 import com.echill.repository.CertificateRepository;
-import com.echill.repository.TeacherProfileRepository;
+import com.echill.repository.UserRepository;
 import com.echill.service.persistence.CertificatePersistenceService;
 import com.echill.util.SecurityUtils;
 import lombok.AccessLevel;
@@ -28,14 +29,14 @@ import java.util.Map;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class CertificateService {
     CertificateRepository certificateRepository;
-    TeacherProfileRepository teacherProfileRepository;
+    UserRepository userRepository;
     CertificateMapper certificateMapper;
     CloudinaryService cloudinaryService;
     CertificatePersistenceService certificatePersistenceService;
 
     public List<CertificateResponse> getMyCertificates() {
         Long userId = SecurityUtils.getCurrentUserId();
-        return certificateRepository.findByTeacherProfileId(userId).stream()
+        return certificateRepository.findByUserId(userId).stream()
                 .map(certificateMapper::toCertificateResponse)
                 .toList();
     }
@@ -43,8 +44,8 @@ public class CertificateService {
     public CertificateResponse createCertificate(CertificateRequest request, MultipartFile evidence) {
         Long userId = SecurityUtils.getCurrentUserId();
         
-        TeacherProfile profile = teacherProfileRepository.findById(userId)
-                .orElseThrow(() -> new AppException(TeacherErrorEnum.PROFILE_NOT_FOUND));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorEnum.USER_NOTFOUND));
 
         String evidenceUrl = null;
         String imagePublicId = null;
@@ -55,7 +56,7 @@ public class CertificateService {
         }
 
         return certificateMapper.toCertificateResponse(
-                certificatePersistenceService.saveCertificate(request, profile, evidenceUrl, imagePublicId)
+                certificatePersistenceService.saveCertificate(request, user, evidenceUrl, imagePublicId)
         );
     }
 
@@ -66,7 +67,7 @@ public class CertificateService {
                 .orElseThrow(() -> new AppException(ErrorEnum.CERTIFICATE_NOT_FOUND));
 
         // Security check: only the owner can update
-        if (!certificate.getTeacherProfile().getId().equals(userId)) {
+        if (!certificate.getUser().getId().equals(userId)) {
             throw new AppException(ErrorEnum.UNAUTHORIZED);
         }
 
@@ -90,10 +91,29 @@ public class CertificateService {
                 .orElseThrow(() -> new AppException(ErrorEnum.CERTIFICATE_NOT_FOUND));
 
         // Security check
-        if (!certificate.getTeacherProfile().getId().equals(userId)) {
+        if (!certificate.getUser().getId().equals(userId)) {
             throw new AppException(ErrorEnum.UNAUTHORIZED);
         }
 
         certificatePersistenceService.deleteCertificate(certificate);
+    }
+
+    public List<com.echill.dto.response.TopStudentResponse> getTopToeicStudents() {
+        org.springframework.data.domain.Pageable topTen = org.springframework.data.domain.PageRequest.of(0, 10);
+        List<Certificate> topCertificates = certificateRepository.findTopCertificates(com.echill.entity.enums.CertType.TOEIC_LR, topTen);
+
+        return topCertificates.stream().map(cert -> {
+            User u = cert.getUser();
+            return com.echill.dto.response.TopStudentResponse.builder()
+                    .id(cert.getId())
+                    .name(u.getFullName())
+                    .avatar(u.getAvatarUrl() != null ? u.getAvatarUrl() : "https://i.pravatar.cc/150?u=" + u.getId())
+                    .scores(com.echill.dto.response.TopStudentResponse.TopScoreDto.builder()
+                            .listening(cert.getListeningScore())
+                            .reading(cert.getReadingScore())
+                            .total(cert.getTotalScore())
+                            .build())
+                    .build();
+        }).toList();
     }
 }

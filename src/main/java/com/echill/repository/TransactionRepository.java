@@ -66,4 +66,95 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
            "GROUP BY label " +
            "ORDER BY label ASC", nativeQuery = true)
     List<Object[]> getRevenueByPeriod(@Param("teacherId") Long teacherId, @Param("courseId") Long courseId, @Param("period") String period);
+
+    @Query(value = "SELECT ti.course_id, SUM(ti.amount_price) as revenue " +
+           "FROM transaction_items ti " +
+           "JOIN transactions t ON ti.transaction_id = t.id " +
+           "JOIN courses c ON ti.course_id = c.id " +
+           "WHERE c.teacher_id = :teacherId " +
+           "AND t.status = 'SUCCESS' " +
+           "AND (:fromDate IS NULL OR t.created_at >= :fromDate) " +
+           "AND (:toDate IS NULL OR t.created_at <= :toDate) " +
+           "GROUP BY ti.course_id", nativeQuery = true)
+    List<Object[]> getRevenuePerCourseByDateRange(
+            @Param("teacherId") Long teacherId,
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate);
+
+    @Query(value = "SELECT COUNT(ti.id) " +
+           "FROM transaction_items ti " +
+           "JOIN transactions t ON ti.transaction_id = t.id " +
+           "WHERE ti.course_id = :courseId " +
+           "AND t.status = 'SUCCESS' " +
+           "AND (:fromDate IS NULL OR t.created_at >= :fromDate) " +
+           "AND (:toDate IS NULL OR t.created_at <= :toDate)", nativeQuery = true)
+    Long getSalesCountByCourseIdAndDateRange(
+            @Param("courseId") Long courseId,
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate);
+
+    @Query(value = "SELECT SUM(ti.amount_price) " +
+           "FROM transaction_items ti " +
+           "JOIN transactions t ON ti.transaction_id = t.id " +
+           "WHERE ti.course_id = :courseId " +
+           "AND t.status = 'SUCCESS' " +
+           "AND (:fromDate IS NULL OR t.created_at >= :fromDate) " +
+           "AND (:toDate IS NULL OR t.created_at <= :toDate)", nativeQuery = true)
+    BigDecimal getRevenueByCourseIdAndDateRange(
+            @Param("courseId") Long courseId,
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate);
+
+    @Query("SELECT SUM(t.totalAmount) FROM Transaction t WHERE t.status = 'SUCCESS' AND (t.type = 'VNPAY' OR t.type = 'MOMO')")
+    BigDecimal getTotalSystemRevenue();
+
+    @Query(value = "SELECT " +
+           "  DATE_FORMAT(t.created_at, '%Y-%m-%d') as dateLabel, " +
+           "  SUM(ti.amount_price) as revenue " +
+           "FROM transaction_items ti " +
+           "JOIN transactions t ON ti.transaction_id = t.id " +
+           "LEFT JOIN courses c ON ti.course_id = c.id " +
+           "WHERE t.status = 'SUCCESS' " +
+           "AND (:fromDate IS NULL OR t.created_at >= :fromDate) " +
+           "AND (:toDate IS NULL OR t.created_at <= :toDate) " +
+           "AND (:teacherId IS NULL OR c.teacher_id = :teacherId) " +
+           "AND (:courseId IS NULL OR c.id = :courseId) " +
+           "GROUP BY dateLabel " +
+           "ORDER BY dateLabel ASC", nativeQuery = true)
+    List<Object[]> getAdminRevenueChartData(
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate,
+            @Param("teacherId") Long teacherId,
+            @Param("courseId") Long courseId);
+
+    @Query(value = "SELECT " +
+           "  u.id as teacherId, " +
+           "  u.full_name as teacherName, " +
+           "  u.avatar_url as teacherAvatar, " +
+           "  SUM(ti.amount_price) as revenue, " +
+           "  COUNT(ti.id) as salesCount " +
+           "FROM transaction_items ti " +
+           "JOIN transactions t ON ti.transaction_id = t.id " +
+           "JOIN courses c ON ti.course_id = c.id " +
+           "JOIN users u ON c.teacher_id = u.id " +
+           "WHERE t.status = 'SUCCESS' " +
+           "GROUP BY u.id, u.full_name, u.avatar_url " +
+           "ORDER BY revenue DESC", nativeQuery = true)
+    List<Object[]> getTeacherRankings();
+
+    @Query(value = "SELECT " +
+           "  c.id as courseId, " +
+           "  c.name as courseName, " +
+           "  u.full_name as teacherName, " +
+           "  u.avatar_url as teacherAvatar, " +
+           "  SUM(ti.amount_price) as revenue, " +
+           "  COUNT(ti.id) as salesCount " +
+           "FROM transaction_items ti " +
+           "JOIN transactions t ON ti.transaction_id = t.id " +
+           "JOIN courses c ON ti.course_id = c.id " +
+           "JOIN users u ON c.teacher_id = u.id " +
+           "WHERE t.status = 'SUCCESS' " +
+           "GROUP BY c.id, c.name, u.full_name, u.avatar_url " +
+           "ORDER BY revenue DESC", nativeQuery = true)
+    List<Object[]> getCourseRankings();
 }
