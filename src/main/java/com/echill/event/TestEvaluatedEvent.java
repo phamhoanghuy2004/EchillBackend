@@ -6,6 +6,6 @@ import java.util.Map;
 
 public record TestEvaluatedEvent(
         Long userId,
-        Map<Long, Double> tagScores,
+        Map<Long, Integer> tagLevelScores,
         TestType testType
 ) {}

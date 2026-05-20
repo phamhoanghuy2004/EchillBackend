@@ -116,6 +116,7 @@ public class TestPersistService {
                 .explanation(dto.getExplanation())
                 .skillType(dto.getSkillType())
                 .tag(tag)
+                .difficultyLevel(dto.getDifficulty())
                 .orderIndex(orderIndex)
                 .build();
 

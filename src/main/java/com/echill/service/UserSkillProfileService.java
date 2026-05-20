@@ -21,59 +21,59 @@ public class UserSkillProfileService {
 
     private final UserSkillProfileRepository profileRepository;
 
-    @Transactional(readOnly = true)
-    public SkillInsightResponse getSkillInsightsByGroup(TagGroup tagGroup) {
-        Long userId = SecurityUtils.getCurrentUserId();
-
-        List<UserSkillProfile> profiles = profileRepository.findByUserIdAndTagGroup(userId, tagGroup);
-
-        if (profiles.isEmpty()) {
-            throw new AppException(StudentErrorEnum.SKILL_PROFILE_NOT_FOUND);
-        }
-
-        List<SkillInsightResponse.SkillDetail> skillDetails = profiles.stream()
-                .map(p -> SkillInsightResponse.SkillDetail.builder()
-                        .tagId(p.getTag().getId())
-                        .tagName(p.getTag().getName())
-                        .score(p.getProficiencyPercentage())
-                        .build())
-                .toList();
-
-        double overallScore = profiles.stream()
-                .mapToDouble(UserSkillProfile::getProficiencyPercentage)
-                .average()
-                .orElse(0.0);
-
-        List<String> weakPoints = profiles.stream()
-                .limit(2)
-                .map(p -> p.getTag().getName())
-                .toList();
-
-        List<String> improvedSkills = profiles.stream()
-                .filter(p -> p.getLatestDelta() > 1.0)
-                .sorted(Comparator.comparing(UserSkillProfile::getLatestDelta).reversed())
-                .limit(1)
-                .map(p -> p.getTag().getName())
-                .toList();
-
-        List<String> declinedSkills = profiles.stream()
-                .filter(p -> p.getLatestDelta() < -1.0)
-                .sorted(Comparator.comparing(UserSkillProfile::getLatestDelta))
-                .limit(1)
-                .map(p -> p.getTag().getName())
-                .toList();
-
-        String remark = generateAnalyticalRemark(overallScore, weakPoints, improvedSkills, declinedSkills);
-
-        return SkillInsightResponse.builder()
-                .skills(skillDetails)
-                .overallScore(Math.round(overallScore * 100.0) / 100.0)
-                .weakPoints(weakPoints)
-                .improvedSkills(improvedSkills)
-                .declinedSkills(declinedSkills)
-                .motivationalRemark(remark)
-                .build();
-    }
+//    @Transactional(readOnly = true)
+//    public SkillInsightResponse getSkillInsightsByGroup(TagGroup tagGroup) {
+//        Long userId = SecurityUtils.getCurrentUserId();
+//
+//        List<UserSkillProfile> profiles = profileRepository.findByUserIdAndTagGroup(userId, tagGroup);
+//
+//        if (profiles.isEmpty()) {
+//            throw new AppException(StudentErrorEnum.SKILL_PROFILE_NOT_FOUND);
+//        }
+//
+//        List<SkillInsightResponse.SkillDetail> skillDetails = profiles.stream()
+//                .map(p -> SkillInsightResponse.SkillDetail.builder()
+//                        .tagId(p.getTag().getId())
+//                        .tagName(p.getTag().getName())
+//                        .score(p.getProficiencyPercentage())
+//                        .build())
+//                .toList();
+//
+//        double overallScore = profiles.stream()
+//                .mapToDouble(UserSkillProfile::getProficiencyPercentage)
+//                .average()
+//                .orElse(0.0);
+//
+//        List<String> weakPoints = profiles.stream()
+//                .limit(2)
+//                .map(p -> p.getTag().getName())
+//                .toList();
+//
+//        List<String> improvedSkills = profiles.stream()
+//                .filter(p -> p.getLatestDelta() > 1.0)
+//                .sorted(Comparator.comparing(UserSkillProfile::getLatestDelta).reversed())
+//                .limit(1)
+//                .map(p -> p.getTag().getName())
+//                .toList();
+//
+//        List<String> declinedSkills = profiles.stream()
+//                .filter(p -> p.getLatestDelta() < -1.0)
+//                .sorted(Comparator.comparing(UserSkillProfile::getLatestDelta))
+//                .limit(1)
+//                .map(p -> p.getTag().getName())
+//                .toList();
+//
+//        String remark = generateAnalyticalRemark(overallScore, weakPoints, improvedSkills, declinedSkills);
+//
+//        return SkillInsightResponse.builder()
+//                .skills(skillDetails)
+//                .overallScore(Math.round(overallScore * 100.0) / 100.0)
+//                .weakPoints(weakPoints)
+//                .improvedSkills(improvedSkills)
+//                .declinedSkills(declinedSkills)
+//                .motivationalRemark(remark)
+//                .build();
+//    }
 
     // 💥 NÂNG CẤP: Dùng String.join cho tất cả để Scale thoải mái
     private String generateAnalyticalRemark(double average, List<String> weakPoints,

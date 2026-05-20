@@ -16,5 +16,6 @@ public class ExcelQuestionDto {
     private String optionC;
     private String optionD;
     private String correctAnswer;
+    private Integer difficulty;
     private int rowNumber;
 }

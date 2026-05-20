@@ -176,25 +176,25 @@ public class CourseSearchService {
         });
     }
 
-    public List<CourseCardResponse> getRecommendedComboForCurrentUser() {
-
-        Long userId = SecurityUtils.getCurrentUserId();
-        log.info("🎯 Bắt đầu trích xuất hồ sơ năng lực để đề xuất lộ trình cho User: {}", userId);
-
-        Level currentLevel = studentProfileRepository.findByUserId(userId)
-                .map(StudentProfile::getLevel)
-                .orElse(Level.UNDETERMINED);
-
-        List<UserSkillProfile> userSkills = userSkillProfileRepository.findByUserIdAndTagGroup(userId, TagGroup.ENGLISH_TOEIC);
-
-        Map<Long, Double> tagProficiencies = userSkills.stream()
-                .collect(Collectors.toMap(
-                        p -> p.getTag().getId(),
-                        UserSkillProfile::getProficiencyPercentage
-                ));
-
-        return suggestComboPathForUser(currentLevel, tagProficiencies);
-    }
+//    public List<CourseCardResponse> getRecommendedComboForCurrentUser() {
+//
+//        Long userId = SecurityUtils.getCurrentUserId();
+//        log.info("🎯 Bắt đầu trích xuất hồ sơ năng lực để đề xuất lộ trình cho User: {}", userId);
+//
+//        Level currentLevel = studentProfileRepository.findByUserId(userId)
+//                .map(StudentProfile::getLevel)
+//                .orElse(Level.UNDETERMINED);
+//
+//        List<UserSkillProfile> userSkills = userSkillProfileRepository.findByUserIdAndTagGroup(userId, TagGroup.ENGLISH_TOEIC);
+//
+//        Map<Long, Double> tagProficiencies = userSkills.stream()
+//                .collect(Collectors.toMap(
+//                        p -> p.getTag().getId(),
+//                        UserSkillProfile::getProficiencyPercentage
+//                ));
+//
+//        return suggestComboPathForUser(currentLevel, tagProficiencies);
+//    }
 
     public List<CourseCardResponse> suggestComboPathForUser(Level currentLevel, Map<Long, Double> tagProficiencies) {
         log.info("🔍 [MSEARCH] Tìm lộ trình cho Level {} với bản đồ năng lực (tagIds): {}", currentLevel, tagProficiencies);

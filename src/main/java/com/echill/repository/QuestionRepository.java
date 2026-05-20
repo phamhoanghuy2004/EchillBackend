@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface QuestionRepository extends JpaRepository<Question, Long> {
@@ -25,4 +26,23 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     @Query("SELECT COUNT(q) FROM Question q JOIN q.section s WHERE s.test.id = :testId")
     Integer countTotalQuestionsByTestId(@Param("testId") Long testId);
+
+//    @Query("SELECT q.id FROM Question q JOIN q.tags t " +
+//            "WHERE t.parent.id = :parentTagId " +
+//            "AND q.difficultyLevel = :level " +
+//            "AND q.id NOT IN :excludedIds")
+//    List<Long> findEligibleQuestionIds(
+//            @Param("parentTagId") Long parentTagId,
+//            @Param("level") Integer level,
+//            @Param("excludedIds") Set<Long> excludedIds
+//    );
+
+    @Query("SELECT DISTINCT q FROM Question q " +
+            "JOIN FETCH q.answers " +
+            "LEFT JOIN FETCH q.tag t " +      // 🟢 Đã sửa thành q.tag và dùng LEFT JOIN
+            "LEFT JOIN FETCH t.parent " +     // 🟢 Chống N+1 cho Parent Tag
+            "JOIN q.section s " +
+            "JOIN s.test test " +
+            "WHERE test.type = 'PLACEMENT_TEST'")
+    List<Question> findAllPlacementTestQuestions();
 }

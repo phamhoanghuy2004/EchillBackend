@@ -71,4 +71,10 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
             @Param("endDate") Instant endDate,
             Pageable pageable
     );
+
+    @Query("SELECT COUNT(tr) > 0 " +
+            "FROM TestResult tr " +
+            "JOIN tr.test t " +
+            "WHERE tr.student.id = :studentId AND t.type = 'PLACEMENT_TEST'")
+    boolean existsByStudentIdAndPlacementTest(@Param("studentId") Long studentId);
 }

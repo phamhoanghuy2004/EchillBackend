@@ -1,5 +1,6 @@
 package com.echill.entity;
 
+import com.echill.entity.enums.MasteryLevel;
 import io.hypersistence.utils.hibernate.id.Tsid;
 import jakarta.persistence.*;
 import lombok.*;
@@ -13,6 +14,9 @@ import java.time.LocalDateTime;
         name = "user_skill_profiles",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_user_tag", columnNames = {"user_id", "tag_id"})
+        },
+        indexes = {
+                @Index(name = "idx_mastery_level", columnList = "mastery_level")
         }
 )
 @Getter
@@ -35,25 +39,55 @@ public class UserSkillProfile extends BaseEntity {
     @JoinColumn(name = "tag_id", nullable = false)
     Tag tag;
 
-    @Column(name = "proficiency_percentage", nullable = false)
+    @Column(name = "current_level", nullable = false)
     @Builder.Default
-    Double proficiencyPercentage = 0.0;
+    Integer currentLevel = 0;
+
+    @Column(name = "is_inferred", nullable = false)
+    @Builder.Default
+    Boolean isInferred = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "mastery_level", length = 30, nullable = false)
+    @Builder.Default
+    MasteryLevel masteryLevel = MasteryLevel.BEGINNER;
 
     @Column(name = "last_tested_at", nullable = false)
     @Builder.Default
     LocalDateTime lastTestedAt = LocalDateTime.now();
 
-    @Column(name = "latest_delta", nullable = false)
-    @Builder.Default
-    Double latestDelta = 0.0;
+    /**
+     * Hàm tự động tính toán MasteryLevel dựa trên max_level của Tag
+     * Gọi hàm này mỗi khi update currentLevel.
+     */
+    public void calculateMasteryLevel() {
+        if (this.tag == null || this.tag.getMaxLevel() == null || this.tag.getMaxLevel() == 0) {
+            this.masteryLevel = MasteryLevel.BEGINNER;
+            return;
+        }
 
-    public void updateProficiency(Double newScore) {
-        Double cappedNewScore = Math.max(0.0, Math.min(100.0, newScore));
+        // Ép currentLevel không được vượt quá maxLevel của Tag
+        int cappedLevel = Math.min(this.currentLevel, this.tag.getMaxLevel());
+        double ratio = (double) cappedLevel / this.tag.getMaxLevel();
 
-        // Tính độ lệch: Điểm mới - Điểm cũ
-        this.latestDelta = cappedNewScore - this.proficiencyPercentage;
+        if (ratio <= 0.25) {
+            this.masteryLevel = MasteryLevel.BEGINNER;
+        } else if (ratio <= 0.50) {
+            this.masteryLevel = MasteryLevel.INTERMEDIATE;
+        } else if (ratio <= 0.75) {
+            this.masteryLevel = MasteryLevel.ADVANCED;
+        } else {
+            this.masteryLevel = MasteryLevel.MASTER;
+        }
+    }
 
-        this.proficiencyPercentage = cappedNewScore;
+    /**
+     * Helper method cập nhật nhanh
+     */
+    public void updateSkill(Integer newLevel, boolean inferred) {
+        this.currentLevel = newLevel;
+        this.isInferred = inferred;
         this.lastTestedAt = LocalDateTime.now();
+        this.calculateMasteryLevel();
     }
 }

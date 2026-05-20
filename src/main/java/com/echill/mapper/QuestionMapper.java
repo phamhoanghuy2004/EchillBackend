@@ -9,8 +9,8 @@ import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring", uses = {AnswerMapper.class})
 public interface QuestionMapper {
-    @Mapping(source = "tag.name", target = "tagName")
-    @Mapping(source = "tag.id", target = "tagId")
+//    @Mapping(source = "tag.name", target = "tagName")
+//    @Mapping(source = "tag.id", target = "tagId")
     @Mapping(source = "questionGroup.id", target = "groupId")
     @Mapping(source = "audioUrl", target = "audioUrl")
     @Mapping(source = "imageUrl", target = "imageUrl")
@@ -20,7 +20,7 @@ public interface QuestionMapper {
     @Mapping(target = "section", ignore = true)
     @Mapping(target = "questionGroup", ignore = true)
     @Mapping(target = "orderIndex", ignore = true)
-    @Mapping(target = "tag", ignore = true)
+//    @Mapping(target = "tag", ignore = true)
     @Mapping(target = "answers", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
