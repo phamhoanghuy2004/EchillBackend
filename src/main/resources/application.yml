@@ -16,9 +16,9 @@ spring:
   # DATABASE CONFIGURATION
   # ===============================
   datasource:
-    url: jdbc:mysql://localhost:3306/echill?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh&createDatabaseIfNotExist=true
-    username: 'root'
-    password: '040404' # ⚠️ Nhớ giấu đi khi đưa lên GitHub nhé!
+    url: jdbc:mysql://mysql-2cc2c868-phamhoanghuy-96f0.e.aivencloud.com:15293/echill_db?sslMode=REQUIRED&rewriteBatchedStatements=true
+    username: avnadmin
+    password: AVNS_439qsgZdIKzTmluCfBg # ⚠️ Nhớ giấu đi khi đưa lên GitHub nhé!
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   # ===============================

@@ -100,12 +100,12 @@ public class CourseController {
                 .build();
     }
 
-    @GetMapping("/recommendations/combo-path")
-    public ApiResponse<List<CourseCardResponse>> getRecommendedComboPathForCurrentUser() {
-        return ApiResponse.<List<CourseCardResponse>>builder()
-                .data(courseSearchService.getRecommendedComboForCurrentUser())
-                .build();
-    }
+//    @GetMapping("/recommendations/combo-path")
+//    public ApiResponse<List<CourseCardResponse>> getRecommendedComboPathForCurrentUser() {
+//        return ApiResponse.<List<CourseCardResponse>>builder()
+//                .data(courseSearchService.getRecommendedComboForCurrentUser())
+//                .build();
+//    }
 
     @GetMapping("/top-purchased")
     public ApiResponse<List<CourseResponse>> getTopPurchasedCourses() {

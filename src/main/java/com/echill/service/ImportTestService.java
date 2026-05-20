@@ -62,132 +62,132 @@ public class ImportTestService {
      * Parse and persist a TOEIC test from an Excel file into the given TestSet.
      * The testSetId is passed from the controller (admin picks the TestSet first).
      */
-//    @Transactional(rollbackFor = Exception.class)
-//    public ImportTestResponse importFromExcel(Long testSetId, String testTitle, MultipartFile file) {
-//        log.info("Starting TOEIC import – TestSet: {}, Title: {}", testSetId, testTitle);
-//
-//        validateFile(file);
-//
-//        List<ToeicExcelRowDto> rows = toeicExcelParser.parse(file);
-//        if (rows.isEmpty()) {
-//            throw new AppException(TeacherErrorEnum.FILE_EMPTY);
-//        }
-//
-//        TestSet testSet = testSetRepository.findById(testSetId)
-//                .orElseThrow(() -> new AppException(TeacherErrorEnum.TEST_SET_NOT_FOUND));
-//
-//        // Build in-memory object graph -----------------------------------
-//        Test test = Test.builder()
-//                .title(testTitle)
-//                .durationMinutes(120)     // default TOEIC full test duration
-//                .passScore(0.0)
-//                .testSet(testSet)
-//                .build();
-//
-//        // Create 7 sections (Part 1 → Part 7)
-//        Map<Integer, TestSection> sectionByPart = new LinkedHashMap<>();
-//        for (int part = 1; part <= 7; part++) {
-//            TestSection section = TestSection.builder()
-//                    .title("Part " + part)
-//                    .orderIndex(part)
-//                    .build();
-//            test.addSection(section);
-//            sectionByPart.put(part, section);
-//        }
-//
-//        // Map<groupCode, QuestionGroup> – one group per unique groupCode per part
-//        Map<String, QuestionGroup> groupMap = new LinkedHashMap<>();
-//
-//        // Map<tagName, Tag> – Cache for tags during this import session
-//        Map<String, Tag> tagCache = new HashMap<>();
-//
-//        int totalQuestions = 0;
-//        int totalGroups    = 0;
-//
-//        for (int i = 0; i < rows.size(); i++) {
-//            ToeicExcelRowDto row = rows.get(i);
-//            int rowIndex = i + 1; // 1-based index for logging
-//
-//            try {
-//                validateRow(row, rowIndex);
-//            } catch (Exception e) {
-//                log.error("Validation error at row {}: {}", rowIndex, e.getMessage());
-//                throw e; // Rethrow to rollback transaction
-//            }
-//
-//            TestSection section = sectionByPart.get(row.getPart());
-//            Question question = buildQuestion(row);
-//
-//            // Handle Tags
-//            if (row.getTag() != null && !row.getTag().isEmpty()) {
-//                String tagName = row.getTag();
-//                Tag tag = tagCache.get(tagName);
-//                if (tag == null) {
-//                    tag = tagRepository.findByName(tagName)
-//                            .orElseGet(() -> {
-//                                Tag newTag = Tag.builder()
-//                                        .name(tagName)
-//                                        .tagGroup(TagGroup.ENGLISH_TOEIC)
-//                                        .build();
-//                                return tagRepository.save(newTag);
-//                            });
-//                    tagCache.put(tagName, tag);
-//                }
-//                question.setTag(tag);
-//            }
-//
-//            if (row.getGroupCode() == null) {
-//                // Standalone question (Part 1, 2, 5)
-//                section.addQuestion(question);
-//            } else {
-//                // Grouped question (Part 3, 4, 6, 7)
-//                String mapKey = row.getPart() + ":" + row.getGroupCode();
-//                QuestionGroup group = groupMap.get(mapKey);
-//
-//                if (group == null) {
-//                    group = QuestionGroup.builder()
-//                            .importCode(row.getGroupCode())
-//                            .sharedContent(row.getPassageContent())
-//                            .build();
-//                    section.addQuestionGroup(group);
-//                    groupMap.put(mapKey, group);
-//                } else {
-//                    // Smart Merge for Part 7 (Double/Triple Passages)
-//                    String newPassage = row.getPassageContent();
-//                    String currentContent = group.getSharedContent();
-//
-//                    if (newPassage != null && !newPassage.trim().isEmpty()) {
-//                        if (currentContent == null || currentContent.trim().isEmpty()) {
-//                            group.setSharedContent(newPassage);
-//                        } else if (!currentContent.contains(newPassage.trim())) {
-//                            // Append with double newline if it's a new unique passage
-//                            group.setSharedContent(currentContent + "\n\n" + newPassage);
-//                        }
-//                    }
-//                }
-//
-//                group.addQuestion(question);
-//                question.setSection(section);
-//            }
-//
-//            totalQuestions++;
-//        }
-//
-//        totalGroups = groupMap.size();
-//
-//        Test saved = testRepository.save(test);
-//        log.info("TOEIC import complete – testId: {}, questions: {}, groups: {}",
-//                saved.getId(), totalQuestions, totalGroups);
-//
-//        return ImportTestResponse.builder()
-//                .testId(saved.getId())
-//                .testSetId(testSetId)
-//                .testTitle(saved.getTitle())
-//                .totalQuestions(totalQuestions)
-//                .totalGroups(totalGroups)
-//                .status("SUCCESS")
-//                .build();
-//    }
+    @Transactional(rollbackFor = Exception.class)
+    public ImportTestResponse importFromExcel(Long testSetId, String testTitle, MultipartFile file) {
+        log.info("Starting TOEIC import – TestSet: {}, Title: {}", testSetId, testTitle);
+
+        validateFile(file);
+
+        List<ToeicExcelRowDto> rows = toeicExcelParser.parse(file);
+        if (rows.isEmpty()) {
+            throw new AppException(TeacherErrorEnum.FILE_EMPTY);
+        }
+
+        TestSet testSet = testSetRepository.findById(testSetId)
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.TEST_SET_NOT_FOUND));
+
+        // Build in-memory object graph -----------------------------------
+        Test test = Test.builder()
+                .title(testTitle)
+                .durationMinutes(120)     // default TOEIC full test duration
+                .passScore(0.0)
+                .testSet(testSet)
+                .build();
+
+        // Create 7 sections (Part 1 → Part 7)
+        Map<Integer, TestSection> sectionByPart = new LinkedHashMap<>();
+        for (int part = 1; part <= 7; part++) {
+            TestSection section = TestSection.builder()
+                    .title("Part " + part)
+                    .orderIndex(part)
+                    .build();
+            test.addSection(section);
+            sectionByPart.put(part, section);
+        }
+
+        // Map<groupCode, QuestionGroup> – one group per unique groupCode per part
+        Map<String, QuestionGroup> groupMap = new LinkedHashMap<>();
+
+        // Map<tagName, Tag> – Cache for tags during this import session
+        Map<String, Tag> tagCache = new HashMap<>();
+
+        int totalQuestions = 0;
+        int totalGroups    = 0;
+
+        for (int i = 0; i < rows.size(); i++) {
+            ToeicExcelRowDto row = rows.get(i);
+            int rowIndex = i + 1; // 1-based index for logging
+
+            try {
+                validateRow(row, rowIndex);
+            } catch (Exception e) {
+                log.error("Validation error at row {}: {}", rowIndex, e.getMessage());
+                throw e; // Rethrow to rollback transaction
+            }
+
+            TestSection section = sectionByPart.get(row.getPart());
+            Question question = buildQuestion(row);
+
+            // Handle Tags
+            if (row.getTag() != null && !row.getTag().isEmpty()) {
+                String tagName = row.getTag();
+                Tag tag = tagCache.get(tagName);
+                if (tag == null) {
+                    tag = tagRepository.findByName(tagName)
+                            .orElseGet(() -> {
+                                Tag newTag = Tag.builder()
+                                        .name(tagName)
+                                        .tagGroup(TagGroup.ENGLISH_TOEIC)
+                                        .build();
+                                return tagRepository.save(newTag);
+                            });
+                    tagCache.put(tagName, tag);
+                }
+                question.setTag(tag);
+            }
+
+            if (row.getGroupCode() == null) {
+                // Standalone question (Part 1, 2, 5)
+                section.addQuestion(question);
+            } else {
+                // Grouped question (Part 3, 4, 6, 7)
+                String mapKey = row.getPart() + ":" + row.getGroupCode();
+                QuestionGroup group = groupMap.get(mapKey);
+
+                if (group == null) {
+                    group = QuestionGroup.builder()
+                            .importCode(row.getGroupCode())
+                            .sharedContent(row.getPassageContent())
+                            .build();
+                    section.addQuestionGroup(group);
+                    groupMap.put(mapKey, group);
+                } else {
+                    // Smart Merge for Part 7 (Double/Triple Passages)
+                    String newPassage = row.getPassageContent();
+                    String currentContent = group.getSharedContent();
+
+                    if (newPassage != null && !newPassage.trim().isEmpty()) {
+                        if (currentContent == null || currentContent.trim().isEmpty()) {
+                            group.setSharedContent(newPassage);
+                        } else if (!currentContent.contains(newPassage.trim())) {
+                            // Append with double newline if it's a new unique passage
+                            group.setSharedContent(currentContent + "\n\n" + newPassage);
+                        }
+                    }
+                }
+
+                group.addQuestion(question);
+                question.setSection(section);
+            }
+
+            totalQuestions++;
+        }
+
+        totalGroups = groupMap.size();
+
+        Test saved = testRepository.save(test);
+        log.info("TOEIC import complete – testId: {}, questions: {}, groups: {}",
+                saved.getId(), totalQuestions, totalGroups);
+
+        return ImportTestResponse.builder()
+                .testId(saved.getId())
+                .testSetId(testSetId)
+                .testTitle(saved.getTitle())
+                .totalQuestions(totalQuestions)
+                .totalGroups(totalGroups)
+                .status("SUCCESS")
+                .build();
+    }
 
     // -------------------------------------------------------------------
     // PRIVATE HELPERS

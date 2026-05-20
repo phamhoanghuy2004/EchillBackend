@@ -201,91 +201,91 @@ public class TestService {
         return testMapper.toResponse(testRepository.save(test));
     }
 
-//    @Transactional(rollbackFor = Exception.class)
-//    public QuestionResponse updateQuestion(Long questionId, QuestionUpdateRequest request) {
-//
-//        Question question = questionRepository.findByIdWithFullRelations(questionId)
-//                .orElseThrow(() -> new AppException(TeacherErrorEnum.QUESTION_NOT_FOUND));
-//
-//        Long ownerId = question.getSection().getTest().getTestSet().getUser().getId();
-//        SecurityUtils.validateOwnership(ownerId);
-//
-//        if (request.getAnswers().size() < 2 || request.getAnswers().size() > 6) {
-//            throw new AppException(TeacherErrorEnum.INVALID_ANSWER_COUNT);
-//        }
-//
-//        long correctCount = 0;
-//        Set<String> uniqueContents = new HashSet<>();
-//
-//        for (AnswerRequest ansReq : request.getAnswers()) {
-//            if (Boolean.TRUE.equals(ansReq.getIsCorrect())) {
-//                correctCount++;
-//            }
-//            if (!uniqueContents.add(ansReq.getContent().trim().toLowerCase())) {
-//                throw new AppException(TeacherErrorEnum.DUPLICATE_ANSWER_CONTENT);
-//            }
-//        }
-//
-//        if (correctCount != 1) {
-//            throw new AppException(TeacherErrorEnum.EXACTLY_ONE_CORRECT_ANSWER_REQUIRED);
-//        }
-//
-//        questionMapper.updateQuestion(question, request);
-//
-//        if (request.getTagName() != null && !request.getTagName().isBlank()) {
-//            String normalizedTagName = request.getTagName().trim().toLowerCase();
-//            if (question.getTag() == null || !normalizedTagName.equals(question.getTag().getName())) {
-//                try {
-//                    Tag tag = tagRepository.findByName(normalizedTagName)
-//                            .orElseGet(() -> tagRepository.save(Tag.builder().name(normalizedTagName).build()));
-//                    question.setTag(tag);
-//                } catch (DataIntegrityViolationException e) {
-//                    Tag existingTag = tagRepository.findByName(normalizedTagName)
-//                            .orElseThrow(() -> new AppException(TeacherErrorEnum.TAG_CREATION_FAILED));
-//                    question.setTag(existingTag);
-//                }
-//            }
-//        } else {
-//            question.setTag(null);
-//        }
-//
-//        Set<Long> requestedAnswerIds = request.getAnswers().stream()
-//                .map(AnswerRequest::getId)
-//                .filter(id -> id != null)
-//                .collect(Collectors.toSet());
-//
-//        question.getAnswers().removeIf(existingAns -> {
-//            boolean shouldRemove = existingAns.getId() != null && !requestedAnswerIds.contains(existingAns.getId());
-//            if (shouldRemove) {
-//                existingAns.setQuestion(null);
-//            }
-//            return shouldRemove;
-//        });
-//
-//        Map<Long, Answer> existingAnswerMap = question.getAnswers().stream()
-//                .collect(Collectors.toMap(Answer::getId, a -> a));
-//
-//        request.getAnswers().forEach(ansReq -> {
-//            if (ansReq.getId() != null) {
-//                if (existingAnswerMap.containsKey(ansReq.getId())) {
-//                    answerMapper.updateAnswer(existingAnswerMap.get(ansReq.getId()), ansReq);
-//                } else {
-//                    throw new AppException(TeacherErrorEnum.INVALID_ANSWER_ID); // Văng lỗi Spoofing
-//                }
-//            } else {
-//                Answer newAnswer = Answer.builder()
-//                        .content(ansReq.getContent())
-//                        .isCorrect(ansReq.getIsCorrect())
-//                        .build();
-//                question.addAnswer(newAnswer);
-//            }
-//        });
-//
-//        Long testId = question.getSection().getTest().getId();
-//        eventPublisher.publishEvent(new TestUpdatedEvent(testId));
-//
-//        return questionMapper.toResponse(questionRepository.save(question));
-//    }
+    @Transactional(rollbackFor = Exception.class)
+    public QuestionResponse updateQuestion(Long questionId, QuestionUpdateRequest request) {
+
+        Question question = questionRepository.findByIdWithFullRelations(questionId)
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.QUESTION_NOT_FOUND));
+
+        Long ownerId = question.getSection().getTest().getTestSet().getUser().getId();
+        SecurityUtils.validateOwnership(ownerId);
+
+        if (request.getAnswers().size() < 2 || request.getAnswers().size() > 6) {
+            throw new AppException(TeacherErrorEnum.INVALID_ANSWER_COUNT);
+        }
+
+        long correctCount = 0;
+        Set<String> uniqueContents = new HashSet<>();
+
+        for (AnswerRequest ansReq : request.getAnswers()) {
+            if (Boolean.TRUE.equals(ansReq.getIsCorrect())) {
+                correctCount++;
+            }
+            if (!uniqueContents.add(ansReq.getContent().trim().toLowerCase())) {
+                throw new AppException(TeacherErrorEnum.DUPLICATE_ANSWER_CONTENT);
+            }
+        }
+
+        if (correctCount != 1) {
+            throw new AppException(TeacherErrorEnum.EXACTLY_ONE_CORRECT_ANSWER_REQUIRED);
+        }
+
+        questionMapper.updateQuestion(question, request);
+
+        if (request.getTagName() != null && !request.getTagName().isBlank()) {
+            String normalizedTagName = request.getTagName().trim().toLowerCase();
+            if (question.getTag() == null || !normalizedTagName.equals(question.getTag().getName())) {
+                try {
+                    Tag tag = tagRepository.findByName(normalizedTagName)
+                            .orElseGet(() -> tagRepository.save(Tag.builder().name(normalizedTagName).build()));
+                    question.setTag(tag);
+                } catch (DataIntegrityViolationException e) {
+                    Tag existingTag = tagRepository.findByName(normalizedTagName)
+                            .orElseThrow(() -> new AppException(TeacherErrorEnum.TAG_CREATION_FAILED));
+                    question.setTag(existingTag);
+                }
+            }
+        } else {
+            question.setTag(null);
+        }
+
+        Set<Long> requestedAnswerIds = request.getAnswers().stream()
+                .map(AnswerRequest::getId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+
+        question.getAnswers().removeIf(existingAns -> {
+            boolean shouldRemove = existingAns.getId() != null && !requestedAnswerIds.contains(existingAns.getId());
+            if (shouldRemove) {
+                existingAns.setQuestion(null);
+            }
+            return shouldRemove;
+        });
+
+        Map<Long, Answer> existingAnswerMap = question.getAnswers().stream()
+                .collect(Collectors.toMap(Answer::getId, a -> a));
+
+        request.getAnswers().forEach(ansReq -> {
+            if (ansReq.getId() != null) {
+                if (existingAnswerMap.containsKey(ansReq.getId())) {
+                    answerMapper.updateAnswer(existingAnswerMap.get(ansReq.getId()), ansReq);
+                } else {
+                    throw new AppException(TeacherErrorEnum.INVALID_ANSWER_ID); // Văng lỗi Spoofing
+                }
+            } else {
+                Answer newAnswer = Answer.builder()
+                        .content(ansReq.getContent())
+                        .isCorrect(ansReq.getIsCorrect())
+                        .build();
+                question.addAnswer(newAnswer);
+            }
+        });
+
+        Long testId = question.getSection().getTest().getId();
+        eventPublisher.publishEvent(new TestUpdatedEvent(testId));
+
+        return questionMapper.toResponse(questionRepository.save(question));
+    }
 
     public TestPracticeResponse getRandomTestForPractice(Long testSetId) {
         return processTestPractice(testSetId, null, null);
