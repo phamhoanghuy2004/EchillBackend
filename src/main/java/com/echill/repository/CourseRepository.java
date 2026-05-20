@@ -79,4 +79,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
            "GROUP BY c " +
            "ORDER BY COUNT(e) DESC")
     List<Course> findTop6MostPurchasedCourses(org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT c.id, c.name, c.teacher.id FROM Course c")
+    List<Object[]> findAllCoursesBasicInfo();
 }

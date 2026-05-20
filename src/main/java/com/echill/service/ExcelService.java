@@ -37,7 +37,8 @@ public class ExcelService {
         CORRECT(5),
         EXPLANATION(6),
         SKILL(7),
-        TAG(8);
+        TAG(8),
+        DIFFICULTY(9);
         private final int index;
     }
 
@@ -88,10 +89,23 @@ public class ExcelService {
         String explanation = getCellValue(row, ExcelColumn.EXPLANATION);
         String skillStr = getCellValue(row, ExcelColumn.SKILL);
         String tagName = getCellValue(row, ExcelColumn.TAG);
+        String difficultyStr = getCellValue(row, ExcelColumn.DIFFICULTY);
 
-        if (isEmpty(content) || isEmpty(a) || isEmpty(b) || isEmpty(correct) || isEmpty(skillStr)) {
+        if (isEmpty(content) || isEmpty(a) || isEmpty(b) || isEmpty(correct) || isEmpty(skillStr) || isEmpty(tagName) || isEmpty(difficultyStr)) {
             log.error("Missing required fields at row {}", rowNum);
-            throw new AppException(TeacherErrorEnum.INVALID_EXCEL_FORMAT); // Nên customize exception để trả về rowNum
+            throw new AppException(TeacherErrorEnum.INVALID_EXCEL_FORMAT);
+        }
+
+        Integer difficulty;
+        try {
+            double val = Double.parseDouble(difficultyStr.trim());
+            difficulty = (int) val;
+            if (difficulty < 1 || difficulty > 5 || val != difficulty) {
+                throw new IllegalArgumentException();
+            }
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid difficulty '{}' at row {}", difficultyStr, rowNum);
+            throw new AppException(TeacherErrorEnum.INVALID_EXCEL_FORMAT);
         }
 
         SkillType skillType;
@@ -112,6 +126,7 @@ public class ExcelService {
                 .explanation(isEmpty(explanation) ? "" : explanation.trim())
                 .skillType(skillType)
                 .tagName(isEmpty(tagName) ? null : tagName.trim().toLowerCase())
+                .difficulty(difficulty)
                 .rowNumber(rowNum)
                 .build();
     }

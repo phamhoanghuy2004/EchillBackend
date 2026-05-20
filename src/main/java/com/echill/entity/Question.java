@@ -6,14 +6,19 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
-@Table(name = "questions")
+@Table(name = "questions", indexes = {
+        @Index(name = "idx_question_difficulty", columnList = "difficulty_level")
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -50,6 +55,10 @@ public class Question extends BaseEntity {
     @Column(nullable = false, name = "order_index")
     Integer orderIndex;
 
+    @Column(name = "difficulty_level", nullable = false)
+    @Builder.Default
+    Integer difficultyLevel = 3;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "section_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
@@ -68,6 +77,7 @@ public class Question extends BaseEntity {
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id ASC")
+    @BatchSize(size = 10)
     @Builder.Default
     List<Answer> answers = new ArrayList<>();
 

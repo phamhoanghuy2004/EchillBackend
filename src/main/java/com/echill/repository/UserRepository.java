@@ -49,4 +49,12 @@ public interface UserRepository extends JpaRepository<User,Long> {
     @Query("SELECT u FROM User u WHERE u.id = :id")
     Optional<User> findByIdForPaymentLock(@Param("id") Long id);
 
+    @Query("SELECT COUNT(u) FROM User u JOIN u.userRoles ur JOIN ur.role r WHERE r.name = 'STUDENT'")
+    long countStudents();
+
+    @Query("SELECT COUNT(u) FROM User u JOIN u.userRoles ur JOIN ur.role r WHERE r.name = 'TEACHER'")
+    long countTeachers();
+
+    @Query("SELECT u.id, u.fullName FROM User u JOIN u.userRoles ur JOIN ur.role r WHERE r.name = 'TEACHER'")
+    List<Object[]> findAllTeachersBasicInfo();
 }
