@@ -23,12 +23,11 @@ public class TagService {
     TagRepository tagRepository;
     TagMapper tagMapper;
 
-    @Cacheable(value = "tags", sync = true)
     @Transactional(readOnly = true)
     public List<TagResponse> getAllTags() {
-        log.info("🚀 [CACHE MISS] Đang chui xuống Database để móc danh sách Tags...");
+        log.info("🚀 Đang chui xuống Database để móc danh sách Tags con...");
 
-        return tagRepository.findAll(Sort.by(Sort.Direction.ASC, "id")).stream()
+        return tagRepository.findAllChildTags().stream()
                 .map(tagMapper::toResponse)
                 .collect(Collectors.toList());
     }

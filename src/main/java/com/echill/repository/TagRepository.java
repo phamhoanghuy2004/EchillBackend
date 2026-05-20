@@ -18,4 +18,6 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     @Query("SELECT t.id FROM Tag t WHERE t.parent IS NULL ORDER BY t.id ASC")
     List<Long> findCoreParentTagIds();
 
+    @Query("SELECT t FROM Tag t WHERE t.parent IS NOT NULL ORDER BY t.id ASC")
+    List<Tag> findAllChildTags();
 }
