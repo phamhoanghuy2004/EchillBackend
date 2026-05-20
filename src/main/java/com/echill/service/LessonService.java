@@ -5,6 +5,7 @@ import com.echill.dto.response.LessonResponse;
 import com.echill.entity.Course;
 import com.echill.entity.Lesson;
 import com.echill.event.CourseUpdatedEvent;
+import com.echill.event.LessonUpdatedEvent;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.exception.TeacherErrorEnum;
@@ -76,6 +77,8 @@ public class LessonService {
         // 4. Lưu database
         lessonRepository.save(lesson);
         log.info("Đã cập nhật bài học ID: {} thành công", lessonId);
+
+        eventPublisher.publishEvent(new LessonUpdatedEvent(lessonId));
 
         eventPublisher.publishEvent(new CourseUpdatedEvent(courseId));
 

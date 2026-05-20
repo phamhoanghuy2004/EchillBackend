@@ -97,7 +97,7 @@ public class ImportTestService {
 
         // Map<groupCode, QuestionGroup> – one group per unique groupCode per part
         Map<String, QuestionGroup> groupMap = new LinkedHashMap<>();
-        
+
         // Map<tagName, Tag> – Cache for tags during this import session
         Map<String, Tag> tagCache = new HashMap<>();
 
@@ -107,7 +107,7 @@ public class ImportTestService {
         for (int i = 0; i < rows.size(); i++) {
             ToeicExcelRowDto row = rows.get(i);
             int rowIndex = i + 1; // 1-based index for logging
-            
+
             try {
                 validateRow(row, rowIndex);
             } catch (Exception e) {
@@ -143,7 +143,7 @@ public class ImportTestService {
                 // Grouped question (Part 3, 4, 6, 7)
                 String mapKey = row.getPart() + ":" + row.getGroupCode();
                 QuestionGroup group = groupMap.get(mapKey);
-                
+
                 if (group == null) {
                     group = QuestionGroup.builder()
                             .importCode(row.getGroupCode())
@@ -155,7 +155,7 @@ public class ImportTestService {
                     // Smart Merge for Part 7 (Double/Triple Passages)
                     String newPassage = row.getPassageContent();
                     String currentContent = group.getSharedContent();
-                    
+
                     if (newPassage != null && !newPassage.trim().isEmpty()) {
                         if (currentContent == null || currentContent.trim().isEmpty()) {
                             group.setSharedContent(newPassage);
@@ -165,7 +165,7 @@ public class ImportTestService {
                         }
                     }
                 }
-                
+
                 group.addQuestion(question);
                 question.setSection(section);
             }

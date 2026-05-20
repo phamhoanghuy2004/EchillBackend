@@ -2,6 +2,7 @@ package com.echill.repository;
 
 import com.echill.dto.response.learner.TestSetRecommendationResponse;
 import com.echill.entity.TestSet;
+import com.echill.entity.enums.TestType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,13 +25,19 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long>, JpaSpec
             "t.id, t.title, t.description, t.year, SIZE(t.tests)) " +
             "FROM TestSet t " +
             "WHERE t.year = :year " +
+            "AND t.type IN :types " +
             "ORDER BY t.createdAt DESC")
-    List<TestSetRecommendationResponse> findRecommendedTestSets(@Param("year") Integer year, Pageable pageable);
+    List<TestSetRecommendationResponse> findRecommendedTestSets(@Param("year") Integer year,
+                                                                @Param("types") List<TestType> types,
+                                                                Pageable pageable);
 
     java.util.List<TestSet> findAllByUserId(Long userId);
 
     @EntityGraph(attributePaths = {"tests"})
     @Query("SELECT ts FROM TestSet ts WHERE ts.id = :testSetId")
     Optional<TestSet> findByIdWithTests(@Param("testSetId") Long testSetId);
+
+    @Query("SELECT c.id FROM TestSet ts JOIN ts.lesson l JOIN l.course c WHERE ts.id = :testSetId")
+    Optional<Long> findCourseIdByTestSetId(@Param("testSetId") Long testSetId);
 
 }

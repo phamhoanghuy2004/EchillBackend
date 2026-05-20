@@ -76,7 +76,7 @@ public class Lesson extends BaseEntity {
 
     @Column(name = "version", nullable = false)
     @Builder.Default
-    private Integer version = 1;
+    private Integer version = 0;
 
     public void addDocument(Document document) {
         documents.add(document);
@@ -128,6 +128,9 @@ public class Lesson extends BaseEntity {
 
         this.hlsUrl = hlsUrl;
         this.videoStatus = VideoStatus.READY;
+
+        // 🟢 NGHIỆP VỤ: Đánh dấu bài học đã có video mới, bắt học viên học lại
+        this.incrementVersion();
     }
 
     public void incrementVersion() {

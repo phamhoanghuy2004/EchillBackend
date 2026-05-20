@@ -18,6 +18,9 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
     boolean existsByLessonIdAndEnrollmentStudentId(Long lessonId, Long studentId);
     Optional<LessonProgress> findByLessonIdAndEnrollmentStudentId(Long lessonId, Long userId);
 
+    @Query("SELECT lp FROM LessonProgress lp JOIN FETCH lp.lesson l WHERE l.id = :lessonId AND lp.enrollment.student.id = :userId")
+    Optional<LessonProgress> findProgressWithLesson(@Param("lessonId") Long lessonId, @Param("userId") Long userId);
+
     @Modifying
     @Query(value = "UPDATE lesson_progresses lp " +
             "INNER JOIN enrollments e ON lp.enrollment_id = e.id " +

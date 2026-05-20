@@ -17,14 +17,14 @@ import org.springframework.web.bind.annotation.*;
 public class UserSkillProfileController {
     UserSkillProfileService profileService;
 
-    @GetMapping("/insights")
-    public ApiResponse<SkillInsightResponse> getSkillInsights(
-            @Valid @ModelAttribute SkillInsightRequest request
-    ) {
-        SkillInsightResponse response = profileService.getSkillInsightsByGroup(request.getGroup());
-
-        return ApiResponse.<SkillInsightResponse>builder()
-                .data(response)
-                .build();
-    }
+//    @GetMapping("/insights")
+//    public ApiResponse<SkillInsightResponse> getSkillInsights(
+//            @Valid @ModelAttribute SkillInsightRequest request
+//    ) {
+//        SkillInsightResponse response = profileService.getSkillInsightsByGroup(request.getGroup());
+//
+//        return ApiResponse.<SkillInsightResponse>builder()
+//                .data(response)
+//                .build();
+//    }
 }

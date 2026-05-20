@@ -28,6 +28,8 @@ public class QuestionPracticeResponse {
     String tagName;
     Integer orderIndex;
 
+    Integer difficultyLevel;
+
     QuestionGroupPracticeResponse group;
     List<AnswerPracticeResponse> answers;
 
