@@ -25,6 +25,26 @@ public interface UserSkillProfileRepository extends JpaRepository<UserSkillProfi
 //            @Param("tagGroup") TagGroup tagGroup
 //    );
 
+    @Query("SELECT p FROM UserSkillProfile p " +
+            "JOIN FETCH p.tag t " +
+            "WHERE p.user.id = :userId " +
+            "AND t.tagGroup = :tagGroup " +
+            "AND t.parent IS NOT NULL") // 👈 Đây là "chốt chặn" loại bỏ Tag Cha
+    List<UserSkillProfile> findChildProfilesByUserIdAndTagGroup(
+            @Param("userId") Long userId,
+            @Param("tagGroup") TagGroup tagGroup
+    );
+
+    @Query("SELECT p FROM UserSkillProfile p " +
+            "JOIN FETCH p.tag t " +
+            "WHERE p.user.id = :userId " +
+            "AND t.tagGroup = :tagGroup " +
+            "AND t.parent IS NULL") // 👈 Mấu chốt ở đây: Chặn ngay dưới DB, cấm lọt Tag Con lên
+    List<UserSkillProfile> findParentProfilesByUserIdAndTagGroup(
+            @Param("userId") Long userId,
+            @Param("tagGroup") TagGroup tagGroup
+    );
+
     // Tìm profile của 1 user theo Tag cụ thể
     Optional<UserSkillProfile> findByUserIdAndTagId(Long userId, Long tagId);
 
