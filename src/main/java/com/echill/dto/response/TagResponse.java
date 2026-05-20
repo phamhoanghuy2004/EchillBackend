@@ -19,4 +19,9 @@ public class TagResponse {
     TagGroup tagGroup;
 
     String groupDisplayName;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    Long parentId;
+
+    String parentName;
 }
