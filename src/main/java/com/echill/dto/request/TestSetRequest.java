@@ -1,5 +1,6 @@
 package com.echill.dto.request;
 
+import com.echill.entity.enums.TestType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -22,4 +23,6 @@ public class TestSetRequest {
     Integer year;
 
     Long lessonId;
+
+    TestType type;
 }
