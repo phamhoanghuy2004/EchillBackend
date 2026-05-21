@@ -12,17 +12,13 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SkillInsightResponse {
 
-    List<SkillDetail> skills;
+    List<SkillDetail> skills; // Dùng để vẽ Radar Chart
 
-    Double overallScore;
+    Double overallScore; // Điểm trung bình (Hệ 100)
 
-    List<String> weakPoints;
+    List<String> weakPoints; // Các điểm yếu cần khắc phục
 
-    List<String> improvedSkills;
-
-    List<String> declinedSkills;
-
-    String motivationalRemark;
+    String motivationalRemark; // Lời nhận xét
 
     @Data
     @Builder
@@ -32,6 +28,7 @@ public class SkillInsightResponse {
     public static class SkillDetail {
         Long tagId;
         String tagName;
-        Double score;
+        Double score;         // Điểm hệ 100 để vẽ UI
+        String masteryLevel;  // Truyền thêm để UI đổi màu (Tùy chọn)
     }
 }

@@ -51,15 +51,6 @@ public class CourseSearchService {
     EnrollmentRepository enrollmentRepository;
     ReviewRepository reviewRepository;
 
-    private static final List<Level> BEGINNER_PATH =
-            List.of(Level.BEGINNER, Level.INTERMEDIATE, Level.ADVANCED);
-
-    private static final List<Level> INTERMEDIATE_PATH =
-            List.of(Level.INTERMEDIATE, Level.ADVANCED);
-
-    private static final List<Level> ADVANCED_PATH =
-            List.of(Level.ADVANCED);
-
     public Page<CourseCardResponse> searchCourses(CourseSearchRequest request) {
 
         log.info("Thực thi tìm kiếm khóa học với request: {}", request);
@@ -176,100 +167,80 @@ public class CourseSearchService {
         });
     }
 
-//    public List<CourseCardResponse> getRecommendedComboForCurrentUser() {
-//
-//        Long userId = SecurityUtils.getCurrentUserId();
-//        log.info("🎯 Bắt đầu trích xuất hồ sơ năng lực để đề xuất lộ trình cho User: {}", userId);
-//
-//        Level currentLevel = studentProfileRepository.findByUserId(userId)
-//                .map(StudentProfile::getLevel)
-//                .orElse(Level.UNDETERMINED);
-//
-//        List<UserSkillProfile> userSkills = userSkillProfileRepository.findByUserIdAndTagGroup(userId, TagGroup.ENGLISH_TOEIC);
-//
-//        Map<Long, Double> tagProficiencies = userSkills.stream()
-//                .collect(Collectors.toMap(
-//                        p -> p.getTag().getId(),
-//                        UserSkillProfile::getProficiencyPercentage
-//                ));
-//
-//        return suggestComboPathForUser(currentLevel, tagProficiencies);
-//    }
-//
-//    public List<CourseCardResponse> suggestComboPathForUser(Level currentLevel, Map<Long, Double> tagProficiencies) {
-//        log.info("🔍 [MSEARCH] Tìm lộ trình cho Level {} với bản đồ năng lực (tagIds): {}", currentLevel, tagProficiencies);
-//
-//        List<CourseCardResponse> recommendedPath = new ArrayList<>();
-//        List<Level> targetLevels = getNextLevels(currentLevel);
-//
-//        if (targetLevels.isEmpty()) return recommendedPath;
-//
-//        List<co.elastic.clients.elasticsearch._types.query_dsl.Query> baseShouldQueries = new ArrayList<>();
-//
-//        if (tagProficiencies != null && !tagProficiencies.isEmpty()) {
-//            for (Map.Entry<Long, Double> entry : tagProficiencies.entrySet()) {
-//                float boostWeight = (float) (100.0 - entry.getValue());
-//                if (boostWeight > 10.0f) {
-//                    baseShouldQueries.add(co.elastic.clients.elasticsearch._types.query_dsl.Query.of(q -> q.term(t -> t
-//                            .field("tagIds")
-//                            .value(entry.getKey())
-//                            .boost(boostWeight)
-//                    )));
-//                }
-//            }
-//        }
-//
-//        List<org.springframework.data.elasticsearch.core.query.Query> multiQueries = new ArrayList<>();
-//
-//        for (Level targetLvl : targetLevels) {
-//            BoolQuery.Builder boolQuery = new BoolQuery.Builder();
-//
-//            boolQuery.filter(f -> f.term(t -> t.field("status").value(Status.ACTIVE.name())));
-//            boolQuery.filter(f -> f.term(t -> t.field("level").value(targetLvl.name())));
-//
-//            if (!baseShouldQueries.isEmpty()) {
-//                boolQuery.should(baseShouldQueries);
-//                boolQuery.minimumShouldMatch("0");
-//            }
-//
-//            NativeQueryBuilder queryBuilder = NativeQuery.builder()
-//                    .withQuery(boolQuery.build()._toQuery())
-//                    .withPageable(PageRequest.of(0, 1))
-//                    .withSort(s -> s.score(sc -> sc.order(SortOrder.Desc)));
-//
-//            multiQueries.add(queryBuilder.build());
-//        }
-//
-//
-//        List<SearchHits<CourseDocument>> multiSearchHits =
-//                elasticsearchOperations.multiSearch(multiQueries, CourseDocument.class);
-//
-//        for (int i = 0; i < multiSearchHits.size(); i++) {
-//            SearchHits<CourseDocument> hits = multiSearchHits.get(i);
-//            Level lvl = targetLevels.get(i);
-//
-//            if (hits.hasSearchHits()) {
-//                CourseDocument bestMatchCourse = hits.getSearchHits().getFirst().getContent();
-//                recommendedPath.add(courseDocumentMapper.toResponse(bestMatchCourse));
-//            } else {
-//                log.warn("⚠️ Không tìm thấy khóa học ACTIVE nào phù hợp cho Level: {}", lvl);
-//            }
-//        }
-//
-//        enrichWithStats(recommendedPath);
-//
-//        return recommendedPath;
-//    }
+    public List<CourseCardResponse> getRecommendedComboForCurrentUser() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        log.info("🎯 Bắt đầu trích xuất hồ sơ năng lực để đề xuất 3 khóa học cho User: {}", userId);
 
-    private List<Level> getNextLevels(Level currentLevel) {
-        if (currentLevel == null) {
-            return BEGINNER_PATH;
+        Level currentLevel = studentProfileRepository.findByUserId(userId)
+                .map(StudentProfile::getLevel)
+                .orElse(Level.UNDETERMINED);
+
+        List<UserSkillProfile> userChildSkills = userSkillProfileRepository.findChildProfilesByUserIdAndTagGroup(userId, TagGroup.ENGLISH_TOEIC);
+
+        Map<Long, Float> tagBoostWeights = userChildSkills.stream()
+                .filter(p -> p.getTag().getMaxLevel() != null && p.getTag().getMaxLevel() > 0)
+                .collect(Collectors.toMap(
+                        p -> p.getTag().getId(),
+                        p -> {
+                            int cappedLevel = Math.min(p.getCurrentLevel(), p.getTag().getMaxLevel());
+                            float masteryRatio = (float) cappedLevel / p.getTag().getMaxLevel();
+                            return (1.0f - masteryRatio) * 100.0f;
+                        }
+                ));
+
+        return suggestComboPathForUser(currentLevel, tagBoostWeights);
+    }
+
+    public List<CourseCardResponse> suggestComboPathForUser(Level currentLevel, Map<Long, Float> tagBoostWeights) {
+        Level targetLevel = (currentLevel == null || currentLevel == Level.UNDETERMINED)
+                ? Level.BEGINNER
+                : currentLevel;
+
+        log.info("🔍 [SEARCH] Tìm Top 3 khóa học cho Level {} với Bản đồ lỗ hổng năng lực: {}", targetLevel, tagBoostWeights);
+
+        BoolQuery.Builder boolQuery = new BoolQuery.Builder();
+
+        boolQuery.filter(f -> f.term(t -> t.field("status").value(Status.ACTIVE.name())));
+        boolQuery.filter(f -> f.term(t -> t.field("level").value(targetLevel.name())));
+
+        if (tagBoostWeights != null && !tagBoostWeights.isEmpty()) {
+            List<co.elastic.clients.elasticsearch._types.query_dsl.Query> baseShouldQueries = new ArrayList<>();
+            for (Map.Entry<Long, Float> entry : tagBoostWeights.entrySet()) {
+                float boostWeight = entry.getValue();
+
+                if (boostWeight > 25.0f) {
+                    baseShouldQueries.add(co.elastic.clients.elasticsearch._types.query_dsl.Query.of(q -> q.term(t -> t
+                            .field("tagIds")
+                            .value(entry.getKey())
+                            .boost(boostWeight)
+                    )));
+                }
+            }
+
+            if (!baseShouldQueries.isEmpty()) {
+                boolQuery.should(baseShouldQueries);
+                boolQuery.minimumShouldMatch("0");
+            }
         }
 
-        return switch (currentLevel) {
-            case UNDETERMINED, BEGINNER -> BEGINNER_PATH;
-            case INTERMEDIATE -> INTERMEDIATE_PATH;
-            case ADVANCED -> ADVANCED_PATH;
-        };
+        NativeQueryBuilder queryBuilder = NativeQuery.builder()
+                .withQuery(boolQuery.build()._toQuery())
+                .withPageable(PageRequest.of(0, 3))
+                .withSort(s -> s.score(sc -> sc.order(SortOrder.Desc)));
+
+        SearchHits<CourseDocument> hits = elasticsearchOperations.search(queryBuilder.build(), CourseDocument.class);
+
+        if (!hits.hasSearchHits()) {
+            log.warn("⚠️ Không tìm thấy khóa học ACTIVE nào phù hợp cho Level: {}", targetLevel);
+            return new ArrayList<>();
+        }
+
+        List<CourseCardResponse> recommendedPath = hits.getSearchHits().stream()
+                .map(hit -> courseDocumentMapper.toResponse(hit.getContent()))
+                .collect(Collectors.toList());
+
+        enrichWithStats(recommendedPath);
+
+        return recommendedPath;
     }
 }

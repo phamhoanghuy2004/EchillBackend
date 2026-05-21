@@ -66,18 +66,15 @@ public class UserSkillProfile extends BaseEntity {
             return;
         }
 
-        // Ép currentLevel không được vượt quá maxLevel của Tag
         int cappedLevel = Math.min(this.currentLevel, this.tag.getMaxLevel());
         double ratio = (double) cappedLevel / this.tag.getMaxLevel();
 
-        if (ratio <= 0.25) {
+        if (ratio <= 0.33) {
             this.masteryLevel = MasteryLevel.BEGINNER;
-        } else if (ratio <= 0.50) {
+        } else if (ratio <= 0.66) {
             this.masteryLevel = MasteryLevel.INTERMEDIATE;
-        } else if (ratio <= 0.75) {
-            this.masteryLevel = MasteryLevel.ADVANCED;
         } else {
-            this.masteryLevel = MasteryLevel.MASTER;
+            this.masteryLevel = MasteryLevel.ADVANCED;
         }
     }
 
