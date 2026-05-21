@@ -24,6 +24,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
             "JOIN FETCH l.course c " +
             "JOIN FETCH c.teacher " +
             "LEFT JOIN FETCH l.documents " +
+            "LEFT JOIN FETCH l.tags " +
             "WHERE l.id = :lessonId")
     Optional<Lesson> findByIdWithCourseAndTeacherAndDocuments(@Param("lessonId") Long lessonId);
 
@@ -86,6 +87,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
         SELECT DISTINCT l FROM Lesson l 
         LEFT JOIN FETCH l.documents 
         LEFT JOIN FETCH l.testSet 
+        LEFT JOIN FETCH l.tags 
         WHERE l.id = :lessonId
     """)
     Optional<Lesson> findLessonWithDetailsById(@Param("lessonId") Long lessonId);

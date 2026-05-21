@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import java.util.List;
 
 @Getter
 @AllArgsConstructor
@@ -29,4 +30,6 @@ public class LessonCreationRequest {
 
     @NotNull(message = "LESSON_PREVIEW_REQUIRED")
     Boolean isPreview;
+
+    List<Long> tagIds;
 }

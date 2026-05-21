@@ -14,6 +14,8 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 @Entity
 @Table(name = "lessons",indexes = {
@@ -73,6 +75,21 @@ public class Lesson extends BaseEntity {
 
     @OneToOne(mappedBy = "lesson", cascade = CascadeType.ALL)
     TestSet testSet;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @Builder.Default
+    @JoinTable(
+            name = "lesson_tags",
+            joinColumns = @JoinColumn(
+                    name = "lesson_id",
+                    foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE")
+            ),
+            inverseJoinColumns = @JoinColumn(
+                    name = "tag_id",
+                    foreignKey = @ForeignKey(foreignKeyDefinition = "FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE")
+            )
+    )
+    Set<Tag> tags = new HashSet<>();
 
     @Column(name = "version", nullable = false)
     @Builder.Default

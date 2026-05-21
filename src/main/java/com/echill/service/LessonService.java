@@ -4,6 +4,7 @@ import com.echill.dto.request.LessonCreationRequest;
 import com.echill.dto.response.LessonResponse;
 import com.echill.entity.Course;
 import com.echill.entity.Lesson;
+import com.echill.entity.Tag;
 import com.echill.event.CourseUpdatedEvent;
 import com.echill.event.LessonUpdatedEvent;
 import com.echill.exception.AppException;
@@ -12,7 +13,11 @@ import com.echill.exception.TeacherErrorEnum;
 import com.echill.mapper.LessonMapper;
 import com.echill.repository.CourseRepository;
 import com.echill.repository.LessonRepository;
+import com.echill.repository.TagRepository;
 import com.echill.util.SecurityUtils;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -30,6 +35,7 @@ public class LessonService {
     LessonRepository lessonRepository;
     LessonMapper lessonMapper;
     CourseRepository courseRepository;
+    TagRepository tagRepository;
     ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -47,8 +53,31 @@ public class LessonService {
                 .course(course)
                 .build();
 
+        List<Tag> validTags = new ArrayList<>();
+        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            validTags = tagRepository.findAllById(request.getTagIds());
+            if (validTags.size() != request.getTagIds().size()) {
+                throw new AppException(TeacherErrorEnum.TAG_NOT_FOUND);
+            }
+        }
+
+        lesson.getTags().addAll(validTags);
+
         lessonRepository.save(lesson);
         log.info("Đã tạo mới khung bài học (Text) thành công, Lesson ID: {}", lesson.getId());
+
+        if (!validTags.isEmpty()) {
+            boolean updated = false;
+            for (Tag tag : validTags) {
+                if (!course.getTags().contains(tag)) {
+                    course.addTag(tag);
+                    updated = true;
+                }
+            }
+            if (updated) {
+                courseRepository.save(course);
+            }
+        }
 
         // 🔴 ATOMIC UPDATE: Tăng biến đếm an toàn tuyệt đối
         courseRepository.incrementLessonCount(course.getId());
@@ -74,9 +103,34 @@ public class LessonService {
         lesson.setDisplayOrder(request.getDisplayOrder());
         lesson.setIsPreview(request.getIsPreview());
 
+        List<Tag> validTags = new ArrayList<>();
+        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            validTags = tagRepository.findAllById(request.getTagIds());
+            if (validTags.size() != request.getTagIds().size()) {
+                throw new AppException(TeacherErrorEnum.TAG_NOT_FOUND);
+            }
+        }
+
+        lesson.getTags().clear();
+        lesson.getTags().addAll(validTags);
+
         // 4. Lưu database
         lessonRepository.save(lesson);
         log.info("Đã cập nhật bài học ID: {} thành công", lessonId);
+
+        Course course = lesson.getCourse();
+        if (!validTags.isEmpty()) {
+            boolean updated = false;
+            for (Tag tag : validTags) {
+                if (!course.getTags().contains(tag)) {
+                    course.addTag(tag);
+                    updated = true;
+                }
+            }
+            if (updated) {
+                courseRepository.save(course);
+            }
+        }
 
         eventPublisher.publishEvent(new LessonUpdatedEvent(lessonId));
 
