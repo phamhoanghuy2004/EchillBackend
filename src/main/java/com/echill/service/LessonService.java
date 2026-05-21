@@ -55,6 +55,9 @@ public class LessonService {
 
         List<Tag> validTags = new ArrayList<>();
         if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            if (request.getTagIds().stream().distinct().count() > 3) {
+                throw new AppException(TeacherErrorEnum.LESSON_TAGS_LIMIT_EXCEEDED);
+            }
             validTags = tagRepository.findAllById(request.getTagIds());
             if (validTags.size() != request.getTagIds().size()) {
                 throw new AppException(TeacherErrorEnum.TAG_NOT_FOUND);
@@ -105,6 +108,9 @@ public class LessonService {
 
         List<Tag> validTags = new ArrayList<>();
         if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
+            if (request.getTagIds().stream().distinct().count() > 3) {
+                throw new AppException(TeacherErrorEnum.LESSON_TAGS_LIMIT_EXCEEDED);
+            }
             validTags = tagRepository.findAllById(request.getTagIds());
             if (validTags.size() != request.getTagIds().size()) {
                 throw new AppException(TeacherErrorEnum.TAG_NOT_FOUND);
