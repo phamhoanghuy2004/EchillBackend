@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.ZoneId;
@@ -34,6 +35,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Transactional(readOnly = true)
 public class CourseService {
 
     CloudinaryService cloudinaryService;
@@ -46,6 +48,7 @@ public class CourseService {
     ReviewRepository reviewRepository;
     TagMapper tagMapper;
 
+    @Transactional
     public CourseResponse createCourse(CourseRequest request, MultipartFile file) {
         Long teacherId = SecurityUtils.getCurrentUserId();
 
@@ -70,6 +73,7 @@ public class CourseService {
     }
 
 
+    @Transactional
     public CourseResponse updateCourse(Long id, CourseRequest request, MultipartFile file) {
         Course existingCourse = courseRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new AppException(TeacherErrorEnum.COURSE_NOT_FOUND));
@@ -200,6 +204,11 @@ public class CourseService {
                                 .hlsUrl(l.getHlsUrl())
                                 .videoStatus(l.getVideoStatus())
                                 .durationSeconds(l.getDurationSeconds())
+                                .tags(l.getTags() == null || l.getTags().isEmpty()
+                                        ? List.of()
+                                        : l.getTags().stream()
+                                        .map(tagMapper::toResponse)
+                                        .toList())
                                 .build())
                         .toList())
 
