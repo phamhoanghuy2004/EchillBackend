@@ -4,6 +4,8 @@ import com.echill.dto.AdaptiveTestSession;
 import com.echill.dto.NextStepResponse;
 import com.echill.dto.response.QuestionPracticeResponse;
 import com.echill.dto.response.AdaptiveQuestionResponse;
+import com.echill.entity.enums.Level;
+import com.echill.repository.StudentProfileRepository;
 import com.echill.repository.TagRepository;
 import com.echill.repository.TestResultRepository;
 import lombok.AccessLevel;
@@ -26,15 +28,19 @@ public class PlacementTestOrchestrator {
 
     // 🟢 DÙNG CACHE SERVICE THAY CHO QUESTION REPOSITORY
     QuestionBankCacheService questionCacheService;
-    TestResultRepository testResultRepository;
+    StudentProfileRepository studentProfileRepository;
     StudentService studentService;
 
     /**
      * API: BẮT ĐẦU BÀI TEST
      */
     public NextStepResponse startTest(Long userId) {
-        if (testResultRepository.existsByStudentIdAndPlacementTest(userId)) {
-            log.warn("User {} đã có lịch sử làm Placement Test. Chặn thi lại.", userId);
+        boolean isAlreadyAssessed = studentProfileRepository.findByUserId(userId)
+                .map(profile -> profile.getLevel() != Level.UNDETERMINED)
+                .orElse(false);
+
+        if (isAlreadyAssessed) {
+            log.warn("User {} đã xác định được trình độ. Chặn thi lại Placement Test.", userId);
             throw new RuntimeException("Bạn đã hoàn thành bài đánh giá đầu vào. Vui lòng tiếp tục lộ trình học của bạn!");
         }
 
