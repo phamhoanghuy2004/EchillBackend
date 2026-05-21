@@ -9,6 +9,7 @@ import com.echill.repository.TagRepository;
 import com.echill.repository.UserRepository;
 import com.echill.repository.UserSkillProfileRepository;
 import com.echill.service.SkillTrackingService;
+import com.echill.service.StudentService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -32,6 +33,7 @@ public class SkillEventListener {
     TagRepository tagRepository;
     UserRepository userRepository;
     SkillTrackingService skillTrackingService;
+    StudentService studentService;
 
     @Async("skillProfileTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -103,6 +105,7 @@ public class SkillEventListener {
         if (!affectedParentTagIds.isEmpty()) {
             log.info("Kích hoạt Skill Roll-up lan truyền lên {} Tag Cha", affectedParentTagIds.size());
             skillTrackingService.updateParentSkillLevelsBatch(userId, affectedParentTagIds);
+            studentService.updateOverallStudentLevel(userId);
         }
     }
 }

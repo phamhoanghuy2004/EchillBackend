@@ -27,6 +27,7 @@ public class PlacementTestOrchestrator {
     // 🟢 DÙNG CACHE SERVICE THAY CHO QUESTION REPOSITORY
     QuestionBankCacheService questionCacheService;
     TestResultRepository testResultRepository;
+    StudentService studentService;
 
     /**
      * API: BẮT ĐẦU BÀI TEST
@@ -130,6 +131,10 @@ public class PlacementTestOrchestrator {
     private NextStepResponse moveToNextTagOrFinish(AdaptiveTestSession session) {
         if (session.getPendingParentTagIds().isEmpty()) {
             log.info("🎉 User {} đã hoàn thành toàn bộ Placement Test!", session.getUserId());
+
+            studentService.updateOverallStudentLevel(session.getUserId());
+            log.info("📈 Đã tính toán và cập nhật Level tổng thành công cho User {}", session.getUserId());
+
             redisService.deleteSession(session.getUserId());
             return new NextStepResponse(true, null, "Hoàn thành bài thi!");
         }
