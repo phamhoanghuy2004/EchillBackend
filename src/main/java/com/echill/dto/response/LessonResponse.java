@@ -31,4 +31,6 @@ public class LessonResponse {
 
     // 💥 CHỨA DANH SÁCH THẰNG CON (Đã được làm phẳng)
     List<DocumentResponse> documents;
+
+    List<TagResponse> tags;
 }

@@ -55,15 +55,6 @@ public class CourseService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new AppException(TeacherErrorEnum.CATEGORY_NOT_FOUND));
 
-        List<Tag> validTags = new ArrayList<>();
-        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
-            validTags = tagRepository.findAllById(request.getTagIds());
-
-            if (validTags.size() != request.getTagIds().size()) {
-                throw new AppException(TeacherErrorEnum.TAG_NOT_FOUND);
-            }
-        }
-
         Map<String, String> uploadResult = null;
         if (file != null && !file.isEmpty()) {
             uploadResult = cloudinaryService.uploadImage(file, CloudinaryFolder.COURSE_IMAGE);
@@ -72,7 +63,7 @@ public class CourseService {
         String url = (uploadResult != null) ? uploadResult.get("url") : null;
         String pId = (uploadResult != null) ? uploadResult.get("publicId") : null;
 
-        Course course = coursePersistenceService.saveNewCourse(teacher, category, validTags, request, url, pId);
+        Course course = coursePersistenceService.saveNewCourse(teacher, category, request, url, pId);
 
         return mapToResponse(course);
 
@@ -85,15 +76,6 @@ public class CourseService {
 
         SecurityUtils.validateOwnership(existingCourse.getTeacher().getId());
 
-        List<Tag> validTags = new ArrayList<>();
-        if (request.getTagIds() != null && !request.getTagIds().isEmpty()) {
-            validTags = tagRepository.findAllById(request.getTagIds());
-
-            if (validTags.size() != request.getTagIds().size()) {
-                throw new AppException(TeacherErrorEnum.TAG_NOT_FOUND);
-            }
-        }
-
         String newImageUrl = null;
         String newImagePublicId = null;
 
@@ -103,7 +85,7 @@ public class CourseService {
             newImagePublicId = uploadResult.get("publicId");
         }
 
-        Course updatedCourse = coursePersistenceService.updateCourseData(existingCourse, request, validTags, newImageUrl, newImagePublicId);
+        Course updatedCourse = coursePersistenceService.updateCourseData(existingCourse, request, newImageUrl, newImagePublicId);
 
         return mapToResponse(updatedCourse);
     }
