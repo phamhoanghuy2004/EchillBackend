@@ -2,6 +2,7 @@ package com.echill.repository;
 
 import com.echill.dto.response.TestResultHistoryDto;
 import com.echill.entity.TestResult;
+import com.echill.entity.enums.TestType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -77,4 +78,18 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
             "JOIN tr.test t " +
             "WHERE tr.student.id = :studentId AND t.type = 'PLACEMENT_TEST'")
     boolean existsByStudentIdAndPlacementTest(@Param("studentId") Long studentId);
+
+    @Query("SELECT new com.echill.dto.response.TestResultHistoryDto(" +
+            "tr.id, t.id, t.title, tr.totalScore, tr.timeTakenSeconds, tr.isPassed, tr.createdAt) " +
+            "FROM TestResult tr " +
+            "JOIN tr.test t " +
+            "WHERE tr.student.id = :studentId " +
+            "AND tr.totalQuestions = 200 " +
+            "AND t.type = :testType " +
+            "ORDER BY tr.createdAt DESC")
+    List<TestResultHistoryDto> findTopRecentFullTests(
+            @Param("studentId") Long studentId,
+            @Param("testType") TestType testType,
+            Pageable pageable
+    );
 }

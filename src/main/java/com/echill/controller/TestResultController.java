@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/test-results")
 @RequiredArgsConstructor
@@ -34,6 +36,14 @@ public class TestResultController {
         return ApiResponse.<PageResponse<TestResultHistoryDto>>builder()
                 .data(resultData)
                 .message("Lấy lịch sử làm bài thành công")
+                .build();
+    }
+
+    @GetMapping("/estimations/recent-full")
+    public ApiResponse<List<TestResultHistoryDto>> getRecentFullTestsForEstimation() {
+        return ApiResponse.<List<TestResultHistoryDto>>builder()
+                .data(testResultService.getRecentFullTestsForEstimation())
+                .message("Lấy dữ liệu 5 đề Full TOEIC gần nhất thành công!")
                 .build();
     }
 }

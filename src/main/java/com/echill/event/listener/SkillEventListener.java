@@ -105,7 +105,7 @@ public class SkillEventListener {
         if (!affectedParentTagIds.isEmpty()) {
             log.info("Kích hoạt Skill Roll-up lan truyền lên {} Tag Cha", affectedParentTagIds.size());
             skillTrackingService.updateParentSkillLevelsBatch(userId, affectedParentTagIds);
-            studentService.updateOverallStudentLevel(userId);
+            studentService.updateOverallStudentLevel(userId, false);
         }
     }
 }
