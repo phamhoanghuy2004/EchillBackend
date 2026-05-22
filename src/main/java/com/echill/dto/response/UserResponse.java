@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -26,4 +27,5 @@ public class UserResponse {
     Long currentCoin;
     String status;
     Set<RoleResponse> roles;
+    List<AdminUserCourseDto> courses;
 }

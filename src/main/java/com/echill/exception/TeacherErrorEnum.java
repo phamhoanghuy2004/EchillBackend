@@ -51,7 +51,8 @@ public enum TeacherErrorEnum implements ErrorCode {
     INVALID_ANSWER_COUNT(2042, "Invalid answer count", HttpStatus.BAD_REQUEST),
     DUPLICATE_ANSWER_CONTENT(2043, "Duplicate answer content", HttpStatus.BAD_REQUEST),
     EXACTLY_ONE_CORRECT_ANSWER_REQUIRED(2044,"Exactly one correct answer is required", HttpStatus.BAD_REQUEST),
-    TAG_CREATION_FAILED(2045,"Tag creation failed", HttpStatus.INTERNAL_SERVER_ERROR)
+    TAG_CREATION_FAILED(2045,"Tag creation failed", HttpStatus.INTERNAL_SERVER_ERROR),
+    LESSON_TAGS_LIMIT_EXCEEDED(2046, "Một bài học chỉ được chọn tối đa 3 tag", HttpStatus.BAD_REQUEST)
     ;
 
     Integer code;

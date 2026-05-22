@@ -113,6 +113,8 @@ public enum ErrorEnum implements ErrorCode {
     CONSULTATION_ALREADY_CLAIMED (1086, "Consultation already claimed", HttpStatus.BAD_REQUEST),
     CONSULTATION_NOT_FOUND(1087, "Consultation not found", HttpStatus.NOT_FOUND),
     NOT_ENOUGH_FULL_TESTS(1088, "Not enough full tests", HttpStatus.BAD_REQUEST),
+    USER_ALREADY_BLOCKED(1088, "User already blocked", HttpStatus.BAD_REQUEST),
+    CANNOT_BLOCK_ADMIN(1089, "Cannot block an admin user", HttpStatus.BAD_REQUEST),
     ;
 
 
