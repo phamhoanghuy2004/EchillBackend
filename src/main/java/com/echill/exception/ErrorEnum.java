@@ -112,6 +112,8 @@ public enum ErrorEnum implements ErrorCode {
     REVIEW_NOT_FOUND(1085, "Review not found", HttpStatus.NOT_FOUND),
     CONSULTATION_ALREADY_CLAIMED (1086, "Consultation already claimed", HttpStatus.BAD_REQUEST),
     CONSULTATION_NOT_FOUND(1087, "Consultation not found", HttpStatus.NOT_FOUND),
+    USER_ALREADY_BLOCKED(1088, "User already blocked", HttpStatus.BAD_REQUEST),
+    CANNOT_BLOCK_ADMIN(1089, "Cannot block an admin user", HttpStatus.BAD_REQUEST),
     ;
 
 
