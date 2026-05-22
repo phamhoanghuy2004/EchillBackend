@@ -3,6 +3,7 @@ package com.echill.repository;
 import com.echill.entity.Course;
 import com.echill.entity.enums.Status;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface CourseRepository extends JpaRepository<Course, Long> {
+public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecificationExecutor<Course> {
     @Query("SELECT c FROM Course c JOIN FETCH c.teacher WHERE c.id = :id")
     Optional<Course> findByIdWithTeacher(@Param("id") Long id);
 

@@ -23,6 +23,7 @@ public class CourseResponse {
     BigDecimal originalPrice;
     String imageUrl;
     Level level;
+    com.echill.entity.enums.Status status;
     Long categoryId;
     String categoryName;
     String teacherName;

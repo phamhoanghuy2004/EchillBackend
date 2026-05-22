@@ -51,7 +51,7 @@ public class Course extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
-    Status status = Status.ACTIVE;
+    Status status = Status.INACTIVE;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

@@ -7,7 +7,7 @@ import com.echill.entity.Lesson;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring", uses = {DocumentMapper.class, TagMapper.class})
+@Mapper(componentModel = "spring", uses = {DocumentMapper.class, TagMapper.class, TestSetMapper.class})
 public interface LessonMapper {
     @Mapping(source = "course.id", target = "courseId")
     LessonResponse toLessonResponse(Lesson lesson);

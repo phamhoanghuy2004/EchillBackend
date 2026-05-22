@@ -41,7 +41,7 @@ public class CoursePersistenceService {
                 .level(request.getLevel())
                 .category(category)
                 .teacher(teacher)
-                .status(Status.ACTIVE)
+                .status(Status.INACTIVE)
                 .build();
 
         Course savedCourse = courseRepository.save(course);
