@@ -134,6 +134,9 @@ public class AuthenticationService {
                     randomPassword
             );
 
+            // Bổ sung check để không cho phép user đã bị block login bằng Google
+            targetUser.ensureCanLogin();
+
             boolean isProfileIncomplete = targetUser.getJobTitle() == null || targetUser.getJobTitle().isEmpty()
                     || targetUser.getDob() == null || targetUser.getAddress() == null || targetUser.getAddress().isEmpty();
 

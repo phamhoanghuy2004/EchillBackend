@@ -11,8 +11,10 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
 @Repository
-public interface UserRepository extends JpaRepository<User,Long> {
+public interface UserRepository extends JpaRepository<User,Long>, JpaSpecificationExecutor<User> {
     public Boolean existsByUsername(String username);
     public Boolean existsByEmail(String email);
     Optional<User> findByUsername(String username);
