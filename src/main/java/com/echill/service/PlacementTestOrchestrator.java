@@ -2,6 +2,7 @@ package com.echill.service;
 
 import com.echill.dto.AdaptiveTestSession;
 import com.echill.dto.NextStepResponse;
+import com.echill.dto.response.PlacementTestStatusResponse;
 import com.echill.dto.response.QuestionPracticeResponse;
 import com.echill.dto.response.AdaptiveQuestionResponse;
 import com.echill.entity.enums.Level;
@@ -28,19 +29,16 @@ public class PlacementTestOrchestrator {
 
     // 🟢 DÙNG CACHE SERVICE THAY CHO QUESTION REPOSITORY
     QuestionBankCacheService questionCacheService;
-    StudentProfileRepository studentProfileRepository;
     StudentService studentService;
 
     /**
      * API: BẮT ĐẦU BÀI TEST
      */
     public NextStepResponse startTest(Long userId) {
-        boolean isAlreadyAssessed = studentProfileRepository.findByUserId(userId)
-                .map(profile -> profile.getLevel() != Level.UNDETERMINED)
-                .orElse(false);
+        PlacementTestStatusResponse status = studentService.checkPlacementTestStatus();
 
-        if (isAlreadyAssessed) {
-            log.warn("User {} đã xác định được trình độ. Chặn thi lại Placement Test.", userId);
+        if (status.isHasCompleted()) {
+            log.warn("User {} đã từng làm Placement Test rồi. Chặn thi lại.", userId);
             throw new RuntimeException("Bạn đã hoàn thành bài đánh giá đầu vào. Vui lòng tiếp tục lộ trình học của bạn!");
         }
 
@@ -138,7 +136,7 @@ public class PlacementTestOrchestrator {
         if (session.getPendingParentTagIds().isEmpty()) {
             log.info("🎉 User {} đã hoàn thành toàn bộ Placement Test!", session.getUserId());
 
-            studentService.updateOverallStudentLevel(session.getUserId());
+            studentService.updateOverallStudentLevel(session.getUserId(), true);
             log.info("📈 Đã tính toán và cập nhật Level tổng thành công cho User {}", session.getUserId());
 
             redisService.deleteSession(session.getUserId());

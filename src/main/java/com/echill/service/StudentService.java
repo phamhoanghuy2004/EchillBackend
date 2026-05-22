@@ -1,5 +1,6 @@
 package com.echill.service;
 
+import com.echill.dto.response.PlacementTestStatusResponse;
 import com.echill.dto.response.StudentResponse;
 import com.echill.dto.response.StudyGoalResponse;
 import com.echill.entity.StudentProfile;
@@ -16,12 +17,12 @@ import com.echill.repository.StudyGoalRepository;
 import com.echill.repository.UserRepository;
 import com.echill.repository.UserSkillProfileRepository;
 import com.echill.util.SecurityUtils;
-import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
@@ -101,7 +102,7 @@ public class StudentService {
     }
 
     @Transactional
-    public void updateOverallStudentLevel(Long userId) {
+    public void updateOverallStudentLevel(Long userId, boolean isPlacementTestFinished) {
         log.info("Bắt đầu tính toán Level Tổng cho User {}", userId);
 
         List<UserSkillProfile> parentProfiles = userSkillProfileRepository.findParentProfilesByUserIdAndTagGroup(userId, TagGroup.ENGLISH_TOEIC);
@@ -134,11 +135,37 @@ public class StudentService {
                         .user(userRepository.getReferenceById(userId))
                         .build());
 
-        // Chỉ save khi Level thực sự thay đổi (Tránh update DB vô ích)
+        boolean isUpdated = false;
+
         if (profile.getLevel() != newOverallLevel) {
             profile.setLevel(newOverallLevel);
-            studentProfileRepository.save(profile);
+            isUpdated = true;
             log.info("🎉 User {} đã thăng cấp thành {}", userId, newOverallLevel);
         }
+
+        if (isPlacementTestFinished && !profile.isPlacementTestCompleted()) {
+            profile.setPlacementTestCompleted(true);
+            isUpdated = true;
+            log.info("✅ Đã bật cờ hoàn thành Placement Test cho User {}", userId);
+        }
+
+        if (isUpdated) {
+            studentProfileRepository.save(profile);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public PlacementTestStatusResponse checkPlacementTestStatus() {
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        return studentProfileRepository.findByUserId(userId)
+                .map(profile -> PlacementTestStatusResponse.builder()
+                        .hasCompleted(profile.isPlacementTestCompleted())
+                        .currentLevel(profile.getLevel().name())
+                        .build())
+                .orElse(PlacementTestStatusResponse.builder()
+                        .hasCompleted(false)
+                        .currentLevel("UNDETERMINED")
+                        .build());
     }
 }

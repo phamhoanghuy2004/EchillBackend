@@ -12,8 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -26,14 +26,12 @@ public class UserSkillProfileService {
     public SkillInsightResponse getSkillInsightsByGroup(TagGroup tagGroup) {
         Long userId = SecurityUtils.getCurrentUserId();
 
-        // 🟢 Gọi đúng hàm đặc nhiệm, kéo thẳng Tag Cha từ MySQL lên
         List<UserSkillProfile> parentProfiles = profileRepository.findParentProfilesByUserIdAndTagGroup(userId, tagGroup);
 
         if (parentProfiles.isEmpty()) {
             throw new AppException(StudentErrorEnum.SKILL_PROFILE_NOT_FOUND);
         }
 
-        // Không cần Stream.filter() nữa! Biến thành SkillDetail luôn.
         List<SkillInsightResponse.SkillDetail> skillDetails = parentProfiles.stream()
                 .map(p -> {
                     double percentageScore = 0.0;
@@ -49,51 +47,66 @@ public class UserSkillProfileService {
                 })
                 .toList();
 
-        // 2. Tính điểm trung bình tổng quan
         double overallScore = skillDetails.stream()
                 .mapToDouble(SkillInsightResponse.SkillDetail::getScore)
                 .average()
                 .orElse(0.0);
 
-        // 3. Tìm 2 kỹ năng yếu nhất
-        List<String> weakPoints = skillDetails.stream()
-                .sorted(Comparator.comparing(SkillInsightResponse.SkillDetail::getScore))
-                .limit(2)
+        List<String> weakSkills = skillDetails.stream()
+                .filter(s -> "BEGINNER".equals(s.getMasteryLevel()))
                 .map(SkillInsightResponse.SkillDetail::getTagName)
                 .toList();
 
-        // 4. Sinh lời nhận xét động
-        String remark = generateAnalyticalRemark(overallScore, weakPoints);
+        List<String> averageSkills = skillDetails.stream()
+                .filter(s -> "INTERMEDIATE".equals(s.getMasteryLevel()))
+                .map(SkillInsightResponse.SkillDetail::getTagName)
+                .toList();
+
+        List<String> strongSkills = skillDetails.stream()
+                .filter(s -> "ADVANCED".equals(s.getMasteryLevel()))
+                .map(SkillInsightResponse.SkillDetail::getTagName)
+                .toList();
+
+        String remark = generateAnalyticalRemark(weakSkills, averageSkills, strongSkills);
 
         return SkillInsightResponse.builder()
                 .skills(skillDetails)
                 .overallScore(Math.round(overallScore * 10.0) / 10.0)
-                .weakPoints(weakPoints)
+                .weakPoints(weakSkills)
                 .motivationalRemark(remark)
                 .build();
     }
 
     /**
-     * 💥 NÂNG CẤP: Lời nhận xét tinh gọn, dựa trực tiếp vào điểm Level hệ 100
+     * 💥 NÂNG CẤP: Lời nhận xét chia khối rõ ràng, cá nhân hóa theo từng nhóm kỹ năng
      */
-    private String generateAnalyticalRemark(double average, List<String> weakPoints) {
+    private String generateAnalyticalRemark(List<String> weakSkills, List<String> averageSkills, List<String> strongSkills) {
         StringBuilder remark = new StringBuilder();
 
-        if (!weakPoints.isEmpty()) {
-            String weakSkillsText = String.join(" và ", weakPoints);
-
-            if (average >= 80.0) {
-                remark.append(String.format("Nền tảng chung của bạn rất vững chắc. Tuy nhiên, để đạt đến độ hoàn hảo và ẵm trọn điểm tối đa, hãy chú ý mài giũa thêm một chút ở kỹ năng [%s] nhé.", weakSkillsText));
-            } else if (average >= 50.0) {
-                remark.append(String.format("Phong độ của bạn khá ổn định. Dù vậy, [%s] đang là điểm nghẽn cản bước bạn vươn lên mốc Master. Hãy ưu tiên luyện tập phần này.", weakSkillsText));
-            } else {
-                remark.append(String.format("Đừng nản lòng! Mọi chuyên gia đều từng là người mới bắt đầu. Hãy tập trung xây dựng lại căn bản, đặc biệt là ở phần [%s].", weakSkillsText));
-            }
-        } else {
-            // Case backup: Lỡ user full điểm không có điểm yếu
-            remark.append("Nền tảng của bạn cực kỳ xuất sắc! Không phát hiện lỗ hổng lớn nào. Cứ tiếp tục duy trì phong độ Master này nhé!");
+        if (!weakSkills.isEmpty() && averageSkills.isEmpty() && strongSkills.isEmpty()) {
+            String weakText = String.join(", ", weakSkills);
+            return String.format("Đừng nản lòng! Mọi chuyên gia đều từng là người mới bắt đầu. Hãy tập trung xây dựng lại căn bản từ các phần [%s] nhé.", weakText);
         }
 
-        return remark.toString();
+        if (weakSkills.isEmpty() && averageSkills.isEmpty() && !strongSkills.isEmpty()) {
+            return "Nền tảng của bạn cực kỳ xuất sắc và không phát hiện lỗ hổng nào! Hãy tiếp tục duy trì phong độ đỉnh cao này ở mọi kỹ năng nhé.";
+        }
+
+        if (!strongSkills.isEmpty()) {
+            String strongText = String.join(", ", strongSkills);
+            remark.append(String.format("Bạn đang nắm rất vững nền tảng ở kỹ năng [%s]. ", strongText));
+        }
+
+        if (!averageSkills.isEmpty()) {
+            String averageText = String.join(", ", averageSkills);
+            remark.append(String.format("Hãy tiếp tục duy trì và luyện tập thêm để nâng tầm phần [%s]. ", averageText));
+        }
+
+        if (!weakSkills.isEmpty()) {
+            String weakText = String.join(", ", weakSkills);
+            remark.append(String.format("Đặc biệt, bạn cần chú ý khắc phục lỗ hổng kiến thức ở phần [%s] để vươn lên cấp độ cao hơn.", weakText));
+        }
+
+        return remark.toString().trim();
     }
 }

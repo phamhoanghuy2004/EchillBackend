@@ -2,6 +2,7 @@ package com.echill.controller;
 
 import com.echill.dto.request.StudyGoalRequest;
 import com.echill.dto.response.ApiResponse;
+import com.echill.dto.response.PlacementTestStatusResponse;
 import com.echill.dto.response.StudentResponse;
 import com.echill.dto.response.StudyGoalResponse;
 import com.echill.service.StudentService;
@@ -53,6 +54,13 @@ public class StudentController {
     public ApiResponse<StudyGoalResponse> getMyActiveGoal() {
         return ApiResponse.<StudyGoalResponse>builder()
                 .data(studyGoalService.getMyActiveGoal())
+                .build();
+    }
+
+    @GetMapping("/placement-test-status")
+    public ApiResponse<PlacementTestStatusResponse> checkPlacementTestStatus() {
+        return ApiResponse.<PlacementTestStatusResponse>builder()
+                .data(studentService.checkPlacementTestStatus())
                 .build();
     }
 

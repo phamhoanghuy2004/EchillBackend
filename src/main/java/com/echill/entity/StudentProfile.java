@@ -31,4 +31,7 @@ public class StudentProfile extends BaseEntity {
     @Column(nullable = false, length = 20)
     Level level = Level.UNDETERMINED;
 
+    @Builder.Default
+    boolean placementTestCompleted = false;
+
 }
