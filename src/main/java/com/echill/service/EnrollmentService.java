@@ -9,6 +9,7 @@ import com.echill.dto.response.learner.MyCourseResponse;
 import com.echill.entity.*;
 import com.echill.entity.enums.EnrollmentStatus;
 import com.echill.entity.enums.LessonStatus;
+import com.echill.entity.enums.Status;
 import com.echill.entity.enums.VideoStatus;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
@@ -121,9 +122,16 @@ public class EnrollmentService {
             throw new AppException(StudentErrorEnum.COURSE_LOCKED);
         }
 
-        enrollment.recordAccess();
-
         Course course = enrollment.getCourse();
+
+        if (course.getStatus() != Status.ACTIVE) {
+            log.warn("🚨 User {} cố truy cập Khóa học ID {} nhưng khóa học đang ở trạng thái {}",
+                    currentUserId, courseId, course.getStatus());
+
+            throw new AppException(StudentErrorEnum.COURSE_LOCKED);
+        }
+
+        enrollment.recordAccess();
 
         return buildCurriculumResponse(course, enrollment);
     }

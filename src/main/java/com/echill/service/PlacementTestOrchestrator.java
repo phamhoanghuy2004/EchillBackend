@@ -6,6 +6,8 @@ import com.echill.dto.response.PlacementTestStatusResponse;
 import com.echill.dto.response.QuestionPracticeResponse;
 import com.echill.dto.response.AdaptiveQuestionResponse;
 import com.echill.entity.enums.Level;
+import com.echill.exception.AppException;
+import com.echill.exception.ErrorEnum;
 import com.echill.repository.StudentProfileRepository;
 import com.echill.repository.TagRepository;
 import com.echill.repository.TestResultRepository;
@@ -39,7 +41,7 @@ public class PlacementTestOrchestrator {
 
         if (status.isHasCompleted()) {
             log.warn("User {} đã từng làm Placement Test rồi. Chặn thi lại.", userId);
-            throw new RuntimeException("Bạn đã hoàn thành bài đánh giá đầu vào. Vui lòng tiếp tục lộ trình học của bạn!");
+            throw new AppException(ErrorEnum.PLACEMENT_TEST_ALREADY_COMPLETED);
         }
 
         redisService.deleteSession(userId);
@@ -47,7 +49,7 @@ public class PlacementTestOrchestrator {
         List<Long> coreParentTagIds = questionCacheService.getCoreParentTagIdsFromCache();
 
         if (coreParentTagIds.isEmpty()) {
-            throw new RuntimeException("Hệ thống chưa có Tag Cha nào được cấu hình!");
+            throw new AppException(ErrorEnum.SYSTEM_PARENT_TAG_NOT_CONFIGURED);
         }
 
         AdaptiveTestSession session = new AdaptiveTestSession();
@@ -66,7 +68,7 @@ public class PlacementTestOrchestrator {
         // 🛡️ LỚP BẢO VỆ 1: CHỐNG RACE CONDITION
         if (!redisService.acquireLock(userId)) {
             log.warn("🚨 Khóa nhấp đúp bị kích hoạt cho User {}", userId);
-            throw new RuntimeException("Hệ thống đang xử lý câu trả lời của bạn, vui lòng không thao tác quá nhanh!");
+            throw new AppException(ErrorEnum.REQUEST_PROCESSING_TOO_FAST);
         }
 
         try {
@@ -75,19 +77,19 @@ public class PlacementTestOrchestrator {
             // 🛡️ LỚP BẢO VỆ 2: CHỐNG IDEMPOTENCY
             if (questionId.equals(session.getLastAnsweredQuestionId())) {
                 log.warn("🚨 Kích hoạt Idempotency: User {} gửi lại câu hỏi {} đã được xử lý", userId, questionId);
-                throw new RuntimeException("Câu hỏi này đã được chấm điểm! Vui lòng làm mới trang (F5) để tiếp tục.");
+                throw new AppException(ErrorEnum.QUESTION_ALREADY_PROCESSED);
             }
 
             // 🛡️ LỚP BẢO VỆ 3: CHỐNG HACK / TRUYỀN SAI ID
             if (!questionId.equals(session.getCurrentQuestionId())) {
                 log.error("🚨 Kích hoạt Anti-Cheat: User {} nộp ID {} nhưng hệ thống đang chờ ID {}", userId, questionId, session.getCurrentQuestionId());
-                throw new RuntimeException("Phát hiện bất thường: ID câu hỏi không hợp lệ!");
+                throw new AppException(ErrorEnum.INVALID_QUESTION_ID);
             }
 
             // --- LOGIC XỬ LÝ CHÍNH ---
             QuestionPracticeResponse practiceQ = questionCacheService.getCachedQuestionById(questionId);
             if (practiceQ == null) {
-                throw new RuntimeException("Câu hỏi không tồn tại hoặc Cache đã bị xóa!");
+                throw new AppException(ErrorEnum.QUESTION_NOT_FOUND_OR_CACHE_EXPIRED);
             }
 
             boolean isCorrect = false;

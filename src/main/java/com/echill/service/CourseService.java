@@ -174,13 +174,14 @@ public class CourseService {
 
     private CourseResponse mapToResponse(Course course) {
         return CourseResponse.builder()
-                .id(course.getId().toString())
+                .id(course.getId())
                 .name(course.getName())
                 .description(course.getDescription())
                 .price(course.getPrice())
                 .originalPrice(course.getOriginalPrice())
                 .imageUrl(course.getImageUrl())
                 .level(course.getLevel())
+                .status(course.getStatus())
                 .categoryId(course.getCategory().getId())
                 .categoryName(course.getCategory().getName())
                 .teacherName(course.getTeacher().getFullName())

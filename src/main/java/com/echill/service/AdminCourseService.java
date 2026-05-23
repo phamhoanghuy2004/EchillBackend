@@ -6,6 +6,7 @@ import com.echill.dto.response.CourseResponse;
 import com.echill.dto.response.PageResponse;
 import com.echill.entity.Course;
 import com.echill.entity.enums.Status;
+import com.echill.event.CourseUpdatedEvent;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
 import com.echill.mapper.CourseMapper;
@@ -19,6 +20,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,7 @@ public class AdminCourseService {
     CourseMapper courseMapper;
     LessonMapper lessonMapper;
     TagMapper tagMapper;
+    ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public PageResponse<CourseCardResponse> getCourses(AdminCourseSearchRequest request) {
@@ -115,12 +118,14 @@ public class AdminCourseService {
         course.setStatus(status);
         Course savedCourse = courseRepository.save(course);
 
+        eventPublisher.publishEvent(new CourseUpdatedEvent(savedCourse.getId()));
+
         return getCourseDetail(savedCourse.getId());
     }
 
     private CourseResponse mapToResponse(Course course) {
         return CourseResponse.builder()
-                .id(course.getId().toString())
+                .id(course.getId())
                 .name(course.getName())
                 .description(course.getDescription())
                 .price(course.getPrice())

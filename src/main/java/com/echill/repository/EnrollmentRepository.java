@@ -42,6 +42,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
         LEFT JOIN LessonProgress lp ON lp.enrollment = e
         LEFT JOIN lp.lesson l
         WHERE e.student.id = :studentId
+        AND c.status = 'ACTIVE'
         GROUP BY e.id, c.id, c.name, c.imageUrl, c.totalLessonsCount, t.fullName, t.avatarUrl, e.lastAccessedAt
     """)
     Page<MyCourseProjection> findMyCoursesWithProgress(@Param("studentId") Long studentId, Pageable pageable);

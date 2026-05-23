@@ -16,7 +16,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CourseResponse {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    String id;
+    Long id;
     String name;
     String description;
     BigDecimal price;
@@ -24,9 +24,12 @@ public class CourseResponse {
     String imageUrl;
     Level level;
     com.echill.entity.enums.Status status;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long categoryId;
     String categoryName;
     String teacherName;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long teacherId;
     String teacherAvatarUrl;
