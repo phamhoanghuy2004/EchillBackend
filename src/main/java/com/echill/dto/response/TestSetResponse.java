@@ -19,6 +19,8 @@ public class TestSetResponse {
     String description;
     Boolean isPublic;
     Integer year;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long lessonId;
 
     TestType type;

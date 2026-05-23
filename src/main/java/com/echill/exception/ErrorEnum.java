@@ -115,6 +115,36 @@ public enum ErrorEnum implements ErrorCode {
     NOT_ENOUGH_FULL_TESTS(1088, "Not enough full tests", HttpStatus.BAD_REQUEST),
     USER_ALREADY_BLOCKED(1088, "User already blocked", HttpStatus.BAD_REQUEST),
     CANNOT_BLOCK_ADMIN(1089, "Cannot block an admin user", HttpStatus.BAD_REQUEST),
+    PLACEMENT_TEST_ALREADY_COMPLETED(
+            1090,
+            "Bạn đã hoàn thành bài đánh giá đầu vào. Vui lòng tiếp tục lộ trình học của bạn!",
+            HttpStatus.BAD_REQUEST
+    ),
+    SYSTEM_PARENT_TAG_NOT_CONFIGURED(
+            1091,
+            "Hệ thống chưa có Tag Cha nào được cấu hình!",
+            HttpStatus.INTERNAL_SERVER_ERROR
+    ),
+    REQUEST_PROCESSING_TOO_FAST(
+            1092,
+            "Hệ thống đang xử lý câu trả lời của bạn, vui lòng không thao tác quá nhanh!",
+            HttpStatus.TOO_MANY_REQUESTS
+    ),
+    QUESTION_ALREADY_PROCESSED(
+            1093,
+            "Câu hỏi này đã được chấm điểm! Vui lòng làm mới trang (F5) để tiếp tục.",
+            HttpStatus.CONFLICT
+    ),
+    INVALID_QUESTION_ID(
+            1094,
+            "Phát hiện bất thường: ID câu hỏi không hợp lệ!",
+            HttpStatus.BAD_REQUEST
+    ),
+    QUESTION_NOT_FOUND_OR_CACHE_EXPIRED(
+            1095,
+            "Câu hỏi không tồn tại hoặc Cache đã bị xóa!",
+            HttpStatus.NOT_FOUND
+    ),
     ;
 
 
