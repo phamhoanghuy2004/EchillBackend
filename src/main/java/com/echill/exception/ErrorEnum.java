@@ -145,6 +145,11 @@ public enum ErrorEnum implements ErrorCode {
             "Câu hỏi không tồn tại hoặc Cache đã bị xóa!",
             HttpStatus.NOT_FOUND
     ),
+    CANNOT_GET_AI_RESPONSE(
+            1096,
+            "Không thể lấy phản hồi từ AI, vui lòng thử lại sau!",
+            HttpStatus.INTERNAL_SERVER_ERROR
+    ),
     ;
 
 
