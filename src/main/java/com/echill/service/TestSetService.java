@@ -10,6 +10,8 @@ import com.echill.entity.TestResult;
 import com.echill.entity.TestSet;
 import com.echill.entity.User;
 import com.echill.entity.enums.TestType;
+import com.echill.event.CourseUpdatedEvent;
+import com.echill.event.LessonUpdatedEvent;
 import com.echill.event.TestSetUpdatedEvent;
 import com.echill.exception.AppException;
 import com.echill.exception.ErrorEnum;
@@ -81,7 +83,16 @@ public class TestSetService {
             testSet.setLesson(lesson);
         }
 
-        return testSetMapper.toResponse(testSetRepository.save(testSet));
+        TestSet savedTestSet = testSetRepository.save(testSet);
+
+        if (savedTestSet.getLesson() != null) {
+            eventPublisher.publishEvent(new LessonUpdatedEvent(savedTestSet.getLesson().getId()));
+            if (savedTestSet.getLesson().getCourse() != null) {
+                eventPublisher.publishEvent(new CourseUpdatedEvent(savedTestSet.getLesson().getCourse().getId()));
+            }
+        }
+
+        return testSetMapper.toResponse(savedTestSet);
     }
 
     public TestSetResponse getTestSetByLessonId(Long lessonId) {
@@ -121,6 +132,13 @@ public class TestSetService {
         TestSet savedTestSet = testSetRepository.save(testSet);
 
         eventPublisher.publishEvent(new TestSetUpdatedEvent(savedTestSet.getId()));
+
+        if (savedTestSet.getLesson() != null) {
+            eventPublisher.publishEvent(new LessonUpdatedEvent(savedTestSet.getLesson().getId()));
+            if (savedTestSet.getLesson().getCourse() != null) {
+                eventPublisher.publishEvent(new CourseUpdatedEvent(savedTestSet.getLesson().getCourse().getId()));
+            }
+        }
 
         return testSetMapper.toResponse(savedTestSet);
     }

@@ -675,4 +675,105 @@ public class TestService {
                 .userAnswers(rawAnswers)
                 .build();
     }
+
+    public com.echill.dto.response.DocumentChatResponse chatWithQuestion(Long questionId, String userQuestion) {
+        Question question = questionRepository.findByIdForChat(questionId)
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.QUESTION_NOT_FOUND));
+
+        Test test = question.getSection().getTest();
+        List<String> sources = new ArrayList<>();
+
+        if (TestType.PRACTICE.equals(test.getType())) {
+            Lesson lesson = test.getTestSet().getLesson();
+            if (lesson != null && lesson.getDocuments() != null && !lesson.getDocuments().isEmpty()) {
+                for (Document doc : lesson.getDocuments()) {
+                    String cleanTitle = doc.getTitle().replaceAll("[\\\\/:*?\"<>|]", "_");
+                    if (!cleanTitle.toLowerCase().endsWith(".pdf")) {
+                        cleanTitle += ".pdf";
+                    }
+                    sources.add(cleanTitle);
+                }
+            } else {
+                sources.add("tonghopkienthuc.pdf");
+            }
+        } else {
+            sources.add("tonghopkienthuc.pdf");
+        }
+
+        StringBuilder contextBuilder = new StringBuilder();
+        contextBuilder.append("Nội dung câu hỏi: ").append(question.getContent()).append("\n");
+        if (question.getAnswers() != null && !question.getAnswers().isEmpty()) {
+            contextBuilder.append("Các đáp án:\n");
+            char optionLabel = 'A';
+            for (Answer ans : question.getAnswers()) {
+                contextBuilder.append(optionLabel++).append(") ").append(ans.getContent())
+                        .append(Boolean.TRUE.equals(ans.getIsCorrect()) ? " (Đúng)" : "").append("\n");
+            }
+        }
+        if (question.getExplanation() != null && !question.getExplanation().isBlank()) {
+            // Loại bỏ HTML tags để không làm rối AI
+            String plainExplanation = question.getExplanation().replaceAll("<[^>]*>", "");
+            contextBuilder.append("Giải thích hiện tại: ").append(plainExplanation).append("\n");
+        }
+        if (question.getTag() != null) {
+            contextBuilder.append("Chủ đề/Tag: ").append(question.getTag().getName()).append("\n");
+        }
+
+        String fullPrompt = String.format("Context Question:\n%s\nUser Ask: %s", contextBuilder.toString(), userQuestion);
+
+        String token = generateRAGChatbotToken();
+        String chatUrl = "http://127.0.0.1:8000/api/chat/";
+        org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("question", fullPrompt);
+        body.put("source", sources);
+        body.put("model", "llama-3.1-8b-instant");
+
+        byte[] jsonBytes;
+        try {
+            jsonBytes = objectMapper.writeValueAsBytes(body);
+        } catch (Exception e) {
+            throw new AppException(ErrorEnum.UNCATEGORIZED);
+        }
+
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        org.springframework.http.HttpEntity<byte[]> entity = new org.springframework.http.HttpEntity<>(jsonBytes, headers);
+
+        try {
+            org.springframework.http.ResponseEntity<Map> responseEntity = restTemplate.exchange(
+                    chatUrl,
+                    org.springframework.http.HttpMethod.POST,
+                    entity,
+                    Map.class
+            );
+
+            if (responseEntity.getStatusCode().is2xxSuccessful() && responseEntity.getBody() != null) {
+                Map<String, Object> respBody = responseEntity.getBody();
+                String aiAnswer = (String) respBody.get("answer");
+                return com.echill.dto.response.DocumentChatResponse.builder()
+                        .answer(aiAnswer)
+                        .build();
+            } else {
+                throw new AppException(ErrorEnum.UNCATEGORIZED, "Lỗi từ RAG Backend");
+            }
+        } catch (Exception e) {
+            log.error("Error calling RAG chatbot: ", e);
+            throw new AppException(ErrorEnum.UNCATEGORIZED, "Không thể kết nối đến máy chủ AI.");
+        }
+    }
+
+    private String generateRAGChatbotToken() {
+        try {
+            String encodedId = "QWERTYUIOPASDFGHJKLZXCVBNM0123456789";
+            String rawString = encodedId + "|" + System.currentTimeMillis();
+            return Base64.getEncoder().encodeToString(rawString.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            log.error("Token generation failed", e);
+            return "";
+        }
+    }
 }

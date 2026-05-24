@@ -21,6 +21,16 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             "WHERE q.id = :questionId")
     Optional<Question> findByIdWithFullRelations(@Param("questionId") Long questionId);
 
+    @Query("SELECT q FROM Question q " +
+            "JOIN FETCH q.section s " +
+            "JOIN FETCH s.test t " +
+            "JOIN FETCH t.testSet ts " +
+            "LEFT JOIN FETCH ts.lesson l " +
+            "LEFT JOIN FETCH q.answers " +
+            "LEFT JOIN FETCH q.tag " +
+            "WHERE q.id = :questionId")
+    Optional<Question> findByIdForChat(@Param("questionId") Long questionId);
+
     @Query("SELECT q FROM Question q WHERE q.section.test.id = :testId")
     List<Question> findByTestId(@Param("testId") Long testId);
 

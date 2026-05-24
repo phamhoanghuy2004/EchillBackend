@@ -129,7 +129,7 @@ public class DocumentService {
 
         java.util.Map<String, Object> body = new java.util.HashMap<>();
         body.put("question", question);
-        body.put("source", cleanTitle);
+        body.put("source", java.util.List.of(cleanTitle));
         body.put("model", "llama-3.1-8b-instant");
 
         byte[] jsonBytes;

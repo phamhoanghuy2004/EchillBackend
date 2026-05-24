@@ -150,6 +150,7 @@ public enum ErrorEnum implements ErrorCode {
             "Không thể lấy phản hồi từ AI, vui lòng thử lại sau!",
             HttpStatus.INTERNAL_SERVER_ERROR
     ),
+    INVALID_DATA(1097,"Câu hỏi không được để trống", HttpStatus.BAD_REQUEST)
     ;
 
 

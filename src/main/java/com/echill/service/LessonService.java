@@ -4,6 +4,7 @@ import com.echill.dto.request.LessonCreationRequest;
 import com.echill.dto.response.LessonResponse;
 import com.echill.entity.Course;
 import com.echill.entity.Lesson;
+import com.echill.entity.Document;
 import com.echill.entity.Tag;
 import com.echill.event.CourseUpdatedEvent;
 import com.echill.event.LessonUpdatedEvent;
@@ -164,5 +165,91 @@ public class LessonService {
         eventPublisher.publishEvent(new CourseUpdatedEvent(courseId));
     }
 
+    public com.echill.dto.response.DocumentChatResponse chatWithLesson(Long lessonId, String question) {
+        Lesson lesson = lessonRepository.findByIdWithCourseAndTeacherAndDocuments(lessonId)
+                .orElseThrow(() -> new AppException(ErrorEnum.LESSON_NOT_FOUND));
+
+        java.util.Set<Document> documents = lesson.getDocuments();
+        if (documents == null || documents.isEmpty()) {
+            return com.echill.dto.response.DocumentChatResponse.builder()
+                    .answer("Bài học này hiện tại chưa có tài liệu nào để AI có thể tham khảo.")
+                    .build();
+        }
+
+        List<String> sources = new java.util.ArrayList<>();
+        for (Document doc : documents) {
+            String cleanTitle = doc.getTitle().replaceAll("[\\\\/:*?\"<>|]", "_");
+            if (!cleanTitle.toLowerCase().endsWith(".pdf")) {
+                cleanTitle += ".pdf";
+            }
+            sources.add(cleanTitle);
+        }
+
+        String token = generateRAGChatbotToken();
+        String chatUrl = "http://127.0.0.1:8000/api/chat/";
+        org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+
+        java.util.Map<String, Object> body = new java.util.HashMap<>();
+        body.put("question", question);
+        body.put("source", sources);
+        body.put("model", "llama-3.1-8b-instant");
+
+        byte[] jsonBytes;
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            jsonBytes = objectMapper.writeValueAsBytes(body);
+        } catch (Exception e) {
+            log.error("Lỗi khi serialize body cho RAG Chatbot: {}", e.getMessage(), e);
+            throw new AppException(ErrorEnum.CANNOT_GET_AI_RESPONSE);
+        }
+
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        headers.setContentLength(jsonBytes.length);
+        headers.add("Cookie", "access_token=" + token);
+
+        org.springframework.http.HttpEntity<byte[]> entity = new org.springframework.http.HttpEntity<>(jsonBytes, headers);
+
+        try {
+            java.util.Map responseMap = restTemplate.postForObject(chatUrl, entity, java.util.Map.class);
+            if (responseMap == null || !responseMap.containsKey("answer")) {
+                throw new AppException(ErrorEnum.CANNOT_GET_AI_RESPONSE);
+            }
+            String answer = (String) responseMap.get("answer");
+            return com.echill.dto.response.DocumentChatResponse.builder()
+                    .answer(answer)
+                    .build();
+        } catch (Exception e) {
+            log.error("Lỗi khi kết nối với RAG Chatbot: {}", e.getMessage(), e);
+            throw new AppException(ErrorEnum.CANNOT_GET_AI_RESPONSE);
+        }
+    }
+
+    private String generateRAGChatbotToken() {
+        try {
+            String signerKey = "Pb6zWmUnYq0Wk6O00k5yiQEb+U6PIY+6B1zmH84HMsLPApdlwj0sc3jecsI/Bu88";
+            byte[] sharedKey = signerKey.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            com.nimbusds.jose.JWSSigner signer = new com.nimbusds.jose.crypto.MACSigner(sharedKey);
+            
+            com.nimbusds.jose.JWSHeader header = new com.nimbusds.jose.JWSHeader(com.nimbusds.jose.JWSAlgorithm.HS256);
+            
+            com.nimbusds.jwt.JWTClaimsSet claimsSet = new com.nimbusds.jwt.JWTClaimsSet.Builder()
+                    .claim("user_id", 1)
+                    .claim("roles", java.util.List.of("admin"))
+                    .claim("user_name", "Hoang Huy")
+                    .claim("type", "access")
+                    .issueTime(new java.util.Date())
+                    .expirationTime(java.util.Date.from(java.time.Instant.now().plusSeconds(900))) // 15 mins
+                    .build();
+            
+            com.nimbusds.jose.Payload payload = new com.nimbusds.jose.Payload(claimsSet.toJSONObject());
+            com.nimbusds.jose.JWSObject jwsObject = new com.nimbusds.jose.JWSObject(header, payload);
+            
+            jwsObject.sign(signer);
+            return jwsObject.serialize();
+        } catch (Exception e) {
+            throw new RuntimeException("Không thể tạo JWT cho RAG Chatbot: " + e.getMessage(), e);
+        }
+    }
 
 }
