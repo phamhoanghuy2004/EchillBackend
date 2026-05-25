@@ -105,29 +105,24 @@ public class StudentService {
     public void updateOverallStudentLevel(Long userId, boolean isPlacementTestFinished) {
         log.info("Bắt đầu tính toán Level Tổng cho User {}", userId);
 
-        List<UserSkillProfile> parentProfiles = userSkillProfileRepository.findParentProfilesByUserIdAndTagGroup(userId, TagGroup.ENGLISH_TOEIC);
-        if (parentProfiles.isEmpty()) return;
+        List<UserSkillProfile> childProfiles = userSkillProfileRepository.findChildProfilesByUserIdAndTagGroup(userId, TagGroup.ENGLISH_TOEIC);
 
-        int totalCurrentLevel = 0;
-        int totalMaxLevel = 0;
+        if (childProfiles.isEmpty()) return;
 
-        for (UserSkillProfile p : parentProfiles) {
-            totalCurrentLevel += p.getCurrentLevel();
-            totalMaxLevel += p.getTag().getMaxLevel();
+        int minLevelAmongAllSkills = 5;
+        for (UserSkillProfile p : childProfiles) {
+            if (p.getCurrentLevel() < minLevelAmongAllSkills) {
+                minLevelAmongAllSkills = p.getCurrentLevel();
+            }
         }
 
-        if (totalMaxLevel == 0) return;
-
-        // 2. Tính Tỷ lệ thông thạo tổng thể (Mastery Ratio)
-        double ratio = (double) totalCurrentLevel / totalMaxLevel;
-
         Level newOverallLevel;
-        if (ratio <= 0.33) {
-            newOverallLevel = Level.BEGINNER;
-        } else if (ratio <= 0.66) {
+        if (minLevelAmongAllSkills >= 5) {
+            newOverallLevel = Level.ADVANCED;
+        } else if (minLevelAmongAllSkills >= 4) {
             newOverallLevel = Level.INTERMEDIATE;
         } else {
-            newOverallLevel = Level.ADVANCED;
+            newOverallLevel = Level.BEGINNER;
         }
 
         StudentProfile profile = studentProfileRepository.findById(userId)
@@ -140,7 +135,7 @@ public class StudentService {
         if (profile.getLevel() != newOverallLevel) {
             profile.setLevel(newOverallLevel);
             isUpdated = true;
-            log.info("🎉 User {} đã thăng cấp thành {}", userId, newOverallLevel);
+            log.info("🎉 User {} đã thăng cấp thành {} do lấp đầy toàn bộ móng!", userId, newOverallLevel);
         }
 
         if (isPlacementTestFinished && !profile.isPlacementTestCompleted()) {

@@ -205,16 +205,6 @@ public class EnrollmentService {
             throw new AppException(StudentErrorEnum.COURSE_LOCKED);
         }
 
-        boolean hasUncompleted = lessonRepository.existsUncompletedPreviousLessons(
-                lesson.getCourse().getId(),
-                enrollment.getId(),
-                lesson.getDisplayOrder()
-        );
-
-        if (hasUncompleted) {
-            throw new AppException(StudentErrorEnum.PREVIOUS_LESSON_NOT_COMPLETED);
-        }
-
         enrollment.recordAccess();
 
         try {

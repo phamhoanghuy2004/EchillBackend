@@ -54,4 +54,23 @@ public class DocumentController {
                 .data(documentService.getDocumentsByLessonId(lessonId))
                 .build();
     }
+
+    @GetMapping("/documents/{documentId}")
+    public ApiResponse<DocumentResponse> getDocumentDetail(@PathVariable Long documentId) {
+        return ApiResponse.<DocumentResponse>builder()
+                .message("Lấy thông tin tài liệu thành công!")
+                .data(documentService.getDocumentDetail(documentId))
+                .build();
+    }
+
+    @PostMapping("/documents/{documentId}/chat")
+    public ApiResponse<com.echill.dto.response.DocumentChatResponse> chatWithDocument(
+            @PathVariable Long documentId,
+            @jakarta.validation.Valid @RequestBody com.echill.dto.request.DocumentChatRequest request) {
+        return ApiResponse.<com.echill.dto.response.DocumentChatResponse>builder()
+                .message("Phản hồi từ AI")
+                .data(documentService.chatWithDocument(documentId, request.getQuestion()))
+                .build();
+    }
+
 }

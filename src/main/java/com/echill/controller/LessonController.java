@@ -162,4 +162,14 @@ public class LessonController {
                 .data(completedCount)
                 .build();
     }
+
+    @PostMapping("/{lessonId}/chat")
+    public ApiResponse<com.echill.dto.response.DocumentChatResponse> chatWithLesson(
+            @PathVariable Long lessonId,
+            @jakarta.validation.Valid @RequestBody com.echill.dto.request.DocumentChatRequest request) {
+        return ApiResponse.<com.echill.dto.response.DocumentChatResponse>builder()
+                .message("Phản hồi từ AI")
+                .data(lessonService.chatWithLesson(lessonId, request.getQuestion()))
+                .build();
+    }
 }

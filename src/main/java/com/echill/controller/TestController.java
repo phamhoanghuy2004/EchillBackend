@@ -132,4 +132,21 @@ public class TestController {
                 .message("Lấy cấu trúc bài thi thành công!")
                 .build();
     }
+
+    @PostMapping("/questions/{questionId}/chat")
+    @PreAuthorize("hasAnyRole('STUDENT', 'TEACHER', 'ADMIN')")
+    public ApiResponse<DocumentChatResponse> chatWithQuestion(
+            @PathVariable Long questionId,
+            @RequestBody java.util.Map<String, String> requestBody) {
+        
+        String question = requestBody.get("question");
+        if (question == null || question.isBlank()) {
+            throw new com.echill.exception.AppException(com.echill.exception.ErrorEnum.INVALID_DATA, "Câu hỏi không được để trống!");
+        }
+        
+        return ApiResponse.<DocumentChatResponse>builder()
+                .message("Phản hồi từ AI thành công!")
+                .data(testService.chatWithQuestion(questionId, question))
+                .build();
+    }
 }

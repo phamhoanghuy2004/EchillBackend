@@ -71,7 +71,7 @@ public class Lesson extends BaseEntity {
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
     @BatchSize(size = 50)
     @Builder.Default
-    List<Document> documents = new ArrayList<>();
+    Set<Document> documents = new HashSet<>();
 
     @OneToOne(mappedBy = "lesson", cascade = CascadeType.ALL)
     TestSet testSet;

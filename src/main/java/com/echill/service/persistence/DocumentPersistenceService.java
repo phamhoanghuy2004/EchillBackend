@@ -61,11 +61,15 @@ public class DocumentPersistenceService {
         eventPublisher.publishEvent(new CourseUpdatedEvent(courseId));
         eventPublisher.publishEvent(new LessonUpdatedEvent(lessonId));
 
+        if (fileType == FileType.PDF) {
+            eventPublisher.publishEvent(new com.echill.event.DocumentUploadedEvent(fileUrl, title));
+        }
+
         return document;
     }
 
     @Transactional
-    public void deleteDocument(Document document, Long courseId) {
+    public void deleteDocument(Document document, Long courseId, Long lessonId) {
 
         // 💥 Xóa trực tiếp entity Document ra khỏi Database.
         // Lệnh này sẽ sinh ra đúng 1 câu: DELETE FROM document WHERE id = ?
@@ -74,5 +78,8 @@ public class DocumentPersistenceService {
         log.info("Đã xóa vĩnh viễn tài liệu ID: {} khỏi Database. File trên Cloudinary sẽ được Cron Job dọn dẹp sau.", document.getId());
 
         eventPublisher.publishEvent(new CourseUpdatedEvent(courseId));
+
+        // 🟢 BẮN SỰ KIỆN CẬP NHẬT BÀI HỌC ĐỂ XÓA CACHE
+        eventPublisher.publishEvent(new LessonUpdatedEvent(lessonId));
     }
 }
