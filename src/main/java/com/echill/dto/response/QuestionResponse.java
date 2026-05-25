@@ -24,6 +24,7 @@ public class QuestionResponse {
     Long tagId;
     String tagName;
     Integer orderIndex;
+    Integer difficultyLevel;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     Long groupId;

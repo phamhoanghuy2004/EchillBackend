@@ -66,6 +66,10 @@ public class TestSetService {
         TestSet testSet = testSetMapper.toEntity(request);
         testSet.setUser(user);
 
+        if (testSet.getType() == null) {
+            testSet.setType(TestType.TOEIC);
+        }
+
         if (testSet.getIsPublic() == null) {
             testSet.setIsPublic(true);
         }

@@ -50,6 +50,7 @@ public class ToeicExcelParser {
     private static final int COL_EXPLANATION     = 9;
     private static final int COL_PASSAGE_CONTENT = 10;
     private static final int COL_TAG             = 11;
+    private static final int COL_DIFFICULTY      = 12;
 
     public List<ToeicExcelRowDto> parse(MultipartFile file) {
         List<ToeicExcelRowDto> rows = new ArrayList<>();
@@ -104,11 +105,12 @@ public class ToeicExcelParser {
         String explanation      = getCellValue(row, COL_EXPLANATION);
         String passageContent   = getCellValue(row, COL_PASSAGE_CONTENT);
         String tag              = getCellValue(row, COL_TAG);
+        String difficultyStr    = getCellValue(row, COL_DIFFICULTY);
 
-        // Validate required fields
+        // Validate required fields (optionD is optional for Placement Test/TOEIC Part 2)
         if (isEmpty(partStr) || isEmpty(questionNoStr) || isEmpty(questionContent)
                 || isEmpty(optionA) || isEmpty(optionB) || isEmpty(optionC)
-                || isEmpty(optionD) || isEmpty(correctAnswer)) {
+                || isEmpty(correctAnswer)) {
             log.error("TOEIC Excel: Missing required field at row {}", rowNum);
             throw new AppException(TeacherErrorEnum.INVALID_EXCEL_FORMAT);
         }
@@ -118,11 +120,6 @@ public class ToeicExcelParser {
             part = (int) Double.parseDouble(partStr.trim());
         } catch (NumberFormatException e) {
             log.error("TOEIC Excel: Invalid part number '{}' at row {}", partStr, rowNum);
-            throw new AppException(TeacherErrorEnum.INVALID_EXCEL_FORMAT);
-        }
-
-        if (part < 1 || part > 7) {
-            log.error("TOEIC Excel: Part must be 1–7 at row {}", rowNum);
             throw new AppException(TeacherErrorEnum.INVALID_EXCEL_FORMAT);
         }
 
@@ -140,6 +137,21 @@ public class ToeicExcelParser {
             throw new AppException(TeacherErrorEnum.INVALID_CORRECT_ANSWER);
         }
 
+        Integer difficulty = null;
+        if (!isEmpty(difficultyStr)) {
+            try {
+                double val = Double.parseDouble(difficultyStr.trim());
+                difficulty = (int) val;
+                if (difficulty < 1 || difficulty > 5 || val != difficulty) {
+                    log.error("TOEIC Excel: Invalid difficulty level '{}' (must be integer 1-5) at row {}", difficultyStr, rowNum);
+                    throw new AppException(TeacherErrorEnum.INVALID_EXCEL_FORMAT, "Difficulty must be between 1 and 5 at row " + rowNum);
+                }
+            } catch (NumberFormatException e) {
+                log.error("TOEIC Excel: Invalid difficulty number '{}' at row {}", difficultyStr, rowNum);
+                throw new AppException(TeacherErrorEnum.INVALID_EXCEL_FORMAT, "Difficulty must be a number at row " + rowNum);
+            }
+        }
+
         return ToeicExcelRowDto.builder()
                 .rowNumber(rowNum)
                 .part(part)
@@ -149,11 +161,12 @@ public class ToeicExcelParser {
                 .optionA(optionA.trim())
                 .optionB(optionB.trim())
                 .optionC(optionC.trim())
-                .optionD(optionD.trim())
+                .optionD(isEmpty(optionD) ? null : optionD.trim())
                 .correctAnswer(normalizedCorrect)
                 .explanation(isEmpty(explanation) ? "" : explanation.trim())
                 .passageContent(isEmpty(passageContent) ? null : passageContent.trim())
                 .tag(isEmpty(tag) ? null : tag.trim())
+                .difficulty(difficulty)
                 .build();
     }
 
