@@ -67,4 +67,25 @@ public interface UserSkillProfileRepository extends JpaRepository<UserSkillProfi
     // 2. Kéo TẤT CẢ Profile Cha hiện có để update
     @Query("SELECT p FROM UserSkillProfile p JOIN FETCH p.tag t WHERE p.user.id = :userId AND t.id IN :parentTagIds")
     List<UserSkillProfile> findParentProfilesByIds(@Param("userId") Long userId, @Param("parentTagIds") Set<Long> parentTagIds);
+
+    // ===== ADAPTIVE LEARNING =====
+
+    /**
+     * Quét lỗ hổng kiến thức: Lấy các Tag Con có currentLevel < targetLevel,
+     * sắp xếp theo minLevel ASC (nền tảng trước), currentLevel ASC (yếu nhất trước).
+     * JOIN FETCH tag + parent trong 1 query để tránh N+1.
+     */
+    @Query("SELECT p FROM UserSkillProfile p " +
+            "JOIN FETCH p.tag t " +
+            "LEFT JOIN FETCH t.parent " +
+            "WHERE p.user.id = :userId " +
+            "AND t.parent IS NOT NULL " +
+            "AND p.currentLevel < :targetLevel " +
+            "ORDER BY t.minLevel ASC, p.currentLevel ASC")
+    List<UserSkillProfile> findKnowledgeGaps(
+            @Param("userId") Long userId,
+            @Param("targetLevel") int targetLevel
+    );
+
+    boolean existsByUserId(Long userId);
 }

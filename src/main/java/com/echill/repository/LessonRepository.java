@@ -91,4 +91,25 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
         WHERE l.id = :lessonId
     """)
     Optional<Lesson> findLessonWithDetailsById(@Param("lessonId") Long lessonId);
+
+    // ===== ADAPTIVE LEARNING =====
+
+    /**
+     * Tìm bài học gắn Tag cụ thể trong các khóa học mà user ĐÃ MUA (Enrollment ACTIVE).
+     * 1 query duy nhất join lesson_tags → lessons → courses → enrollments.
+     */
+    @Query("""
+        SELECT l FROM Lesson l
+        JOIN l.tags t
+        JOIN l.course c
+        JOIN Enrollment e ON e.course = c 
+            AND e.student.id = :userId 
+            AND e.enrollmentStatus = com.echill.entity.enums.EnrollmentStatus.ACTIVE
+        WHERE t.id = :tagId
+        ORDER BY l.displayOrder ASC
+    """)
+    List<Lesson> findLessonsByTagAndEnrolledUser(
+            @Param("userId") Long userId,
+            @Param("tagId") Long tagId
+    );
 }

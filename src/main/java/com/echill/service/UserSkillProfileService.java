@@ -1,10 +1,12 @@
 package com.echill.service;
 
 import com.echill.dto.response.SkillInsightResponse;
+import com.echill.entity.StudentProfile;
 import com.echill.entity.UserSkillProfile;
 import com.echill.entity.enums.TagGroup;
 import com.echill.exception.AppException;
 import com.echill.exception.StudentErrorEnum;
+import com.echill.repository.StudentProfileRepository;
 import com.echill.repository.UserSkillProfileRepository;
 import com.echill.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -21,6 +24,7 @@ import java.util.stream.Collectors;
 public class UserSkillProfileService {
 
     private final UserSkillProfileRepository profileRepository;
+    private final StudentProfileRepository studentProfileRepository;
 
     @Transactional(readOnly = true)
     public SkillInsightResponse getSkillInsightsByGroup(TagGroup tagGroup) {
@@ -108,5 +112,72 @@ public class UserSkillProfileService {
         }
 
         return remark.toString().trim();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SkillInsightResponse.SkillDetail> getChildSkillInsights(Long parentTagId) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        List<UserSkillProfile> childProfiles = profileRepository.findAllByUserIdAndTagParentId(userId, parentTagId);
+
+        return childProfiles.stream()
+                .map(p -> {
+                    double percentageScore = 0.0;
+                    if (p.getTag().getMaxLevel() != null && p.getTag().getMaxLevel() > 0) {
+                        percentageScore = ((double) p.getCurrentLevel() / p.getTag().getMaxLevel()) * 100.0;
+                    }
+                    return SkillInsightResponse.SkillDetail.builder()
+                            .tagId(p.getTag().getId())
+                            .tagName(p.getTag().getName())
+                            .score(Math.round(percentageScore * 100.0) / 100.0)
+                            .masteryLevel(p.getMasteryLevel().name())
+                            .build();
+                })
+                .toList();
+    }
+
+    // ===== ADAPTIVE LEARNING (Bước 1-3) =====
+
+    /**
+     * Tìm Tag lỗ hổng ưu tiên nhất của user.
+     * Bước 1: Xác định Target Level từ StudentProfile.
+     * Bước 2: Quét các Tag Con có currentLevel < targetLevel.
+     * Bước 3: DB đã sort theo minLevel ASC, currentLevel ASC → lấy phần tử đầu.
+     *
+     * @return Optional<UserSkillProfile> - Tag con có lỗ hổng ưu tiên nhất
+     */
+    @Transactional(readOnly = true)
+    public Optional<UserSkillProfile> findTopKnowledgeGap(Long userId) {
+        // Bước 1: Lấy Level từ StudentProfile → xác định targetLevel
+        StudentProfile sp = studentProfileRepository.findByUserId(userId)
+                .orElse(null);
+        if (sp == null) return Optional.empty();
+
+        int targetLevel = switch (sp.getLevel()) {
+            case BEGINNER -> 3;
+            case INTERMEDIATE -> 4;
+            case ADVANCED -> 5;
+            default -> 3; // UNDETERMINED → dùng mức thấp nhất
+        };
+
+        // Bước 2-3: 1 query duy nhất, DB sort sẵn, lấy phần tử đầu
+        List<UserSkillProfile> gaps = profileRepository.findKnowledgeGaps(userId, targetLevel);
+
+        return gaps.stream().findFirst();
+    }
+
+    /**
+     * Tính Target Level cho user dựa trên StudentProfile.
+     */
+    public int getTargetLevel(Long userId) {
+        StudentProfile sp = studentProfileRepository.findByUserId(userId)
+                .orElse(null);
+        if (sp == null) return 3;
+
+        return switch (sp.getLevel()) {
+            case BEGINNER -> 3;
+            case INTERMEDIATE -> 4;
+            case ADVANCED -> 5;
+            default -> 3;
+        };
     }
 }

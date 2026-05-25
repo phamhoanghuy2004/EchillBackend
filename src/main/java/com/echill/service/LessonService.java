@@ -18,6 +18,7 @@ import com.echill.repository.TagRepository;
 import com.echill.util.SecurityUtils;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -250,6 +251,22 @@ public class LessonService {
         } catch (Exception e) {
             throw new RuntimeException("Không thể tạo JWT cho RAG Chatbot: " + e.getMessage(), e);
         }
+    }
+
+    // ===== ADAPTIVE LEARNING (Bước 4) =====
+
+    /**
+     * Tìm bài học (trong khóa đã mua) dạy về Tag bị hổng.
+     * Query 1 lần duy nhất join lesson_tags → lessons → courses → enrollments.
+     *
+     * @param userId ID của học viên
+     * @param tagId  ID của Tag bị hổng
+     * @return Optional<Lesson> - Bài học phù hợp nhất (theo displayOrder)
+     */
+    @Transactional(readOnly = true)
+    public Optional<Lesson> findLessonForGapTag(Long userId, Long tagId) {
+        List<Lesson> lessons = lessonRepository.findLessonsByTagAndEnrolledUser(userId, tagId);
+        return lessons.stream().findFirst();
     }
 
 }
