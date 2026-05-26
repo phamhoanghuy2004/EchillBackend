@@ -287,6 +287,28 @@ public class TestService {
         return questionMapper.toResponse(questionRepository.save(question));
     }
 
+    @Transactional(readOnly = true)
+    public TestPracticeResponse resumePracticeSession(TestSession activeSession) {
+        TestPracticeResponse clientResponse = parseSnapshotSafe(activeSession);
+        return finalizeClientResponse(activeSession, clientResponse);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public TestPracticeResponse startPracticeSession(Long userId, Long testSetId, Long testId,
+                                                     TestPracticeResponse preparedResponse) {
+        TestPracticeResponse safeResponse = testPracticeMapper.clonePracticeResponse(preparedResponse);
+        TestSession session;
+        try {
+            session = self.createSessionAndProcessAccess(userId, testSetId, testId, safeResponse);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("Race condition when starting practice session for user {}", userId);
+            session = getActiveSession(userId, testSetId)
+                    .orElseThrow(() -> new AppException(ErrorEnum.UNCATEGORIZED));
+            safeResponse = parseSnapshotSafe(session);
+        }
+        return finalizeClientResponse(session, safeResponse);
+    }
+
     public TestPracticeResponse getRandomTestForPractice(Long testSetId) {
         return processTestPractice(testSetId, null, null);
     }
