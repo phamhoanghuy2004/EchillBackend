@@ -29,4 +29,13 @@ public interface TestRepository extends JpaRepository<Test, Long> {
 
     @Query("SELECT t FROM Test t JOIN FETCH t.testSet WHERE t.id = :testId")
     Optional<Test> findByIdWithTestSet(@Param("testId") Long testId);
+
+    @Query("SELECT DISTINCT t FROM Test t " +
+            "JOIN FETCH t.testSet ts " +
+            "JOIN FETCH t.sections s " +
+            "LEFT JOIN FETCH s.questions q " +
+            "LEFT JOIN FETCH q.tag " +
+            "LEFT JOIN FETCH q.questionGroup " +
+            "WHERE t.id = :testId")
+    Optional<Test> findByIdWithSectionsAndQuestions(@Param("testId") Long testId);
 }

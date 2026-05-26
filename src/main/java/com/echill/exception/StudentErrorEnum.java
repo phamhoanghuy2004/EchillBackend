@@ -40,6 +40,9 @@ public enum StudentErrorEnum implements ErrorCode {
     SKILL_PROFILE_NOT_FOUND(1067, "Skill profile not found", HttpStatus.NOT_FOUND),
     HAS_ACTIVE_SESSION_OTHER_TEST(1068, "Has active session other test", HttpStatus.BAD_REQUEST),
     NOT_ENOUGH_COIN(1069, "Not enough coin", HttpStatus.BAD_REQUEST),
+    PERSONALIZED_TEST_GENERATION_FAILED(1070, "Failed to generate personalized practice test", HttpStatus.INTERNAL_SERVER_ERROR),
+    NO_SKILL_DATA_FOR_PERSONALIZED(1071, "No skill profile data available for personalized test", HttpStatus.BAD_REQUEST),
+    GEMINI_QUOTA_EXCEEDED(1072, "Gemini API quota exceeded. Please retry later or check your API plan", HttpStatus.TOO_MANY_REQUESTS),
     ;
 
     Integer code;

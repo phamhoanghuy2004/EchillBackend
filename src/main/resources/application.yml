@@ -52,6 +52,14 @@ spring:
   # ===============================
   # EMAIL CONFIGURATION (Gmail SMTP)
   # ===============================
+  ai:
+    google:
+      genai:
+        api-key: AIzaSyB3vGJ3E1WDL3VT_I5nsqsXsk1DWGclT9o
+        chat:
+          options:
+            model: ${GEMINI_MODEL:gemini-2.5-flash}
+
   mail:
     host: smtp.gmail.com
     port: 587

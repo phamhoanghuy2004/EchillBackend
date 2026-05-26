@@ -1,6 +1,7 @@
 package com.echill.repository;
 
 import com.echill.entity.Question;
+import com.echill.entity.enums.SkillType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -55,4 +56,38 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             "JOIN s.test test " +
             "WHERE test.type = 'PLACEMENT_TEST'")
     List<Question> findAllPlacementTestQuestions();
+
+    @Query("SELECT DISTINCT q FROM Question q " +
+            "JOIN FETCH q.answers " +
+            "LEFT JOIN FETCH q.questionGroup " +
+            "WHERE q.tag.id = :tagId " +
+            "AND q.skillType = :skillType " +
+            "AND q.difficultyLevel = :difficulty")
+    List<Question> findListeningQuestionsByTagAndDifficulty(
+            @Param("tagId") Long tagId,
+            @Param("skillType") SkillType skillType,
+            @Param("difficulty") Integer difficulty);
+
+    @Query("SELECT DISTINCT q FROM Question q " +
+            "JOIN FETCH q.answers " +
+            "LEFT JOIN FETCH q.questionGroup " +
+            "WHERE q.tag.id = :tagId " +
+            "AND q.skillType = :skillType")
+    List<Question> findListeningQuestionsByTag(
+            @Param("tagId") Long tagId,
+            @Param("skillType") SkillType skillType);
+
+    boolean existsByTagIdAndSkillType(Long tagId, SkillType skillType);
+
+    @Query("SELECT DISTINCT q FROM Question q " +
+            "JOIN FETCH q.answers " +
+            "LEFT JOIN FETCH q.questionGroup " +
+            "WHERE q.id = :questionId")
+    Optional<Question> findByIdForClone(@Param("questionId") Long questionId);
+
+    @Query("SELECT q FROM Question q WHERE q.questionGroup.id = :groupId ORDER BY q.orderIndex ASC")
+    List<Question> findByQuestionGroupIdOrderByOrderIndex(@Param("groupId") Long groupId);
+
+    @Query("SELECT DISTINCT q FROM Question q JOIN FETCH q.answers WHERE q.id IN :questionIds")
+    List<Question> findByIdsWithAnswers(@Param("questionIds") List<Long> questionIds);
 }

@@ -40,4 +40,6 @@ public interface TestSetRepository extends JpaRepository<TestSet, Long>, JpaSpec
     @Query("SELECT c.id FROM TestSet ts JOIN ts.lesson l JOIN l.course c WHERE ts.id = :testSetId")
     Optional<Long> findCourseIdByTestSetId(@Param("testSetId") Long testSetId);
 
+    Optional<TestSet> findByUserIdAndTitle(Long userId, String title);
+
 }
