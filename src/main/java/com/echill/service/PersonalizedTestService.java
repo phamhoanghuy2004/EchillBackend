@@ -43,6 +43,7 @@ public class PersonalizedTestService {
     UserRepository userRepository;
     TestPracticeMapper testPracticeMapper;
     TestSessionRepository testSessionRepository;
+    UserSkillProfileService profileService;
 
     ChatClient.Builder chatClientBuilder;
 
@@ -58,12 +59,9 @@ public class PersonalizedTestService {
                 .orElseThrow(() -> new AppException(StudentErrorEnum.PROFILE_NOT_FOUND));
 
         int safetyGateLevel = resolveSafetyGateLevel(studentProfile.getLevel());
-        int gapTargetLevel = resolveGapTargetLevel(studentProfile.getLevel());
-        List<UserSkillProfile> weakTags = resolveWeakTags(userId, gapTargetLevel);
 
-        if (weakTags.isEmpty()) {
-            throw new AppException(StudentErrorEnum.NO_SKILL_DATA_FOR_PERSONALIZED);
-        }
+        UserSkillProfile weakTag = profileService.findTopKnowledgeGap(userId)
+                .orElseThrow(() -> new AppException(StudentErrorEnum.NO_SKILL_DATA_FOR_PERSONALIZED));
 
         TestSet testSet = getOrCreatePersonalizedTestSet(userId);
 
@@ -75,7 +73,7 @@ public class PersonalizedTestService {
             return testService.resumePracticeSession(activeSession.get());
         }
 
-        Test savedTest = buildAndSaveTest(testSet, weakTags, safetyGateLevel);
+        Test savedTest = buildAndSaveTest(testSet, weakTag, safetyGateLevel);
         // Dùng entity vừa build trong memory — tránh MultipleBagFetch khi reload sections+questions+answers
         TestPracticeResponse practiceResponse = testPracticeMapper.toPracticeResponse(savedTest);
         return testService.startPracticeSession(userId, testSet.getId(), savedTest.getId(), practiceResponse);
@@ -97,65 +95,6 @@ public class PersonalizedTestService {
                 });
     }
 
-    private List<UserSkillProfile> resolveWeakTags(Long userId, int gapTargetLevel) {
-        List<UserSkillProfile> gaps = profileRepository.findKnowledgeGaps(userId, gapTargetLevel);
-
-        if (gaps.isEmpty()) {
-            gaps = profileRepository.findChildProfilesByUserIdAndTagGroup(userId, TagGroup.ENGLISH_TOEIC).stream()
-                    .sorted(Comparator.comparingInt(UserSkillProfile::getCurrentLevel))
-                    .toList();
-        }
-
-        List<UserSkillProfile> selected = selectBalancedWeakTags(gaps, MAX_WEAK_TAGS);
-        log.info("Personalized test weak tags for user {}: {}",
-                userId,
-                selected.stream()
-                        .map(p -> resolveSkillCategoryName(p.getTag()) + "/" + p.getTag().getName()
-                                + "(lv" + p.getCurrentLevel() + ")")
-                        .toList());
-        return selected;
-    }
-
-    /**
-     * Tránh chỉ chọn 3 tag Listening (minLevel thấp + level 0) — luân phiên Grammar / Vocabulary / Reading / Listening.
-     */
-    private List<UserSkillProfile> selectBalancedWeakTags(List<UserSkillProfile> candidates, int maxTags) {
-        if (candidates.isEmpty()) {
-            return List.of();
-        }
-
-        Map<String, List<UserSkillProfile>> byCategory = new LinkedHashMap<>();
-        for (UserSkillProfile profile : candidates) {
-            String category = resolveSkillCategoryKey(profile.getTag());
-            byCategory.computeIfAbsent(category, k -> new ArrayList<>()).add(profile);
-        }
-
-        List<String> categoryOrder = List.of("grammar", "vocabulary", "reading", "listening", "other");
-        List<UserSkillProfile> selected = new ArrayList<>();
-        Set<Long> pickedTagIds = new HashSet<>();
-
-        for (String category : categoryOrder) {
-            if (selected.size() >= maxTags) {
-                break;
-            }
-            List<UserSkillProfile> pool = byCategory.get(category);
-            if (pool != null && !pool.isEmpty()) {
-                UserSkillProfile pick = pool.getFirst();
-                selected.add(pick);
-                pickedTagIds.add(pick.getTag().getId());
-            }
-        }
-
-        if (selected.size() < maxTags) {
-            candidates.stream()
-                    .filter(p -> !pickedTagIds.contains(p.getTag().getId()))
-                    .limit(maxTags - selected.size())
-                    .forEach(selected::add);
-        }
-
-        return selected;
-    }
-
     private String resolveSkillCategoryKey(Tag tag) {
         String name = resolveSkillCategoryName(tag).toLowerCase();
         if (name.contains("grammar") || name.contains("ngữ pháp")) {
@@ -173,14 +112,6 @@ public class PersonalizedTestService {
         return "other";
     }
 
-    private int resolveGapTargetLevel(Level level) {
-        return switch (level) {
-            case BEGINNER, UNDETERMINED -> 3;
-            case INTERMEDIATE -> 4;
-            case ADVANCED -> 5;
-        };
-    }
-
     private int resolveSafetyGateLevel(Level level) {
         return switch (level) {
             case BEGINNER, UNDETERMINED -> 2;
@@ -189,7 +120,7 @@ public class PersonalizedTestService {
         };
     }
 
-    private Test buildAndSaveTest(TestSet testSet, List<UserSkillProfile> weakTags, int safetyGateLevel) {
+    private Test buildAndSaveTest(TestSet testSet, UserSkillProfile weakTag, int safetyGateLevel) {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM HH:mm"));
         Test test = Test.builder()
                 .title("Luyện tập cá nhân hóa - " + timestamp)
@@ -202,32 +133,27 @@ public class PersonalizedTestService {
         TestSection section = TestSection.builder()
                 .title("Luyện tập theo điểm yếu")
                 .orderIndex(1)
-                .instructions("Hoàn thành 10 câu hỏi được chọn theo kỹ năng bạn cần cải thiện.")
+                .instructions("Hoàn thành " + TARGET_QUESTION_COUNT + " câu hỏi được chọn theo kỹ năng bạn cần cải thiện.")
                 .build();
         test.addSection(section);
 
-        int[] allocation = distributeQuestions(TARGET_QUESTION_COUNT, weakTags.size());
+        int questionsForTag = TARGET_QUESTION_COUNT;
         Set<Long> usedSourceQuestionIds = new HashSet<>();
         int orderIndex = 1;
         boolean geminiQuotaExceeded = false;
+        Tag tag = weakTag.getTag();
 
-        for (int i = 0; i < weakTags.size(); i++) {
-            UserSkillProfile profile = weakTags.get(i);
-            int questionsForTag = allocation[i];
-            Tag tag = profile.getTag();
-
-            if (usesListeningBank(tag)) {
-                for (int q = 0; q < questionsForTag; q++) {
-                    int difficulty = pickDifficulty(profile.getCurrentLevel(), safetyGateLevel);
-                    orderIndex = addListeningQuestion(section, tag, difficulty, usedSourceQuestionIds, orderIndex);
-                }
-            } else {
-                // Grammar, Vocabulary, Reading (và mọi nhánh không phải Listening) → chỉ Gemini AI
-                var readingResult = addReadingQuestionsForTag(
-                        section, tag, profile, questionsForTag, safetyGateLevel, orderIndex);
-                orderIndex = readingResult.orderIndex();
-                geminiQuotaExceeded = geminiQuotaExceeded || readingResult.quotaExceeded();
+        if (usesListeningBank(tag)) {
+            for (int q = 0; q < questionsForTag; q++) {
+                int difficulty = pickDifficulty(weakTag.getCurrentLevel(), safetyGateLevel);
+                orderIndex = addListeningQuestion(section, tag, difficulty, usedSourceQuestionIds, orderIndex);
             }
+        } else {
+            // Grammar, Vocabulary, Reading (và mọi nhánh không phải Listening) → chỉ Gemini AI
+            var readingResult = addReadingQuestionsForTag(
+                    section, tag, weakTag, questionsForTag, safetyGateLevel, orderIndex);
+            orderIndex = readingResult.orderIndex();
+            geminiQuotaExceeded = readingResult.quotaExceeded();
         }
 
         if (section.getQuestions().isEmpty()) {
@@ -240,16 +166,6 @@ public class PersonalizedTestService {
         }
 
         return testRepository.save(test);
-    }
-
-    private int[] distributeQuestions(int total, int tagCount) {
-        int[] result = new int[tagCount];
-        int base = total / tagCount;
-        int remainder = total % tagCount;
-        for (int i = 0; i < tagCount; i++) {
-            result[i] = base + (i < remainder ? 1 : 0);
-        }
-        return result;
     }
 
     private int pickDifficulty(int currentLevel, int safetyGateLevel) {
@@ -384,18 +300,46 @@ public class PersonalizedTestService {
     }
 
     private String buildReadingBatchPrompt(Tag tag, List<Integer> difficulties) {
-        String parentName = tag.getParent() != null ? tag.getParent().getName() : "TOEIC Reading";
+        String parentName = tag.getParent() != null ? tag.getParent().getName() : "";
+        String tagName = tag.getName();
+        String fullCategory = (parentName + " " + tagName).toLowerCase();
+
         String difficultyList = difficulties.stream()
                 .map(String::valueOf)
                 .collect(java.util.stream.Collectors.joining(", "));
+
+        String formatInstruction;
+
+        if (fullCategory.contains("part 7")) {
+            formatInstruction = """
+                    Generate exactly %d TOEIC Part 7 (Reading Comprehension) multiple-choice questions.
+                    For each question, create a short reading passage (e.g., email, memo, notice) and 1 related question.
+                    Combine the passage and the question into the 'content' field in this format:
+                    [Passage Text]
+                    
+                    [Question Text]
+                    """.formatted(difficulties.size());
+        } else if (fullCategory.contains("part 5") || fullCategory.contains("part 6")) {
+            formatInstruction = """
+                    Generate exactly %d TOEIC Incomplete Sentences/Texts multiple-choice questions.
+                    For each question, provide a sentence or short text with a blank space (represented by "___").
+                    """.formatted(difficulties.size());
+        } else {
+            // Default to Part 5 style if not explicitly part 7
+            formatInstruction = """
+                    Generate exactly %d TOEIC-style multiple-choice questions (similar to Part 5 Incomplete Sentences).
+                    For each question, provide a sentence with a blank space (represented by "___").
+                    """.formatted(difficulties.size());
+        }
+
         return """
-                Generate exactly %d TOEIC Part 5 (Incomplete Sentences) multiple-choice questions in English.
+                %s
                 Topic tag: %s (parent skill: %s).
                 Each question should match one of these difficulty levels (1=easiest, 5=hardest), in order: %s.
                 Provide exactly 4 options A, B, C, D and one correct answer letter per question.
                 Return JSON with a "questions" array containing exactly %d items.
                 Fields per question: content, optionA, optionB, optionC, optionD, correctAnswer (A/B/C/D), explanation (brief, in Vietnamese).
-                """.formatted(difficulties.size(), tag.getName(), parentName, difficultyList, difficulties.size());
+                """.formatted(formatInstruction, tagName, parentName, difficultyList, difficulties.size());
     }
 
     private boolean isGeminiQuotaError(Throwable e) {
