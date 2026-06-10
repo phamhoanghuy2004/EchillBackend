@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
@@ -9,16 +9,16 @@ spring:
       max-file-size: 5MB
       max-request-size: 10MB
   elasticsearch:
-    uris: http://localhost:9200
+    uris: ${ELASTICSEARCH_URI:http://localhost:9200}
 
 
   # ===============================
   # DATABASE CONFIGURATION
   # ===============================
   datasource:
-    url: jdbc:mysql://mysql-2cc2c868-phamhoanghuy-96f0.e.aivencloud.com:15293/echill_db?sslMode=REQUIRED&rewriteBatchedStatements=true
-    username: avnadmin
-    password: AVNS_439qsgZdIKzTmluCfBg # ⚠️ Nhớ giấu đi khi đưa lên GitHub nhé!
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD} # ⚠️ Nhớ giấu đi khi đưa lên GitHub nhé!
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   # ===============================
@@ -42,12 +42,12 @@ spring:
   # ===============================
   data:
     redis:
-      host: valkey-dostore-phamhoanghuy-96f0.f.aivencloud.com
-      port: 15294
-      username: default
-      password: AVNS_rmKGsDZar026KHs_sI5
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      username: ${REDIS_USERNAME:default}
+      password: ${REDIS_PASSWORD}
       ssl:
-        enabled: true
+        enabled: ${REDIS_SSL_ENABLED:true}
 
   # ===============================
   # EMAIL CONFIGURATION (Gmail SMTP)
@@ -55,7 +55,7 @@ spring:
   ai:
     google:
       genai:
-        api-key: AIzaSyB3vGJ3E1WDL3VT_I5nsqsXsk1DWGclT9o
+        api-key: ${GEMINI_API_KEY}
         chat:
           options:
             model: ${GEMINI_MODEL:gemini-2.5-flash}
@@ -63,8 +63,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: thanhnha04042004@gmail.com
-    password: xnunovesmreweltn
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -83,9 +83,9 @@ logging:
 # JWT CONFIGURATION
 # ===============================
 jwt:
-  signerKey: "4666c04b12243870bf10458cb52745f79f68e7d88c1028a27cd036f37346aa96" # ⚠️ Nhớ đổi key khác khi lên Production!
-  valid-duration: 7200 # in seconds (2 giờ)
-  refreshable-duration: 604800 # in seconds (7 ngày)
+  signerKey: ${JWT_SIGNER_KEY} # ⚠️ Nhớ đổi key khác khi lên Production!
+  valid-duration: ${JWT_VALID_DURATION:7200} # in seconds (2 giờ)
+  refreshable-duration: ${JWT_REFRESHABLE_DURATION:604800} # in seconds (7 ngày)
 
 # ===============================
 # OTP CONFIGURATION
@@ -99,29 +99,29 @@ otp:
 # GOOGLE OAUTH2 CONFIGURATION
 # ===============================
 google:
-  client-id: "38105657400-0bmvkg4d58iq8dv8vi5vl806mbfrm3ig.apps.googleusercontent.com"
+  client-id: ${GOOGLE_CLIENT_ID}
 
 # ===============================
 # CLOUDINARY CONFIGURATION
 # ===============================
 cloudinary:
-  cloud-name: dxqk6g7se
-  api-key: 858981758875523
-  api-secret: nFbzQGQ1BhAIrHixSu4VecJx69Q
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
   video:
-    eager-profile: sp_full_hd/m3u8
-  webhook-url: https://cleistocarpous-britany-unscabrous.ngrok-free.dev/webhook/cloudinary
+    eager-profile: ${CLOUDINARY_VIDEO_PROFILE:sp_full_hd/m3u8}
+  webhook-url: ${CLOUDINARY_WEBHOOK_URL}
 
 # ===============================
 # VNpay CONFIGURATION
 # ===============================
 vnpay:
-  tmn-code: 13FBJQZE
-  hash-secret: DV1KKW3LM3T3FA95AJT4COUJ7B9Z8W0O
-  pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-  return-url: https://front-end-online-e-course.vercel.app/payment/result
+  tmn-code: ${VNPAY_TMN_CODE}
+  hash-secret: ${VNPAY_HASH_SECRET}
+  pay-url: ${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+  return-url: ${VNPAY_RETURN_URL}
 
 app:
   test:
-    default-section-name: "Phần thi mặc định" # Hoặc "Default Section"
-    max-questions-per-file: 2000 # Giới hạn số câu hỏi (Fix lỗi 5)
+    default-section-name: ${DEFAULT_SECTION_NAME:Phần thi mặc định} # Hoặc "Default Section"
+    max-questions-per-file: ${MAX_QUESTIONS_PER_FILE:2000} # Giới hạn số câu hỏi (Fix lỗi 5)
