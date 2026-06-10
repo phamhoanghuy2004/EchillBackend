@@ -95,4 +95,10 @@ public class CourseQueryService {
             });
         }
     }
+
+    @Transactional(readOnly = true)
+    public Boolean checkEnrollment(Long courseId) {
+        Long userId = com.echill.util.SecurityUtils.getCurrentUserId();
+        return enrollmentRepository.existsByStudentIdAndCourseId(userId, courseId);
+    }
 }

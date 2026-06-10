@@ -39,9 +39,10 @@ public class TeacherAnalyticsController {
     @PreAuthorize("hasRole('TEACHER')")
     public ApiResponse<List<RevenueChartResponse>> getRevenueChart(
             @RequestParam(required = false) Long courseId,
-            @RequestParam(defaultValue = "MONTH") String period) {
+            @RequestParam(defaultValue = "MONTH") String period,
+            @RequestParam(required = false) Integer year) {
         return ApiResponse.<List<RevenueChartResponse>>builder()
-                .data(teacherAnalyticsService.getRevenueChart(courseId, period))
+                .data(teacherAnalyticsService.getRevenueChart(courseId, period, year))
                 .build();
     }
 
@@ -65,11 +66,12 @@ public class TeacherAnalyticsController {
     @PreAuthorize("hasRole('TEACHER')")
     public ApiResponse<List<CourseDetailReportResponse>> getTopCoursesDetail(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(defaultValue = "REVENUE") String sortBy) {
         Instant from = fromDate != null ? fromDate.atStartOfDay(ZoneOffset.UTC).toInstant() : null;
         Instant to = toDate != null ? toDate.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant() : null;
         return ApiResponse.<List<CourseDetailReportResponse>>builder()
-                .data(teacherAnalyticsService.getTopCoursesDetailReport(from, to))
+                .data(teacherAnalyticsService.getTopCoursesDetailReport(from, to, sortBy))
                 .build();
     }
 }

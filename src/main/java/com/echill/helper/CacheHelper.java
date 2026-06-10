@@ -57,4 +57,20 @@ public class CacheHelper {
             log.info("🧹 Đã xóa tổng cộng {} cache đề thi con.", testIds.size());
         }
     }
+
+    public void evictTestSetDetail(Long testSetId) {
+        if (testSetId == null) return;
+
+        Cache cacheDetails = cacheManager.getCache("testSetDetails");
+        if (cacheDetails != null) {
+            cacheDetails.evict(testSetId);
+            log.info("🧹 [CACHE CLEARED] Đã xóa cache testSetDetails cho TestSet ID: {}", testSetId);
+        }
+
+        Cache cacheCounts = cacheManager.getCache("testQuestionCounts");
+        if (cacheCounts != null) {
+            cacheCounts.evict(testSetId);
+            log.info("🧹 [CACHE CLEARED] Đã xóa cache testQuestionCounts cho TestSet ID: {}", testSetId);
+        }
+    }
 }

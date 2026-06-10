@@ -46,6 +46,7 @@ public class ImportTestService {
     QuestionRepository questionRepository;
     TagRepository tagRepository;
     QuestionBankCacheService questionBankCacheService;
+    org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     /** Cloudinary folder structure */
     private static final String FOLDER_QUESTION_AUDIO = "toeic/audio/questions";
@@ -201,6 +202,8 @@ public class ImportTestService {
             log.info("🔄 [PLACEMENT TEST] Reloading CAT questions bank cache...");
             questionBankCacheService.loadPlacementQuestionsToCache();
         }
+        
+        eventPublisher.publishEvent(new com.echill.event.TestSetUpdatedEvent(testSetId));
 
         return ImportTestResponse.builder()
                 .testId(saved.getId())

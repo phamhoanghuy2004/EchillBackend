@@ -96,7 +96,7 @@ public class CourseService {
 
     public List<CourseResponse> getAllCoursesByTeacher() {
         Long teacherId = SecurityUtils.getCurrentUserId();
-        List<Course> courses = courseRepository.findAllByTeacherIdWithDetails(teacherId);
+        List<Course> courses = courseRepository.findAllByTeacherIdWithBasicDetails(teacherId);
         List<Long> courseIds = courses.stream().map(Course::getId).toList();
 
         Map<Long, Long> studentCounts = enrollmentRepository.countEnrollmentsByCourseIds(courseIds).stream()
@@ -119,7 +119,7 @@ public class CourseService {
 
         return courses.stream()
                 .map(course -> {
-                    CourseResponse response = mapToResponse(course);
+                    CourseResponse response = mapToBasicResponse(course);
                     response.setStudentCount(studentCounts.getOrDefault(course.getId(), 0L));
                     response.setReviewCount(reviewCounts.getOrDefault(course.getId(), 0L));
                     Double avg = averageRatings.get(course.getId());
@@ -222,5 +222,28 @@ public class CourseService {
                 .build();
     }
 
-
+    private CourseResponse mapToBasicResponse(Course course) {
+        return CourseResponse.builder()
+                .id(course.getId())
+                .name(course.getName())
+                .description(course.getDescription())
+                .price(course.getPrice())
+                .originalPrice(course.getOriginalPrice())
+                .imageUrl(course.getImageUrl())
+                .level(course.getLevel())
+                .status(course.getStatus())
+                .categoryId(course.getCategory().getId())
+                .categoryName(course.getCategory().getName())
+                .teacherName(course.getTeacher().getFullName())
+                .teacherId(course.getTeacher().getId())
+                .teacherAvatarUrl(course.getTeacher().getAvatarUrl() != null ? 
+                        course.getTeacher().getAvatarUrl() : 
+                        "https://ui-avatars.com/api/?name=" + java.net.URLEncoder.encode(course.getTeacher().getFullName(), java.nio.charset.StandardCharsets.UTF_8) + "&background=random")
+                .createdAt(course.getCreatedAt() != null ?
+                        course.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDateTime() : null)
+                .totalLessonsCount(course.getTotalLessonsCount())
+                .lessons(List.of())
+                .tags(List.of())
+                .build();
+    }
 }

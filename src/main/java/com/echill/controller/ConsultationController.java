@@ -41,6 +41,7 @@ public class ConsultationController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<PageResponse<ConsultationResponse>> getAll(
             @Valid @ModelAttribute ConsultationSearchRequest request) {
         return ApiResponse.<PageResponse<ConsultationResponse>>builder()

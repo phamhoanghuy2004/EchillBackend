@@ -5,6 +5,7 @@ import com.echill.dto.response.*;
 import com.echill.dto.response.guest.TestPracticeResponse;
 import com.echill.dto.response.guest.TestReviewDetailResponse;
 import com.echill.repository.TestRepository;
+import com.echill.service.AdminTestService;
 import com.echill.service.TestSectionService;
 import com.echill.service.TestService;
 import jakarta.validation.Valid;
@@ -27,6 +28,7 @@ import java.util.List;
 public class TestController {
     TestService testService;
     TestSectionService testSectionService;
+    AdminTestService adminTestService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -81,6 +83,24 @@ public class TestController {
             @RequestBody @Valid QuestionUpdateRequest request) {
         return ApiResponse.<QuestionResponse>builder()
                 .data(testService.updateQuestion(questionId, request))
+                .build();
+    }
+
+    @PostMapping("/questions/{id}/audio")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ApiResponse<String> uploadQuestionAudio(@PathVariable Long id, @RequestPart("file") MultipartFile file) {
+        return ApiResponse.<String>builder()
+                .data(adminTestService.uploadQuestionAudio(id, file))
+                .message("Upload audio successfully")
+                .build();
+    }
+
+    @PostMapping("/questions/{id}/image")
+    @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
+    public ApiResponse<String> uploadQuestionImage(@PathVariable Long id, @RequestPart("file") MultipartFile file) {
+        return ApiResponse.<String>builder()
+                .data(adminTestService.uploadQuestionImage(id, file))
+                .message("Upload image successfully")
                 .build();
     }
 
