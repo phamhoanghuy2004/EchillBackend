@@ -30,12 +30,15 @@ public class TestCacheListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTestSetSyncEvent(TestSetUpdatedEvent event) {
         Long testSetId = event.testSetId();
-        log.info("🎯 Nhận được tín hiệu DB Commit xong cho TestSet: {}. Bắt đầu dọn Cache các Test con!", testSetId);
+        log.info("🎯 Nhận được tín hiệu DB Commit xong cho TestSet: {}. Bắt đầu dọn Cache!", testSetId);
 
-        // 1. Lấy toàn bộ ID của các đề thi con thuộc bộ đề này
+        // 1. Dọn cache của chính bộ đề
+        cacheHelper.evictTestSetDetail(testSetId);
+
+        // 2. Lấy toàn bộ ID của các đề thi con thuộc bộ đề này
         List<Long> testIds = testRepository.findTestIdsByTestSetId(testSetId);
 
-        // 2. Quét sạch Cache của chúng
+        // 3. Quét sạch Cache của chúng
         cacheHelper.evictTestPractices(testIds);
     }
 }

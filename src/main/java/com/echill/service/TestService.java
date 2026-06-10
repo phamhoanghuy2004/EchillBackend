@@ -75,6 +75,7 @@ public class TestService {
     ScoreCalculator scoreCalculator;
     TransactionRepository transactionRepository;
     EnrollmentRepository enrollmentRepository;
+    jakarta.persistence.EntityManager entityManager;
 
     @Lazy
     @Autowired
@@ -156,11 +157,31 @@ public class TestService {
 
     @Transactional
     public void deleteTest(Long testId) {
-        if (!testRepository.existsById(testId)) {
-            throw new AppException(TeacherErrorEnum.TEST_NOT_FOUND);
-        }
+        Test test = testRepository.findById(testId)
+                .orElseThrow(() -> new AppException(TeacherErrorEnum.TEST_NOT_FOUND));
+        Long testSetId = test.getTestSet().getId();
+        
+        // Dùng Bulk Delete (JPQL) để tránh N+1 delete query của Hibernate Cascade
+        entityManager.createQuery("DELETE FROM Answer a WHERE a.question.id IN (SELECT q.id FROM Question q WHERE q.section.test.id = :testId)")
+                .setParameter("testId", testId)
+                .executeUpdate();
+                
+        entityManager.createQuery("DELETE FROM Question q WHERE q.section.test.id = :testId")
+                .setParameter("testId", testId)
+                .executeUpdate();
+                
+        entityManager.createQuery("DELETE FROM QuestionGroup qg WHERE qg.section.test.id = :testId")
+                .setParameter("testId", testId)
+                .executeUpdate();
+                
+        entityManager.createQuery("DELETE FROM TestSection ts WHERE ts.test.id = :testId")
+                .setParameter("testId", testId)
+                .executeUpdate();
+        
         testRepository.deleteById(testId);
         log.info("Deleting test with id: {}", testId);
+        
+        eventPublisher.publishEvent(new com.echill.event.TestSetUpdatedEvent(testSetId));
     }
 
     @Transactional(readOnly = true)

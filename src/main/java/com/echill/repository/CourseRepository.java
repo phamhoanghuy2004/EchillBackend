@@ -25,6 +25,12 @@ public interface CourseRepository extends JpaRepository<Course, Long>, JpaSpecif
             "WHERE c.teacher.id = :teacherId")
     List<Course> findAllByTeacherIdWithDetails(@Param("teacherId") Long teacherId);
 
+    @Query("SELECT DISTINCT c FROM Course c " +
+            "JOIN FETCH c.category " +
+            "JOIN FETCH c.teacher " +
+            "WHERE c.teacher.id = :teacherId")
+    List<Course> findAllByTeacherIdWithBasicDetails(@Param("teacherId") Long teacherId);
+
     @Query("SELECT c FROM Course c " +
             "JOIN FETCH c.category " +
             "JOIN FETCH c.teacher " +

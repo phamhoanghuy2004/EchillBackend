@@ -62,44 +62,67 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>,
            "JOIN courses c ON ti.course_id = c.id " +
            "WHERE c.teacher_id = :teacherId " +
            "AND (:courseId IS NULL OR c.id = :courseId) " +
+           "AND (:year IS NULL OR YEAR(t.created_at) = :year) " +
            "AND t.status = 'SUCCESS' " +
            "GROUP BY label " +
            "ORDER BY label ASC", nativeQuery = true)
-    List<Object[]> getRevenueByPeriod(@Param("teacherId") Long teacherId, @Param("courseId") Long courseId, @Param("period") String period);
+    List<Object[]> getRevenueByPeriod(@Param("teacherId") Long teacherId, @Param("courseId") Long courseId, @Param("period") String period, @Param("year") Integer year);
 
-    @Query(value = "SELECT ti.course_id, SUM(ti.amount_price) as revenue " +
-           "FROM transaction_items ti " +
-           "JOIN transactions t ON ti.transaction_id = t.id " +
-           "JOIN courses c ON ti.course_id = c.id " +
-           "WHERE c.teacher_id = :teacherId " +
+    @Query("SELECT ti.course.id, SUM(ti.amountPrice) as revenue, COUNT(ti) as salesCount " +
+           "FROM TransactionItem ti " +
+           "JOIN ti.transaction t " +
+           "WHERE ti.course.teacher.id = :teacherId " +
            "AND t.status = 'SUCCESS' " +
-           "AND (:fromDate IS NULL OR t.created_at >= :fromDate) " +
-           "AND (:toDate IS NULL OR t.created_at <= :toDate) " +
-           "GROUP BY ti.course_id", nativeQuery = true)
-    List<Object[]> getRevenuePerCourseByDateRange(
+           "AND (:fromDate IS NULL OR t.createdAt >= :fromDate) " +
+           "AND (:toDate IS NULL OR t.createdAt <= :toDate) " +
+           "GROUP BY ti.course.id")
+    List<Object[]> getRevenueAndSalesPerCourseByDateRange(
             @Param("teacherId") Long teacherId,
             @Param("fromDate") Instant fromDate,
             @Param("toDate") Instant toDate);
 
-    @Query(value = "SELECT COUNT(ti.id) " +
-           "FROM transaction_items ti " +
-           "JOIN transactions t ON ti.transaction_id = t.id " +
-           "WHERE ti.course_id = :courseId " +
+    @Query("SELECT ti.course.id, ti.course.name, COUNT(ti) as salesCount " +
+           "FROM TransactionItem ti " +
+           "JOIN ti.transaction t " +
+           "WHERE ti.course.teacher.id = :teacherId AND t.status = 'SUCCESS' " +
+           "AND (:fromDate IS NULL OR t.createdAt >= :fromDate) " +
+           "AND (:toDate IS NULL OR t.createdAt <= :toDate) " +
+           "GROUP BY ti.course.id, ti.course.name " +
+           "ORDER BY salesCount DESC")
+    List<Object[]> findTopSellingCoursesByTeacherIdAndDateRange(
+            @Param("teacherId") Long teacherId,
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate);
+
+    @Query("SELECT COUNT(ti) FROM TransactionItem ti " +
+           "JOIN ti.transaction t " +
+           "WHERE ti.course.teacher.id = :teacherId AND t.status = 'SUCCESS'")
+    long countSalesByTeacherId(@Param("teacherId") Long teacherId);
+
+    @Query("SELECT COUNT(ti) FROM TransactionItem ti " +
+           "JOIN ti.transaction t " +
+           "WHERE ti.course.teacher.id = :teacherId AND ti.course.id = :courseId AND t.status = 'SUCCESS'")
+    long countSalesByTeacherIdAndCourseId(@Param("teacherId") Long teacherId, @Param("courseId") Long courseId);
+
+    @Query("SELECT COUNT(ti) " +
+           "FROM TransactionItem ti " +
+           "JOIN ti.transaction t " +
+           "WHERE ti.course.id = :courseId " +
            "AND t.status = 'SUCCESS' " +
-           "AND (:fromDate IS NULL OR t.created_at >= :fromDate) " +
-           "AND (:toDate IS NULL OR t.created_at <= :toDate)", nativeQuery = true)
+           "AND (:fromDate IS NULL OR t.createdAt >= :fromDate) " +
+           "AND (:toDate IS NULL OR t.createdAt <= :toDate)")
     Long getSalesCountByCourseIdAndDateRange(
             @Param("courseId") Long courseId,
             @Param("fromDate") Instant fromDate,
             @Param("toDate") Instant toDate);
 
-    @Query(value = "SELECT SUM(ti.amount_price) " +
-           "FROM transaction_items ti " +
-           "JOIN transactions t ON ti.transaction_id = t.id " +
-           "WHERE ti.course_id = :courseId " +
+    @Query("SELECT SUM(ti.amountPrice) " +
+           "FROM TransactionItem ti " +
+           "JOIN ti.transaction t " +
+           "WHERE ti.course.id = :courseId " +
            "AND t.status = 'SUCCESS' " +
-           "AND (:fromDate IS NULL OR t.created_at >= :fromDate) " +
-           "AND (:toDate IS NULL OR t.created_at <= :toDate)", nativeQuery = true)
+           "AND (:fromDate IS NULL OR t.createdAt >= :fromDate) " +
+           "AND (:toDate IS NULL OR t.createdAt <= :toDate)")
     BigDecimal getRevenueByCourseIdAndDateRange(
             @Param("courseId") Long courseId,
             @Param("fromDate") Instant fromDate,

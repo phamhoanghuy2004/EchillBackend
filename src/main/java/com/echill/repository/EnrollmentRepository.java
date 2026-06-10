@@ -107,7 +107,23 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     @Query("SELECT e.course.id, e.course.name, COUNT(e) as enrollmentCount " +
            "FROM Enrollment e " +
            "WHERE e.course.teacher.id = :teacherId " +
+           "AND (:fromDate IS NULL OR e.createdAt >= :fromDate) " +
+           "AND (:toDate IS NULL OR e.createdAt <= :toDate) " +
            "GROUP BY e.course.id, e.course.name " +
            "ORDER BY enrollmentCount DESC")
-    List<Object[]> findTopSellingCoursesByTeacherId(@Param("teacherId") Long teacherId);
+    List<Object[]> findTopSellingCoursesByTeacherIdAndDateRange(
+            @Param("teacherId") Long teacherId, 
+            @Param("fromDate") java.time.Instant fromDate, 
+            @Param("toDate") java.time.Instant toDate);
+
+    @Query("SELECT e.course.id, COUNT(e) " +
+           "FROM Enrollment e " +
+           "WHERE e.course.teacher.id = :teacherId " +
+           "AND (:fromDate IS NULL OR e.createdAt >= :fromDate) " +
+           "AND (:toDate IS NULL OR e.createdAt <= :toDate) " +
+           "GROUP BY e.course.id")
+    List<Object[]> getEnrollmentsCountPerCourseByDateRange(
+            @Param("teacherId") Long teacherId,
+            @Param("fromDate") java.time.Instant fromDate,
+            @Param("toDate") java.time.Instant toDate);
 }

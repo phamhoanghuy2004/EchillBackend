@@ -31,6 +31,7 @@ public class AdminTestService {
     QuestionGroupRepository questionGroupRepository;
     TestRepository testRepository;
     TestMapper testMapper;
+    org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     public TestResponse getTestById(Long testId) {
         Test test = testRepository.findById(testId)
@@ -47,6 +48,9 @@ public class AdminTestService {
         question.setAudioUrl(uploadResult.get("url"));
         question.setAudioPublicId(uploadResult.get("public_id"));
         questionRepository.save(question);
+        
+        Long testId = question.getSection().getTest().getId();
+        eventPublisher.publishEvent(new com.echill.event.TestUpdatedEvent(testId));
 
         return uploadResult.get("url");
     }
@@ -60,6 +64,9 @@ public class AdminTestService {
         question.setImageUrl(uploadResult.get("url"));
         question.setImagePublicId(uploadResult.get("public_id"));
         questionRepository.save(question);
+        
+        Long testId = question.getSection().getTest().getId();
+        eventPublisher.publishEvent(new com.echill.event.TestUpdatedEvent(testId));
 
         return uploadResult.get("url");
     }
@@ -73,6 +80,9 @@ public class AdminTestService {
         group.setSharedAudioUrl(uploadResult.get("url"));
         group.setSharedAudioPublicId(uploadResult.get("public_id"));
         questionGroupRepository.save(group);
+        
+        Long testId = group.getSection().getTest().getId();
+        eventPublisher.publishEvent(new com.echill.event.TestUpdatedEvent(testId));
 
         return uploadResult.get("url");
     }
@@ -86,6 +96,9 @@ public class AdminTestService {
         group.setSharedImageUrl(uploadResult.get("url"));
         group.setSharedImagePublicId(uploadResult.get("public_id"));
         questionGroupRepository.save(group);
+        
+        Long testId = group.getSection().getTest().getId();
+        eventPublisher.publishEvent(new com.echill.event.TestUpdatedEvent(testId));
 
         return uploadResult.get("url");
     }

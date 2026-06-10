@@ -39,4 +39,5 @@ public class CourseResponse {
     Double averageRating;
     Long studentCount;
     Long reviewCount;
+    Integer totalLessonsCount;
 }

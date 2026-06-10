@@ -113,4 +113,12 @@ public class CourseController {
                 .data(courseService.getTop6PurchasedCourses())
                 .build();
     }
+
+    @GetMapping("/{id}/check-enrollment")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<Boolean> checkEnrollment(@PathVariable Long id) {
+        return ApiResponse.<Boolean>builder()
+                .data(courseQueryService.checkEnrollment(id))
+                .build();
+    }
 }

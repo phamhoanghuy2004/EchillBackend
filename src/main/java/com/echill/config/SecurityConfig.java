@@ -31,13 +31,13 @@ public class SecurityConfig {
 
             "/users", "/auth/login", "/auth/introspect", "/auth/logout", "/auth/register", "/auth/verify-register-otp",
             "/auth/resend-register-otp", "/auth/google-login", "/auth/forgot-password", "/auth/reset-password",
-            "/webhook/cloudinary", "/ws/**"
+            "/auth/refresh", "/webhook/cloudinary", "/ws/**", "/consultations/submit"
     };
 
     static String[] PUBLIC_GET_ENDPOINTS = {
             "/courses", "/courses/**", "/exams", "/exams/**", "/ws/**", "/categories", "/categories/**", "/payments/vnpay-ipn",
-            "/teachers/all", "/teachers/random", "/blogs", "/blogs/**", "/reviews/featured", "/certificates/top-toeic",
-            "/tags", "/tags/**"
+            "/teachers/all", "/teachers/random", "/blogs", "/blogs/**", "/reviews/featured", "/reviews/course/**", "/certificates/top-toeic",
+            "/tags", "/tags/**", "/test-sets", "/test-sets/**"
     };
 
     CustomJwtDecoder customJwtDecoder;

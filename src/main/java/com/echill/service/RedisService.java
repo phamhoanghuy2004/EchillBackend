@@ -81,4 +81,37 @@ public class RedisService {
         String lockKey = LOCK_KEY_PREFIX + userId;
         redisTemplate.delete(lockKey);
     }
+
+    /**
+     * Xóa cache theo pattern
+     */
+    public void clearCacheByPattern(String pattern) {
+        java.util.Set<String> keys = redisTemplate.keys(pattern);
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+            log.info("🗑️ Đã xóa {} keys với pattern: {}", keys.size(), pattern);
+        }
+    }
+
+    /**
+     * Xóa toàn bộ system caches theo yêu cầu
+     */
+    public void clearAllSystemCaches() {
+        String[] cacheNames = {
+            "courseDetail", "categories", "testPractice", "testReviewCache", 
+            "topStudents", "lessonDetails", "tags", "allCourses", 
+            "allTeachers", "latestBlogs", "testSetDetails", "testQuestionCounts", 
+            "testSectionSummaries", "allReviews", "getMyReviewByCourse", 
+            "allReviewsByCourse", "featuredReviews"
+        };
+        for (String cacheName : cacheNames) {
+            clearCacheByPattern(cacheName + "::*"); // Xóa tất cả các keys trong từng namespace của Spring Cache
+        }
+        
+        // Xóa cache session placement test và lock
+        clearCacheByPattern(SESSION_KEY_PREFIX + "*");
+        clearCacheByPattern(LOCK_KEY_PREFIX + "*");
+        
+        log.info("✅ Đã xóa toàn bộ cache hệ thống (System Caches + Placement Test Sessions).");
+    }
 }
