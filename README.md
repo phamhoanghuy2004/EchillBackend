@@ -2,115 +2,115 @@
   <br />
   <h1>🌟 E-Chill Backend 🌟</h1>
   <p>
-    <strong>A robust, scalable Spring Boot REST API for the E-Chill Online Course Platform.</strong>
+    <strong>Hệ thống API RESTful mạnh mẽ, dễ dàng mở rộng dành cho Nền tảng học trực tuyến E-Chill, được xây dựng với Spring Boot.</strong>
   </p>
   <br />
 </div>
 
-## 📖 Introduction
+## 📖 Giới thiệu
 
-**E-Chill Backend** is the core server-side application powering the E-Chill online learning platform. Designed with modularity and scalability in mind, it provides robust APIs for course management, adaptive learning tests, real-time chat, and secure authentication. 
-
----
-
-## ✨ Main Features
-
-- 🔐 **Authentication & Authorization:** Secure JWT-based authentication using OAuth2 Resource Server. Role-based access control (Admin, Teacher, Student).
-- 📚 **Course Management:** Full CRUD operations for courses, lessons, and documents. Includes review and enrollment management.
-- 📝 **Testing & Assessment:** Features Placement Tests, Adaptive Tests, and comprehensive test result tracking to analyze student skills.
-- 💬 **Real-time Chat:** Seamless communication via WebSocket for real-time messaging.
-- ☁️ **Media Management:** Integrated with Cloudinary for fast and secure image, video, and document hosting.
-- 💳 **Payments & Transactions:** Management of Vouchers, Coin Packages, and detailed transaction histories.
-- 📊 **Analytics Dashboard:** Advanced analytics and statistics for Admins, Teachers, and individual Student study progress.
-- 🤖 **AI Integration:** Leveraging Spring AI with Google GenAI for intelligent features (like adaptive testing and personalized skill profiling).
-- 📂 **Excel Processing:** Batch import and export capabilities utilizing Apache POI.
+**E-Chill Backend** là ứng dụng máy chủ cốt lõi cung cấp sức mạnh cho nền tảng học trực tuyến E-Chill. Được thiết kế theo hướng module hóa và dễ dàng mở rộng, hệ thống cung cấp các API mạnh mẽ để quản lý khóa học, bài kiểm tra đánh giá năng lực thích ứng (Adaptive Learning), trò chuyện theo thời gian thực (Real-time chat), và bảo mật xác thực an toàn.
 
 ---
 
-## 🛠️ Technologies Used
+## ✨ Các chức năng chính
 
-### Core Framework
+- 🔐 **Xác thực & Phân quyền:** Xác thực bảo mật bằng JWT thông qua OAuth2 Resource Server. Phân quyền truy cập theo vai trò (Quản trị viên, Giáo viên, Học viên).
+- 📚 **Quản lý khóa học:** Đầy đủ các thao tác CRUD cho khóa học, bài học, và tài liệu. Bao gồm cả quản lý đánh giá (Review) và ghi danh khóa học (Enrollment).
+- 📝 **Kiểm tra & Đánh giá:** Tích hợp Bài kiểm tra đầu vào (Placement Tests), Bài kiểm tra thích ứng (Adaptive Tests), và theo dõi toàn diện kết quả kiểm tra để phân tích kỹ năng học viên.
+- 💬 **Trò chuyện trực tuyến (Real-time Chat):** Giao tiếp mượt mà qua WebSocket giúp nhắn tin theo thời gian thực.
+- ☁️ **Quản lý Media:** Tích hợp với Cloudinary để lưu trữ hình ảnh, video và tài liệu tải lên một cách nhanh chóng và an toàn.
+- 💳 **Thanh toán & Giao dịch:** Quản lý Voucher, các Gói xu (Coin Packages), và lịch sử giao dịch chi tiết.
+- 📊 **Bảng điều khiển Thống kê (Analytics Dashboard):** Cung cấp các thống kê và phân tích nâng cao dành cho Quản trị viên, Giáo viên, và tiến độ học tập của từng cá nhân học viên.
+- 🤖 **Tích hợp AI:** Tận dụng sức mạnh của Spring AI kết hợp với Google GenAI để đem đến các tính năng thông minh (như hệ thống bài thi thích ứng và hồ sơ kỹ năng cá nhân hóa).
+- 📂 **Xử lý Excel:** Khả năng nhập và xuất dữ liệu hàng loạt thông qua Apache POI.
+
+---
+
+## 🛠️ Công nghệ sử dụng
+
+### Framework cốt lõi
 - **Java 21**
 - **Spring Boot 3.3.0** (Web, Data JPA, Validation, Mail)
 - **Spring Security** (OAuth2 Resource Server)
 - **Spring Boot WebSocket**
 
-### Database & Caching
-- **MySQL** (Relational Database)
-- **Redis** (In-memory Data Structure Store & Caching)
-- **Elasticsearch** (Search Engine & Full-text search)
+### Cơ sở dữ liệu & Caching
+- **MySQL** (Hệ quản trị cơ sở dữ liệu quan hệ)
+- **Redis** (Lưu trữ dữ liệu trong bộ nhớ & Caching)
+- **Elasticsearch** (Công cụ tìm kiếm & Tìm kiếm toàn văn bản)
 
-### Utilities & Integrations
-- **Lombok** & **MapStruct** (Boilerplate reduction & Object Mapping)
-- **Spring AI** (Google GenAI Integration)
-- **Cloudinary HTTP44** (Media Storage)
-- **Apache POI** (Excel File Processing)
-- **TSID Creator** (Unique ID Generation)
+### Tiện ích & Tích hợp khác
+- **Lombok** & **MapStruct** (Giảm thiểu mã rập khuôn & Ánh xạ đối tượng)
+- **Spring AI** (Tích hợp Google GenAI)
+- **Cloudinary HTTP44** (Lưu trữ phương tiện)
+- **Apache POI** (Xử lý file Excel)
+- **TSID Creator** (Tạo ID định danh duy nhất)
 
 ---
 
-## 🚀 Installation & Running
+## 🚀 Cài đặt & Chạy dự án
 
-### Prerequisites
-Make sure you have the following installed on your machine:
+### Yêu cầu hệ thống
+Đảm bảo bạn đã cài đặt các phần mềm sau trên máy:
 - **Java 21** (JDK 21)
 - **Maven**
 - **MySQL** Database Server
 - **Redis** Server
-- **Elasticsearch** Server (Optional depending on your active profile)
+- **Elasticsearch** Server (Tùy chọn, phụ thuộc vào cấu hình profile bạn sử dụng)
 
-### Setup Instructions
+### Hướng dẫn cài đặt
 
-1. **Clone the repository:**
+1. **Clone mã nguồn về máy:**
    ```bash
    git clone <repository_url>
    cd echill-backend
    ```
 
-2. **Configure Environment Variables:**
-   Create a `.env` file in the root directory (or configure via `application.yml`/`application.properties`) with your respective credentials for Database, Redis, Cloudinary, Google AI, and Mail server.
+2. **Cấu hình biến môi trường:**
+   Tạo một file `.env` ở thư mục gốc (hoặc cấu hình thông qua file `application.yml`/`application.properties`) với các thông tin đăng nhập tương ứng cho Database, Redis, Cloudinary, Google AI, và máy chủ Mail.
 
-3. **Build the Application:**
-   Using Maven wrapper:
+3. **Build dự án:**
+   Sử dụng Maven wrapper:
    ```bash
    ./mvnw clean install -DskipTests
    ```
 
-4. **Run the Application:**
+4. **Chạy ứng dụng:**
    ```bash
    ./mvnw spring-boot:run
    ```
-   *The server will typically start on port `8080`.*
+   *Máy chủ sẽ mặc định chạy ở cổng `8080`.*
 
 ---
 
-## 📡 List of Main APIs
+## 📡 Danh sách các API chính
 
-The application exposes a wide variety of RESTful endpoints. Here is a high-level overview of the primary resource prefixes:
+Ứng dụng cung cấp nhiều endpoint RESTful. Dưới đây là tổng quan về các nhóm resource (tiền tố) chính:
 
-| Prefix | Description |
+| Tiền tố (Prefix) | Mô tả |
 |---|---|
-| `/api/v1/auth` | Login, Registration, Token verification, Password reset |
-| `/api/v1/users` | User profile management |
-| `/api/v1/courses` | Course browsing, details, and modifications |
-| `/api/v1/lessons` | Lesson content and progression |
-| `/api/v1/enrollments` | Managing student course enrollments |
-| `/api/v1/tests` | Standard and Placement exams |
-| `/api/v1/adaptive-tests`| AI-driven personalized assessments |
-| `/api/v1/chat` | WebSocket endpoints and chat history retrieval |
-| `/api/v1/payments` | Transactions, Coin packages, and Voucher application |
-| `/api/v1/admin/*` | Dedicated admin endpoints for users, analytics, and platform control |
+| `/api/v1/auth` | Đăng nhập, Đăng ký, Xác thực token, Đặt lại mật khẩu |
+| `/api/v1/users` | Quản lý thông tin hồ sơ người dùng |
+| `/api/v1/courses` | Xem danh sách, chi tiết và chỉnh sửa thông tin khóa học |
+| `/api/v1/lessons` | Nội dung bài học và tiến độ |
+| `/api/v1/enrollments` | Quản lý ghi danh khóa học của học viên |
+| `/api/v1/tests` | Bài kiểm tra tiêu chuẩn và đánh giá đầu vào |
+| `/api/v1/adaptive-tests`| Đánh giá kỹ năng cá nhân hóa được hỗ trợ bởi AI |
+| `/api/v1/chat` | Các endpoint cho WebSocket và truy xuất lịch sử trò chuyện |
+| `/api/v1/payments` | Giao dịch, Gói xu (Coin), và áp dụng Voucher |
+| `/api/v1/admin/*` | Các endpoint quản trị dành riêng cho việc quản lý người dùng, thống kê và kiểm soát hệ thống |
 
-*(Note: Detailed API documentation is typically accessible via Swagger UI if configured in the environment.)*
-
----
-
-## 🔑 Default Accounts
-
-For development and testing purposes, use the following administrator credentials:
-
-- **Username:** `hoanghuy`
-- **Password:** `17102004Huy@`
+*(Lưu ý: Tài liệu API chi tiết thường có thể truy cập qua giao diện Swagger UI nếu đã được cấu hình trong môi trường.)*
 
 ---
-*Created with ❤️ by the E-Chill Development Team.*
+
+## 🔑 Tài khoản & Mật khẩu mặc định
+
+Sử dụng tài khoản quản trị viên dưới đây dành cho mục đích phát triển và thử nghiệm:
+
+- **Tài khoản (Username):** `hoanghuy`
+- **Mật khẩu (Password):** `17102004Huy@`
+
+---
+*Được phát triển với ❤️ bởi Đội ngũ E-Chill.*
