@@ -2,6 +2,8 @@ server:
   port: ${SERVER_PORT:8080}
 
 spring:
+  main:
+    lazy-initialization: true # 🚀 VŨ KHÍ BÍ MẬT: Giảm 50% thời gian khởi động
   application:
     name: echill-backend
   servlet:
@@ -27,7 +29,7 @@ spring:
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: none # 🚀 Tắt kiểm tra schema để khởi động cực nhanh
     properties:
       hibernate:
         format_sql: true

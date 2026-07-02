@@ -12,8 +12,8 @@ WORKDIR /app
 # Copy the generated jar from build stage
 COPY --from=build /app/target/echill-backend-0.0.1-SNAPSHOT.jar app.jar
 
-# Limit JVM memory for Render's free tier (512MB total, give JVM 256MB to be safe)
-ENV JAVA_OPTS="-Xms256m -Xmx256m"
+# Limit JVM memory for Render's free tier (512MB total). Use SerialGC for low-CPU environments to speed up boot.
+ENV JAVA_OPTS="-Xmx350m -XX:+UseSerialGC -noverify"
 
 # Render automatically assigns a port via the PORT environment variable.
 ENV SERVER_PORT=${PORT:-8080}
