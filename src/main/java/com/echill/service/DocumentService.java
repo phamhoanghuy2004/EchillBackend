@@ -124,7 +124,7 @@ public class DocumentService {
         String token = generateRAGChatbotToken();
 
         // Call chatbot chat API
-        String chatUrl = "http://127.0.0.1:8000/api/chat/";
+        String chatUrl = "https://phamhoanghuy-ragchatbot.hf.space/api/chat/";
         org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
 
         java.util.Map<String, Object> body = new java.util.HashMap<>();
