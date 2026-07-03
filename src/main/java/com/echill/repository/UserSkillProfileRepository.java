@@ -71,7 +71,7 @@ public interface UserSkillProfileRepository extends JpaRepository<UserSkillProfi
     // ===== ADAPTIVE LEARNING =====
 
     /**
-     * Quét lỗ hổng kiến thức: Lấy các Tag Con có currentLevel < targetLevel,
+     * Quét lỗ hổng kiến thức: Lấy các Tag Con dựa trên MasteryLevel mục tiêu.
      * sắp xếp theo minLevel ASC (nền tảng trước), currentLevel ASC (yếu nhất trước).
      * JOIN FETCH tag + parent trong 1 query để tránh N+1.
      */
@@ -80,11 +80,11 @@ public interface UserSkillProfileRepository extends JpaRepository<UserSkillProfi
             "LEFT JOIN FETCH t.parent " +
             "WHERE p.user.id = :userId " +
             "AND t.parent IS NOT NULL " +
-            "AND p.currentLevel < :targetLevel " +
+            "AND p.masteryLevel IN :gapLevels " +
             "ORDER BY t.minLevel ASC, p.currentLevel ASC")
     List<UserSkillProfile> findKnowledgeGaps(
             @Param("userId") Long userId,
-            @Param("targetLevel") int targetLevel
+            @Param("gapLevels") List<MasteryLevel> gapLevels
     );
 
     boolean existsByUserId(Long userId);

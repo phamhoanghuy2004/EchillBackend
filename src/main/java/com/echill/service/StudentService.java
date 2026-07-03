@@ -109,20 +109,27 @@ public class StudentService {
 
         if (childProfiles.isEmpty()) return;
 
-        int minLevelAmongAllSkills = 5;
+        double totalRatio = 0.0;
+        int validProfilesCount = 0;
+
         for (UserSkillProfile p : childProfiles) {
-            if (p.getCurrentLevel() < minLevelAmongAllSkills) {
-                minLevelAmongAllSkills = p.getCurrentLevel();
+            if (p.getTag() != null && p.getTag().getMaxLevel() != null && p.getTag().getMaxLevel() > 0) {
+                int cappedLevel = Math.min(p.getCurrentLevel(), p.getTag().getMaxLevel());
+                double ratio = (double) cappedLevel / p.getTag().getMaxLevel();
+                totalRatio += ratio;
+                validProfilesCount++;
             }
         }
 
+        double avgRatio = validProfilesCount > 0 ? totalRatio / validProfilesCount : 0.0;
+
         Level newOverallLevel;
-        if (minLevelAmongAllSkills >= 5) {
-            newOverallLevel = Level.ADVANCED;
-        } else if (minLevelAmongAllSkills >= 4) {
+        if (avgRatio <= (1.0 / 3.0)) {
+            newOverallLevel = Level.BEGINNER;
+        } else if (avgRatio <= (2.0 / 3.0)) {
             newOverallLevel = Level.INTERMEDIATE;
         } else {
-            newOverallLevel = Level.BEGINNER;
+            newOverallLevel = Level.ADVANCED;
         }
 
         StudentProfile profile = studentProfileRepository.findById(userId)

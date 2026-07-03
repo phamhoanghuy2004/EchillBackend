@@ -69,9 +69,9 @@ public class UserSkillProfile extends BaseEntity {
         int cappedLevel = Math.min(this.currentLevel, this.tag.getMaxLevel());
         double ratio = (double) cappedLevel / this.tag.getMaxLevel();
 
-        if (ratio <= 0.33) {
+        if (ratio <= (1.0 / 3.0)) {
             this.masteryLevel = MasteryLevel.BEGINNER;
-        } else if (ratio <= 0.66) {
+        } else if (ratio <= (2.0 / 3.0)) {
             this.masteryLevel = MasteryLevel.INTERMEDIATE;
         } else {
             this.masteryLevel = MasteryLevel.ADVANCED;

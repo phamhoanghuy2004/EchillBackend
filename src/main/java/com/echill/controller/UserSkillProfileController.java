@@ -70,7 +70,7 @@ public class UserSkillProfileController {
         }
 
         UserSkillProfile gap = topGap.get();
-        int targetLevel = profileService.getTargetLevel(userId);
+        int targetLevel = profileService.getTargetLevelForTag(userId, gap.getTag());
 
         // Bước 4: Tìm bài học trong khóa đã mua
         Optional<Lesson> lesson = lessonService.findLessonForGapTag(userId, gap.getTag().getId());
