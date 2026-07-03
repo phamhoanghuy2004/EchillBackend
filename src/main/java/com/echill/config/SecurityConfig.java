@@ -90,6 +90,7 @@ public class SecurityConfig {
 
         // Thay "http://localhost:3000" bằng domain frontend của bạn sau khi deploy
         corsConfiguration.addAllowedOrigin("http://localhost:5173");
+        corsConfiguration.addAllowedOrigin("https://front-end-online-e-course.vercel.app"); // Cho phép FE trên Vercel
         corsConfiguration.addAllowedMethod("*"); // Cho phép mọi method (GET, POST, PUT, DELETE, OPTIONS)
         corsConfiguration.addAllowedHeader("*"); // Cho phép mọi header (Authorization, Content-Type,...)
         corsConfiguration.setAllowCredentials(true);
