@@ -3,6 +3,8 @@ package com.echill.service;
 import com.echill.dto.response.SkillInsightResponse;
 import com.echill.entity.StudentProfile;
 import com.echill.entity.UserSkillProfile;
+import com.echill.entity.Tag;
+import com.echill.entity.enums.MasteryLevel;
 import com.echill.entity.enums.TagGroup;
 import com.echill.exception.AppException;
 import com.echill.exception.StudentErrorEnum;
@@ -152,32 +154,30 @@ public class UserSkillProfileService {
                 .orElse(null);
         if (sp == null) return Optional.empty();
 
-        int targetLevel = switch (sp.getLevel()) {
-            case BEGINNER -> 3;
-            case INTERMEDIATE -> 4;
-            case ADVANCED -> 5;
-            default -> 3; // UNDETERMINED → dùng mức thấp nhất
+        List<MasteryLevel> gapLevels = switch (sp.getLevel()) {
+            case BEGINNER, UNDETERMINED -> List.of(MasteryLevel.BEGINNER);
+            case INTERMEDIATE, ADVANCED -> List.of(MasteryLevel.BEGINNER, MasteryLevel.INTERMEDIATE);
         };
 
         // Bước 2-3: 1 query duy nhất, DB sort sẵn, lấy phần tử đầu
-        List<UserSkillProfile> gaps = profileRepository.findKnowledgeGaps(userId, targetLevel);
+        List<UserSkillProfile> gaps = profileRepository.findKnowledgeGaps(userId, gapLevels);
 
         return gaps.stream().findFirst();
     }
 
     /**
-     * Tính Target Level cho user dựa trên StudentProfile.
+     * Tính Target Level cụ thể cho Tag dựa trên Max Level của Tag đó.
      */
-    public int getTargetLevel(Long userId) {
+    public int getTargetLevelForTag(Long userId, Tag tag) {
         StudentProfile sp = studentProfileRepository.findByUserId(userId)
                 .orElse(null);
         if (sp == null) return 3;
 
+        int maxLevel = (tag.getMaxLevel() != null && tag.getMaxLevel() > 0) ? tag.getMaxLevel() : 5;
+
         return switch (sp.getLevel()) {
-            case BEGINNER -> 3;
-            case INTERMEDIATE -> 4;
-            case ADVANCED -> 5;
-            default -> 3;
+            case BEGINNER, UNDETERMINED -> (int) Math.floor(maxLevel / 3.0) + 1;
+            case INTERMEDIATE, ADVANCED -> (int) Math.floor(maxLevel * 2.0 / 3.0) + 1;
         };
     }
 }
