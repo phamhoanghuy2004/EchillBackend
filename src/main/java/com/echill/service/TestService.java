@@ -737,10 +737,10 @@ public class TestService {
                     sources.add(cleanTitle);
                 }
             } else {
-                sources.add("tonghopkienthuc.pdf");
+                sources.add("Tai_Lieu_Full_Part.pdf");
             }
         } else {
-            sources.add("tonghopkienthuc.pdf");
+            sources.add("Tai_Lieu_Full_Part.pdf");
         }
 
         StringBuilder contextBuilder = new StringBuilder();
@@ -765,7 +765,7 @@ public class TestService {
         String fullPrompt = String.format("Context Question:\n%s\nUser Ask: %s", contextBuilder.toString(), userQuestion);
 
         String token = generateRAGChatbotToken();
-        String chatUrl = "https://phamhoanghuy-ragchatbot.hf.space/api/chat/";
+        String chatUrl = "http://rag-chatbot:8000/api/chat/";
         org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
 
         Map<String, Object> body = new HashMap<>();
