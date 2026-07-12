@@ -1,0 +1,25 @@
+# Cấu hình IDE/Trình soạn thảo
+.idea/
+.vscode/
+*.iml
+
+# Thư mục build của Maven
+target/
+*.jar
+*.war
+*.ear
+*.class
+
+# Cấu hình Git
+.git/
+.gitignore
+
+# Các file Logs
+*.log
+
+# Môi trường và thông tin nhạy cảm
+.env
+
+# Hệ điều hành
+.DS_Store
+Thumbs.db
