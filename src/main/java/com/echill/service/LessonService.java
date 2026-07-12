@@ -187,7 +187,7 @@ public class LessonService {
         }
 
         String token = generateRAGChatbotToken();
-        String chatUrl = "https://phamhoanghuy-ragchatbot.hf.space/api/chat/";
+        String chatUrl = "http://rag-chatbot:8000/api/chat/";
         org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
 
         java.util.Map<String, Object> body = new java.util.HashMap<>();

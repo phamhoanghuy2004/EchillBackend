@@ -58,7 +58,7 @@ public class DocumentUploadedEventListener {
         String token = generateRAGChatbotToken();
 
         // 4. Call Chatbot Upload API
-        String uploadUrl = "https://phamhoanghuy-ragchatbot.hf.space/api/upload/";
+        String uploadUrl = "http://rag-chatbot:8000/api/upload/";
 
         org.springframework.util.LinkedMultiValueMap<String, Object> body = new org.springframework.util.LinkedMultiValueMap<>();
         
