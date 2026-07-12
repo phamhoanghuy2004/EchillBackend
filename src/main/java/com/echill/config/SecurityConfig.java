@@ -16,9 +16,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
-
 
 @Configuration
 @EnableWebSecurity
@@ -28,7 +27,6 @@ import org.springframework.web.filter.CorsFilter;
 public class SecurityConfig {
 
     static String[] PUBLIC_POST_ENDPOINTS = {
-
             "/users", "/auth/login", "/auth/introspect", "/auth/logout", "/auth/register", "/auth/verify-register-otp",
             "/auth/resend-register-otp", "/auth/google-login", "/auth/forgot-password", "/auth/reset-password",
             "/auth/refresh", "/webhook/cloudinary", "/ws/**", "/consultations/submit"
@@ -58,8 +56,8 @@ public class SecurityConfig {
         // Cấu hình JWT Decoder & Xử lý ngoại lệ 401
         httpSecurity.oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwtConfigurer -> jwtConfigurer
-                                .decoder(customJwtDecoder)
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                        .decoder(customJwtDecoder)
+                        .jwtAuthenticationConverter(jwtAuthenticationConverter()))
         );
 
         // Gom chung xử lý ngoại lệ 401 và 403 vào khối exceptionHandling của Spring Security
@@ -84,8 +82,11 @@ public class SecurityConfig {
         return httpSecurity.build();
     }
 
+    // =========================================================
+    // CẤU HÌNH CORS CHUẨN CHO SPRING SECURITY ĐỨNG SAU NGINX
+    // =========================================================
     @Bean
-    public CorsFilter corsFilter() {
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
 
         // Thay "http://localhost:3000" bằng domain frontend của bạn sau khi deploy
@@ -95,10 +96,10 @@ public class SecurityConfig {
         corsConfiguration.addAllowedHeader("*"); // Cho phép mọi header (Authorization, Content-Type,...)
         corsConfiguration.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
-        urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration);
 
-        return new CorsFilter(urlBasedCorsConfigurationSource);
+        return source;
     }
 
     @Bean
@@ -110,5 +111,4 @@ public class SecurityConfig {
         jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter);
         return jwtAuthenticationConverter;
     }
-
 }
